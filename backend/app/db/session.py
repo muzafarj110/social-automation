@@ -49,7 +49,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Create tables. Fine for dev; use Alembic migrations in production."""
+    """Auto-create tables on the local SQLite dev DB only.
+
+    When DATABASE_URL is set (e.g. Railway Postgres), schema is owned by Alembic
+    migrations — run `alembic upgrade head` instead. This avoids create_all and
+    migrations fighting over the same schema in production.
+    """
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+
     # Import models so they register on Base.metadata.
     from app import models  # noqa: F401
 
