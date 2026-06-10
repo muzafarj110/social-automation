@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import accounts, auth, content, posts, routes
+from app.api import accounts, auth, content, inbox, posts, routes
 from app.core.config import settings
 from app.db.session import init_db
 
@@ -57,6 +57,8 @@ app.include_router(accounts.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
 # Phase 2
 app.include_router(posts.router, prefix="/api")
+# Phase 4 — approval inbox
+app.include_router(inbox.router, prefix="/api")
 
 
 @app.get("/", tags=["system"])

@@ -90,3 +90,12 @@ export const publishPost = (id) => apiSend(`/posts/${id}/publish`, "POST", {});
 export const schedulePost = (id, scheduled_for, timezone) =>
   apiSend(`/posts/${id}/schedule`, "POST", { scheduled_for, timezone });
 export const deletePost = (id) => apiSend(`/posts/${id}`, "DELETE");
+
+// --- Approval inbox ---
+export const generateApproval = (data) => apiSend("/inbox/generate", "POST", data);
+export const listInbox = (status = "pending") =>
+  apiGet(`/inbox?status=${encodeURIComponent(status)}`);
+export const editApproval = (id, draft_text) =>
+  apiSend(`/inbox/${id}`, "PATCH", { draft_text });
+export const approveApproval = (id) => apiSend(`/inbox/${id}/approve`, "POST", {});
+export const rejectApproval = (id) => apiSend(`/inbox/${id}/reject`, "POST", {});

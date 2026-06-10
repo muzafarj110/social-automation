@@ -4,6 +4,7 @@ import Auth from "./components/Auth.jsx";
 import Accounts from "./components/Accounts.jsx";
 import Generate from "./components/Generate.jsx";
 import Posts from "./components/Posts.jsx";
+import Inbox from "./components/Inbox.jsx";
 
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
@@ -62,6 +63,7 @@ export default function App() {
           {[
             ["generate", "Generate"],
             ["posts", "Posts"],
+            ["inbox", "Inbox"],
             ["accounts", "Accounts"],
           ].map(([id, label]) => (
             <div
@@ -85,6 +87,7 @@ export default function App() {
           />
         )}
         {tab === "posts" && <Posts refreshKey={postsRefresh} />}
+        {tab === "inbox" && <Inbox accounts={accounts} />}
         {tab === "accounts" && (
           <Accounts
             user={user}
