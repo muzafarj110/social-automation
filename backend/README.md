@@ -26,8 +26,8 @@ Leave `DATABASE_URL` empty for local dev — the app falls back to a SQLite file
 
 ```bash
 source .venv/bin/activate
-uvicorn app.main:app --reload
-# API docs: http://127.0.0.1:8000/docs
+uvicorn app.main:app --reload --port 8001
+# API docs: http://127.0.0.1:8001/docs  (the frontend dev proxy targets :8001)
 ```
 
 On startup the app auto-creates tables **only** on the SQLite dev DB. With a
