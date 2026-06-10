@@ -274,19 +274,35 @@ class HubClient:
         return await self.call("post_series", params)
 
     async def write_comment(self, **params: Any) -> dict[str, Any]:
-        """POST /api/linkedin-comment-writer → comment draft(s) for approval inbox."""
+        """POST /api/linkedin-comment → comment draft for the approval inbox.
+
+        Params (confirmed via Hub OpenAPI): post_topic (req), your_role (req),
+        post_summary, your_goal, tone.
+        """
         return await self.call("comment_writer", params)
 
     async def write_dm(self, **params: Any) -> dict[str, Any]:
-        """POST /api/linkedin-dm-writer → single DM draft (manual send)."""
+        """POST /api/linkedin-dm → DM draft(s) (manual send).
+
+        Params: prospect_name (req), prospect_role (req), your_role (req),
+        your_offer, goal, num_messages (int).
+        """
         return await self.call("dm_writer", params)
 
     async def outreach_campaign(self, **params: Any) -> dict[str, Any]:
-        """POST /api/linkedin-outreach-campaign → multi-step DM sequence."""
+        """POST /api/linkedin-outreach-campaign → multi-step DM sequence.
+
+        Params: your_role (req), your_offer (req), target_role (req),
+        target_industry, campaign_goal, num_touchpoints (int).
+        """
         return await self.call("outreach_campaign", params)
 
     async def optimize_profile(self, **params: Any) -> dict[str, Any]:
-        """POST /api/linkedin-profile-optimizer → profile rewrite suggestions."""
+        """POST /api/linkedin-profile → profile rewrite suggestions.
+
+        Params: current_headline (req), current_summary (req), role (req),
+        industry (req), goals.
+        """
         return await self.call("profile_optimizer", params)
 
     async def headline_variants(self, **params: Any) -> dict[str, Any]:

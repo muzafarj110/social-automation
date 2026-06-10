@@ -14,26 +14,42 @@ const KINDS = [
   ["profile", "Profile"],
 ];
 
-// Suggested Hub params per kind. Field names are passed straight to the Hub —
-// adjust here if the Hub's schema differs.
+// Hub request params per kind — field names match the Hub's OpenAPI schema and
+// are passed straight through. `req` marks fields the Hub requires.
 const PARAM_FIELDS = {
   comment: [
-    { name: "post_url", label: "Post URL", placeholder: "https://linkedin.com/posts/…" },
-    { name: "angle", label: "Angle / stance", placeholder: "supportive · add a stat · ask a question" },
+    { name: "post_topic", label: "Post topic", placeholder: "what the post you're replying to is about", req: true },
+    { name: "post_summary", label: "Post summary", placeholder: "a sentence or two about the post" },
+    { name: "your_role", label: "Your role", placeholder: "Founder @ Acme", req: true },
+    { name: "your_goal", label: "Your goal", placeholder: "build visibility" },
+    { name: "tone", label: "Tone", placeholder: "professional" },
   ],
   dm: [
-    { name: "recipient_name", label: "Recipient", placeholder: "Jane Doe" },
-    { name: "goal", label: "Goal of message", placeholder: "book a 15-min intro call" },
+    { name: "prospect_name", label: "Prospect name", placeholder: "Jane Doe", req: true },
+    { name: "prospect_role", label: "Prospect role", placeholder: "VP Eng @ Globex", req: true },
+    { name: "your_role", label: "Your role", placeholder: "Founder @ Acme", req: true },
+    { name: "your_offer", label: "Your offer", placeholder: "AI onboarding tool" },
+    { name: "goal", label: "Goal", placeholder: "book a discovery call" },
+    { name: "num_messages", label: "Number of messages", placeholder: "3", type: "number" },
   ],
   outreach: [
-    { name: "target_persona", label: "Target persona", placeholder: "Seed-stage SaaS founders" },
-    { name: "goal", label: "Campaign goal", placeholder: "demo signups" },
+    { name: "your_role", label: "Your role", placeholder: "Founder @ Acme", req: true },
+    { name: "your_offer", label: "Your offer", placeholder: "AI onboarding tool", req: true },
+    { name: "target_role", label: "Target role", placeholder: "VP Engineering", req: true },
+    { name: "target_industry", label: "Target industry", placeholder: "B2B SaaS" },
+    { name: "campaign_goal", label: "Campaign goal", placeholder: "book discovery calls" },
+    { name: "num_touchpoints", label: "Touchpoints", placeholder: "4", type: "number" },
   ],
   profile: [
-    { name: "current_headline", label: "Current headline", placeholder: "Founder @ Acme" },
-    { name: "target_role", label: "Target positioning", placeholder: "AI infrastructure leader" },
+    { name: "current_headline", label: "Current headline", placeholder: "Founder @ Acme", req: true },
+    { name: "current_summary", label: "Current summary / about", placeholder: "your existing about section", req: true },
+    { name: "role", label: "Role", placeholder: "Founder", req: true },
+    { name: "industry", label: "Industry", placeholder: "B2B SaaS", req: true },
+    { name: "goals", label: "Goals", placeholder: "attract clients and opportunities" },
   ],
 };
+
+const NUMERIC = new Set(["num_messages", "num_touchpoints"]);
 
 function InboxCard({ item, onChange }) {
   const [text, setText] = useState(item.draft_text || "");
@@ -132,6 +148,7 @@ export default function Inbox({ accounts, refreshKey }) {
   const [accountId, setAccountId] = useState("");
   const [params, setParams] = useState({});
   const [commentId, setCommentId] = useState("");
+  const [postUrl, setPostUrl] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
@@ -160,10 +177,12 @@ export default function Inbox({ accounts, refreshKey }) {
     setBusy(true);
     try {
       const cleanParams = Object.fromEntries(
-        Object.entries(params).filter(([, v]) => v && String(v).trim())
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null && String(v).trim())
+          .map(([k, v]) => [k, NUMERIC.has(k) ? Number(v) : v])
       );
       const context = {};
-      if (cleanParams.post_url) context.post_url = cleanParams.post_url;
+      if (kind === "comment" && postUrl.trim()) context.post_url = postUrl.trim();
       if (kind === "comment" && commentId.trim()) context.comment_id = commentId.trim();
       await generateApproval({
         kind,
@@ -173,6 +192,7 @@ export default function Inbox({ accounts, refreshKey }) {
       });
       setParams({});
       setCommentId("");
+      setPostUrl("");
       if (statusFilter !== "pending") setStatusFilter("pending");
       else load();
     } catch (e2) {
@@ -202,13 +222,25 @@ export default function Inbox({ accounts, refreshKey }) {
 
           {fields.map((f) => (
             <div key={f.name}>
-              <label>{f.label}</label>
-              <input value={params[f.name] || ""} placeholder={f.placeholder} onChange={setParam(f.name)} />
+              <label>
+                {f.label}{" "}
+                {f.req ? <span style={{ color: "var(--teal)" }}>*</span>
+                       : <span className="muted">(optional)</span>}
+              </label>
+              <input
+                type={f.type || "text"}
+                value={params[f.name] ?? ""}
+                placeholder={f.placeholder}
+                onChange={setParam(f.name)}
+              />
             </div>
           ))}
 
           {kind === "comment" && (
             <>
+              <label>Target post URL <span className="muted">(optional — for your reference)</span></label>
+              <input value={postUrl} placeholder="https://linkedin.com/posts/…"
+                     onChange={(e) => setPostUrl(e.target.value)} />
               <label>Company-page comment ID <span className="muted">(optional — enables auto-reply via Zernio)</span></label>
               <input value={commentId} placeholder="leave blank for a personal comment you'll post yourself"
                      onChange={(e) => setCommentId(e.target.value)} />
