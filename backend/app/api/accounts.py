@@ -1,0 +1,84 @@
+"""Account linking routes — attach Zernio-connected LinkedIn accounts to a user."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user
+from app.clients.zernio_client import ZernioClient, ZernioError
+from app.core.config import settings
+from app.db.session import get_db
+from app.models.account import LinkedInAccount
+from app.models.user import User
+from app.schemas.account import AccountOut, LinkAccountRequest
+
+router = APIRouter(prefix="/accounts", tags=["accounts"])
+
+
+@router.get("/zernio/available")
+async def zernio_available_accounts(
+    current: User = Depends(get_current_user),
+) -> dict[str, object]:
+    """List LinkedIn accounts connected under the app's Zernio key, so the
+    user can find the accountId to link. Uses the app-level Zernio key."""
+    if not settings.zernio_api_key or settings.zernio_api_key.startswith("paste-"):
+        raise HTTPException(503, "ZERNIO_API_KEY is not set in .env")
+    async with ZernioClient(settings.zernio_base_url, settings.zernio_api_key) as z:
+        try:
+            return await z.list_accounts()
+        except ZernioError as e:
+            raise HTTPException(e.status_code or 502, e.message) from e
+
+
+@router.get("", response_model=list[AccountOut])
+async def list_accounts(
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[LinkedInAccount]:
+    rows = await db.scalars(
+        select(LinkedInAccount).where(LinkedInAccount.user_id == current.id)
+    )
+    return list(rows)
+
+
+@router.post("/link", response_model=AccountOut, status_code=201)
+async def link_account(
+    body: LinkAccountRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> LinkedInAccount:
+    existing = await db.scalar(
+        select(LinkedInAccount).where(
+            LinkedInAccount.user_id == current.id,
+            LinkedInAccount.zernio_account_id == body.zernio_account_id,
+        )
+    )
+    if existing:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Account already linked")
+
+    account = LinkedInAccount(
+        user_id=current.id,
+        zernio_account_id=body.zernio_account_id,
+        account_type=body.account_type,
+        display_name=body.display_name,
+        avatar_url=body.avatar_url,
+    )
+    db.add(account)
+    await db.commit()
+    await db.refresh(account)
+    return account
+
+
+@router.delete("/{account_id}", status_code=204)
+async def unlink_account(
+    account_id: int,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    account = await db.get(LinkedInAccount, account_id)
+    if not account or account.user_id != current.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Account not found")
+    await db.delete(account)
+    await db.commit()
