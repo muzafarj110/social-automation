@@ -33,6 +33,7 @@ const emptyForm = {
   time_of_day: "09:00",
   timezone: browserTz,
   ai_timing: false,
+  auto_improve: true,
 };
 
 function CampaignCard({ c, onChange }) {
@@ -62,6 +63,7 @@ function CampaignCard({ c, onChange }) {
         <strong style={{ color: "var(--blue)" }}>{c.name}</strong>
         <span className={`badge ${c.status === "active" ? "published" : "draft"}`}>{c.status}</span>
         <span className="badge kind">{c.mode === "auto" ? "auto-publish" : "approve first"}</span>
+        {c.auto_improve && <span className="badge published">QA + polish</span>}
         <div className="spacer" />
         <span className="muted">{c.frequency_per_week}×/week</span>
       </div>
@@ -142,6 +144,7 @@ export default function Campaigns({ accounts }) {
         time_of_day: form.time_of_day,
         timezone: form.timezone,
         ai_timing: form.ai_timing,
+        auto_improve: form.auto_improve,
       };
       if (form.topic_source === "topics") {
         payload.topics = form.topicsText.split("\n").map((s) => s.trim()).filter(Boolean);
@@ -236,6 +239,12 @@ export default function Campaigns({ accounts }) {
                 onClick={() => toggleAngle(t)} style={{ padding: "8px 12px" }}>{t}</button>
             ))}
           </div>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontWeight: 400 }}>
+            <input type="checkbox" checked={form.auto_improve} style={{ width: "auto" }}
+                   onChange={(e) => setForm({ ...form, auto_improve: e.target.checked })} />
+            <span>Auto quality-check &amp; polish each post before it's scheduled <span className="muted">(recommended)</span></span>
+          </label>
 
           <label>Posts per week</label>
           <input type="number" min="1" max="14" value={form.frequency_per_week}

@@ -176,6 +176,28 @@ async def test_post_type_rotation(monkeypatch):
         ]
 
 
+async def test_auto_improve_polishes_low_scores(monkeypatch):
+    await init_db()
+
+    class _PolishHub(_FakeHub):
+        async def call(self, name, payload):
+            if name == "score_checker":
+                return {"overall_score": 50}      # below par -> trigger polish
+            if name == "content_optimizer":
+                return {"optimized_content": "POLISHED VERSION"}
+            return {}
+
+    monkeypatch.setattr(svc, "HubClient", _PolishHub)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth, acc = await _bootstrap(c, "camp_polish@b.com")
+        body = {**_BASE, "name": "Polish", "account_id": acc, "mode": "approve",
+                "auto_improve": True, "frequency_per_week": 1, "topics": ["x"]}
+        cid = (await c.post("/api/campaigns", headers=auth, json=body)).json()["id"]
+        r = await c.post(f"/api/campaigns/{cid}/run", headers=auth)
+        assert r.status_code == 200 and len(r.json()) == 1
+        assert r.json()[0]["body"] == "POLISHED VERSION"
+
+
 async def test_ai_timing_runs_with_fallback(monkeypatch):
     await init_db()
     monkeypatch.setattr(svc, "HubClient", _FakeHub)

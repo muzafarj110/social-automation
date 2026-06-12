@@ -196,6 +196,37 @@ async def ai_timing(campaign: Campaign, hub: HubClient) -> tuple[list[int], str]
     return days, (time_str or _BEST_TIME)
 
 
+_OPTIMIZED_KEYS = ("optimized_content", "optimized", "improved_content", "improved",
+                   "rewritten", "rewrite", "content", "full_post", "result")
+
+
+async def qa_and_polish(hub: HubClient, content: str, tone: str) -> str:
+    """Score content; if below par (<75), rewrite it via content-optimizer.
+
+    Best-effort and non-fatal — always returns usable content. This is what
+    makes the autopilot vet its own output before scheduling.
+    """
+    try:
+        sd = await hub.call("score_checker", {"content": content, "platform": "linkedin"})
+        score = sd.get("overall_score")
+        if not isinstance(score, (int, float)):
+            score = sd.get("score") if isinstance(sd.get("score"), (int, float)) else None
+    except Exception:
+        return content
+    if not isinstance(score, (int, float)) or score >= 75:
+        return content
+    try:
+        opt = await hub.call("content_optimizer",
+                             {"content": content, "goal": "engagement", "tone": tone})
+    except Exception:
+        return content
+    for k in _OPTIMIZED_KEYS:
+        v = opt.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return content
+
+
 async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> list[Post]:
     """Generate a batch for the campaign. Commits and returns the created posts."""
     user = await db.get(User, campaign.user_id)
@@ -236,10 +267,14 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
             except HubError:
                 continue  # skip this slot, keep the batch going
 
+            body_text = data.get("full_post") or data.get("hook") or topic
+            if campaign.auto_improve:
+                body_text = await qa_and_polish(hub, body_text, campaign.tone)
+
             post = Post(
                 user_id=user.id,
                 account_id=account.id,
-                body=data.get("full_post") or data.get("hook") or topic,
+                body=body_text,
                 hashtags=data.get("hashtags"),
                 source="generated",
                 campaign_id=campaign.id,

@@ -63,6 +63,8 @@ class Campaign(Base):
     timezone: Mapped[str] = mapped_column(String(64), default="UTC")
     # when true, the Hub's engagement-strategy suggests the posting days/times
     ai_timing: Mapped[bool] = mapped_column(Boolean, default=False)
+    # when true, each generated post is QA-scored and auto-polished if below par
+    auto_improve: Mapped[bool] = mapped_column(Boolean, default=True)
 
     status: Mapped[str] = mapped_column(String(20), default=ACTIVE, index=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

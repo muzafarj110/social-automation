@@ -150,27 +150,32 @@ export default function Generate({ accounts, onSaved, goConnect }) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [qa, setQa] = useState(null);
+  const [qaNote, setQaNote] = useState("");
+  const [showQaDetail, setShowQaDetail] = useState(false);
   const [info, setInfo] = useState(null);
   const [task, setTask] = useState(""); // which sub-action is running
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
+  // Check quality and, if the score is below par, let the AI polish it
+  // automatically — then re-check. The user only reviews if they want to.
   const runQa = async () => {
-    setError(""); setTask("qa"); setQa(null);
+    setError(""); setTask("qa"); setQa(null); setQaNote(""); setShowQaDetail(false);
     try {
-      const res = await qaCheck({ content: body, topic: form.topic, audience: form.audience });
+      let res = await qaCheck({ content: body, topic: form.topic, audience: form.audience });
+      const score0 = res?.score?.overall_score;
+      if (typeof score0 === "number" && score0 < 75) {
+        setTask("improve");
+        const opt = await optimizeContent({ content: body, goal: "engagement", tone: form.tone });
+        const better = pickOptimized(opt.data);
+        if (better && better !== body) {
+          setBody(better);
+          const res2 = await qaCheck({ content: better, topic: form.topic, audience: form.audience });
+          setQaNote(`Below par (${score0}/100), so the AI polished it automatically — now ${res2?.score?.overall_score ?? "?"}/100.`);
+          res = res2;
+        }
+      }
       setQa(res);
-    } catch (e) { setError(e.message); }
-    finally { setTask(""); }
-  };
-
-  const improve = async () => {
-    setError(""); setTask("improve");
-    try {
-      const res = await optimizeContent({ content: body, goal: "engagement", tone: form.tone });
-      const better = pickOptimized(res.data);
-      if (better) { setBody(better); setMsg("Post improved by AI. Re-run the quality check to compare."); setQa(null); }
-      else setMsg("Optimizer ran but returned no rewrite.");
     } catch (e) { setError(e.message); }
     finally { setTask(""); }
   };
@@ -195,6 +200,7 @@ export default function Generate({ accounts, onSaved, goConnect }) {
       setResult(data);
       setBody(data.full_post || "");
       setQa(null);
+      setQaNote("");
       setInfo(null);
     } catch (err) {
       setError(err.message);
@@ -293,30 +299,45 @@ export default function Generate({ accounts, onSaved, goConnect }) {
             <div className="row">
               <strong style={{ color: "var(--blue)" }}>Quality check</strong>
               <span className="muted" style={{ fontSize: 12 }}>
-                We score the post, review it, and flag robotic phrasing before you post — not blind AI output.
+                We score it, and if it's below par the AI polishes it automatically — no manual review unless you want it.
               </span>
             </div>
             <div className="row" style={{ marginTop: 8 }}>
               <button className="btn-secondary" disabled={!!task || !body.trim()} onClick={runQa}>
-                {task === "qa" ? "Checking…" : "Run quality check"}
-              </button>
-              <button className="btn-secondary" disabled={!!task || !body.trim()} onClick={improve}>
-                {task === "improve" ? "Improving…" : "Improve with AI"}
+                {task === "qa" ? "Checking…" : task === "improve" ? "Polishing…" : "Check & polish"}
               </button>
             </div>
-            {qa && (
-              <div className="row" style={{ marginTop: 12, gap: 12, alignItems: "stretch" }}>
-                <div className="card" style={{ flex: 1, margin: 0 }}>
-                  <h3>Score</h3><HubBlocks data={qa.score} />
+            {qa && (() => {
+              const s = qa.score || {};
+              const a = qa.ai_detection || {};
+              const score = s.overall_score;
+              const good = typeof score !== "number" || score >= 75;
+              return (
+                <div style={{ marginTop: 12 }}>
+                  <div className="row" style={{ gap: 10, alignItems: "center" }}>
+                    <span className="badge" style={{ background: good ? "#dcfce7" : "#fef9c3", color: good ? "#166534" : "#854d0e" }}>
+                      {typeof score === "number" ? `Score ${score}` : "Checked"}{s.verdict ? ` · ${s.verdict}` : ""}
+                    </span>
+                    {a.verdict && <span className="muted" style={{ fontSize: 12 }}>AI-detection: {a.verdict}</span>}
+                    <div className="spacer" />
+                    <a style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--teal)" }}
+                       onClick={() => setShowQaDetail((v) => !v)}>
+                      {showQaDetail ? "Hide detailed review" : "View detailed review"}
+                    </a>
+                  </div>
+                  {qaNote
+                    ? <div className="success" style={{ marginTop: 8 }}>{qaNote}</div>
+                    : good && <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>✓ Good to post — the AI didn't find changes worth making.</div>}
+                  {showQaDetail && (
+                    <div className="row" style={{ marginTop: 12, gap: 12, alignItems: "stretch" }}>
+                      <div className="card" style={{ flex: 1, margin: 0 }}><h3>Score</h3><HubBlocks data={qa.score} /></div>
+                      <div className="card" style={{ flex: 1, margin: 0 }}><h3>QA review</h3><HubBlocks data={qa.qa} /></div>
+                      <div className="card" style={{ flex: 1, margin: 0 }}><h3>AI-detection</h3><HubBlocks data={qa.ai_detection} /></div>
+                    </div>
+                  )}
                 </div>
-                <div className="card" style={{ flex: 1, margin: 0 }}>
-                  <h3>QA review</h3><HubBlocks data={qa.qa} />
-                </div>
-                <div className="card" style={{ flex: 1, margin: 0 }}>
-                  <h3>AI-detection</h3><HubBlocks data={qa.ai_detection} />
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #e8ecf7" }}>

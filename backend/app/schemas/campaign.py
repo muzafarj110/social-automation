@@ -24,6 +24,7 @@ class CampaignCreate(BaseModel):
     time_of_day: str = Field("09:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     timezone: str = "UTC"
     ai_timing: bool = False                # let the Hub suggest posting days/times
+    auto_improve: bool = True              # QA + auto-polish each generated post
 
 
 class CampaignUpdate(BaseModel):
@@ -42,6 +43,7 @@ class CampaignUpdate(BaseModel):
     time_of_day: str | None = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     timezone: str | None = None
     ai_timing: bool | None = None
+    auto_improve: bool | None = None
     status: str | None = Field(None, pattern="^(active|paused)$")
 
 
@@ -65,6 +67,7 @@ class CampaignOut(BaseModel):
     time_of_day: str
     timezone: str
     ai_timing: bool
+    auto_improve: bool
     status: str
     last_run_at: datetime | None
     next_run_at: datetime | None
