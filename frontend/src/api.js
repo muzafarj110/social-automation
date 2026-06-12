@@ -102,3 +102,10 @@ export const editApproval = (id, draft_text) =>
   apiSend(`/inbox/${id}`, "PATCH", { draft_text });
 export const approveApproval = (id) => apiSend(`/inbox/${id}/approve`, "POST", {});
 export const rejectApproval = (id) => apiSend(`/inbox/${id}/reject`, "POST", {});
+
+// --- Campaigns (autopilot) ---
+export const listCampaigns = () => apiGet("/campaigns");
+export const createCampaign = (data) => apiSend("/campaigns", "POST", data);
+export const updateCampaign = (id, data) => apiSend(`/campaigns/${id}`, "PATCH", data);
+export const deleteCampaign = (id) => apiSend(`/campaigns/${id}`, "DELETE");
+export const runCampaign = (id) => apiSend(`/campaigns/${id}/run`, "POST", {});

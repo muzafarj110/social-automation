@@ -5,6 +5,7 @@ import Accounts from "./components/Accounts.jsx";
 import Generate from "./components/Generate.jsx";
 import Posts from "./components/Posts.jsx";
 import Inbox from "./components/Inbox.jsx";
+import Campaigns from "./components/Campaigns.jsx";
 
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
@@ -62,6 +63,7 @@ export default function App() {
         <div className="tabs">
           {[
             ["generate", "Generate"],
+            ["campaigns", "Autopilot"],
             ["posts", "Posts"],
             ["inbox", "Inbox"],
             ["accounts", "Accounts"],
@@ -87,6 +89,7 @@ export default function App() {
           />
         )}
         {tab === "posts" && <Posts refreshKey={postsRefresh} />}
+        {tab === "campaigns" && <Campaigns accounts={accounts} />}
         {tab === "inbox" && <Inbox accounts={accounts} />}
         {tab === "accounts" && (
           <Accounts

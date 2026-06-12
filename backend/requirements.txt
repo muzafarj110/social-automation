@@ -18,6 +18,9 @@ bcrypt>=4.1
 pyjwt>=2.8
 cryptography>=42.0
 
+# Scheduling (autopilot campaign top-up)
+apscheduler>=3.10
+
 # Queue / worker (used in later phases)
 redis>=5.0
 rq>=1.16

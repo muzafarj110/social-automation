@@ -37,6 +37,7 @@ logger = logging.getLogger("hub_client")
 ENDPOINTS: dict[str, str] = {
     "text_post": "/api/linkedin-text-post",
     "post_series": "/api/linkedin-post-series",
+    "calendar": "/api/linkedin-calendar",               # plans a content calendar
     "comment_writer": "/api/linkedin-comment",          # was -comment-writer (404)
     "dm_writer": "/api/linkedin-dm",                     # was -dm-writer (404)
     "outreach_campaign": "/api/linkedin-outreach-campaign",

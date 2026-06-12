@@ -20,7 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import accounts, auth, content, inbox, posts, routes
+from app.api import accounts, auth, campaigns, content, inbox, posts, routes
 from app.core.config import settings
 from app.db.session import init_db
 
@@ -41,7 +41,13 @@ async def lifespan(app: FastAPI):
         log.warning("HUB_API_KEY not set — generation will need a per-user key.")
     if not settings.zernio_api_key or settings.zernio_api_key.startswith("paste-"):
         log.warning("ZERNIO_API_KEY not set — publishing endpoints unavailable.")
-    yield
+    # Autopilot: recurring campaign top-up (no-op if APScheduler is unavailable).
+    from app.services import scheduler
+    scheduler.start()
+    try:
+        yield
+    finally:
+        scheduler.stop()
 
 
 app = FastAPI(
@@ -69,6 +75,8 @@ app.include_router(content.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")
 # Phase 4 — approval inbox
 app.include_router(inbox.router, prefix="/api")
+# Autopilot campaigns
+app.include_router(campaigns.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------
