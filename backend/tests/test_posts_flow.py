@@ -53,6 +53,10 @@ async def _bootstrap(c: AsyncClient, email: str) -> tuple[dict, int]:
     r = await c.post("/api/auth/register", json={"email": email, "password": "supersecret"})
     assert r.status_code == 201, r.text
     auth = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    # Each user needs their own Zernio key to publish (multi-tenant isolation).
+    rk = await c.put("/api/auth/me/zernio-key", headers=auth,
+                     json={"zernio_api_key": "zk_usertoken"})
+    assert rk.status_code == 200, rk.text
     r = await c.post("/api/accounts/link", headers=auth,
                      json={"zernio_account_id": "zacc_1", "account_type": "personal"})
     assert r.status_code == 201, r.text
@@ -61,12 +65,13 @@ async def _bootstrap(c: AsyncClient, email: str) -> tuple[dict, int]:
 
 @pytest.fixture
 def zernio_key(monkeypatch):
+    # Publisher now takes the key as an argument; the mock ignores it.
     monkeypatch.setattr(publisher.settings, "zernio_api_key", "zk_test")
 
 
 async def test_publish_now(monkeypatch, zernio_key):
     await init_db()
-    monkeypatch.setattr(publisher, "_client", lambda: _FakeZ())
+    monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ())
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth, account_id = await _bootstrap(c, "pub@b.com")
         r = await c.post("/api/posts", headers=auth,
@@ -85,7 +90,7 @@ async def test_publish_now(monkeypatch, zernio_key):
 
 async def test_schedule(monkeypatch, zernio_key):
     await init_db()
-    monkeypatch.setattr(publisher, "_client", lambda: _FakeZ())
+    monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ())
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth, account_id = await _bootstrap(c, "sch@b.com")
         r = await c.post("/api/posts", headers=auth,
@@ -102,7 +107,7 @@ async def test_schedule(monkeypatch, zernio_key):
 
 async def test_duplicate_marks_failed(monkeypatch, zernio_key):
     await init_db()
-    monkeypatch.setattr(publisher, "_client", lambda: _FakeZ(dup=True))
+    monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ(dup=True))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth, account_id = await _bootstrap(c, "dup@b.com")
         r = await c.post("/api/posts", headers=auth,
@@ -118,7 +123,7 @@ async def test_duplicate_marks_failed(monkeypatch, zernio_key):
 
 async def test_ownership_isolation(monkeypatch, zernio_key):
     await init_db()
-    monkeypatch.setattr(publisher, "_client", lambda: _FakeZ())
+    monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ())
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth_a, acc_a = await _bootstrap(c, "owner_a@b.com")
         r = await c.post("/api/posts", headers=auth_a,
@@ -130,3 +135,21 @@ async def test_ownership_isolation(monkeypatch, zernio_key):
         # B cannot see or publish A's post
         assert (await c.get(f"/api/posts/{pid}", headers=auth_b)).status_code == 404
         assert (await c.post(f"/api/posts/{pid}/publish", headers=auth_b)).status_code == 404
+
+
+async def test_publish_without_zernio_key_blocked(monkeypatch, zernio_key):
+    """A user with no Zernio key on file cannot publish (isolation gate)."""
+    await init_db()
+    monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ())
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        r = await c.post("/api/auth/register",
+                         json={"email": "nokey@b.com", "password": "supersecret"})
+        auth = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        r = await c.post("/api/accounts/link", headers=auth,
+                         json={"zernio_account_id": "zacc_x", "account_type": "personal"})
+        acc = r.json()["id"]
+        r = await c.post("/api/posts", headers=auth,
+                         json={"account_id": acc, "body": "no key post"})
+        pid = r.json()["id"]
+        r = await c.post(f"/api/posts/{pid}/publish", headers=auth)
+        assert r.status_code == 400, r.text

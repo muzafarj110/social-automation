@@ -26,6 +26,7 @@ from app.clients.hub_client import (
     HubValidationError,
 )
 from app.clients.zernio_client import ZernioError
+from app.core.user_keys import resolve_zernio_key
 from app.db.session import get_db
 from app.models import approval as st
 from app.models.account import LinkedInAccount
@@ -147,7 +148,10 @@ async def approve(
     # Compliant path: company-page comment reply executes via Zernio.
     if a.kind == st.COMMENT and comment_id:
         try:
-            await svc.reply_company_comment(str(comment_id), a.draft_text or "")
+            await svc.reply_company_comment(
+                str(comment_id), a.draft_text or "",
+                zernio_key=resolve_zernio_key(current) or "",
+            )
         except svc.DraftError as e:
             raise HTTPException(e.status_code, e.message) from e
         except ZernioError as e:

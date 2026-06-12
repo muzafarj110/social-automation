@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.clients.zernio_client import ZernioClient, ZernioError
 from app.core.config import settings
+from app.core.user_keys import resolve_zernio_key
 from app.db.session import get_db
 from app.models.account import LinkedInAccount
 from app.models.user import User
@@ -21,11 +22,12 @@ router = APIRouter(prefix="/accounts", tags=["accounts"])
 async def zernio_available_accounts(
     current: User = Depends(get_current_user),
 ) -> dict[str, object]:
-    """List LinkedIn accounts connected under the app's Zernio key, so the
-    user can find the accountId to link. Uses the app-level Zernio key."""
-    if not settings.zernio_api_key or settings.zernio_api_key.startswith("paste-"):
-        raise HTTPException(503, "ZERNIO_API_KEY is not set in .env")
-    async with ZernioClient(settings.zernio_base_url, settings.zernio_api_key) as z:
+    """List LinkedIn accounts under THIS user's own Zernio key, so they can find
+    the accountId to link. Each user only sees their own Zernio connection."""
+    key = resolve_zernio_key(current)
+    if not key:
+        raise HTTPException(400, "Set your Zernio API key in the app first.")
+    async with ZernioClient(settings.zernio_base_url, key) as z:
         try:
             return await z.list_accounts()
         except ZernioError as e:

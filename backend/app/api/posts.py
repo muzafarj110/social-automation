@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.user_keys import resolve_zernio_key
 from app.db.session import get_db
 from app.models import post as post_status
 from app.models.account import LinkedInAccount
@@ -115,9 +116,12 @@ async def publish_post(
     if post.status == post_status.PUBLISHED:
         raise HTTPException(status.HTTP_409_CONFLICT, "Post already published")
     account = await _get_owned_account(post.account_id, current, db)
+    zkey = resolve_zernio_key(current)
+    if not zkey:
+        raise HTTPException(400, "Set your Zernio API key in the app first.")
 
     try:
-        await publisher.publish_now(post, account.zernio_account_id)
+        await publisher.publish_now(post, account.zernio_account_id, zernio_key=zkey)
     except publisher.PublishError as e:
         await db.commit()  # persist FAILED status/error set by the service
         raise HTTPException(e.status_code, e.message) from e
@@ -138,10 +142,13 @@ async def schedule_post(
     if post.status == post_status.PUBLISHED:
         raise HTTPException(status.HTTP_409_CONFLICT, "Post already published")
     account = await _get_owned_account(post.account_id, current, db)
+    zkey = resolve_zernio_key(current)
+    if not zkey:
+        raise HTTPException(400, "Set your Zernio API key in the app first.")
 
     try:
         await publisher.schedule(post, account.zernio_account_id,
-                                 body.scheduled_for, body.timezone)
+                                 body.scheduled_for, body.timezone, zernio_key=zkey)
     except publisher.PublishError as e:
         await db.commit()
         raise HTTPException(e.status_code, e.message) from e

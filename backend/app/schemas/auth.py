@@ -33,7 +33,12 @@ class UserOut(BaseModel):
     status: str
     created_at: datetime
     has_hub_key: bool = False
+    has_zernio_key: bool = False
 
 
 class SetHubKeyRequest(BaseModel):
     hub_api_key: str = Field(..., min_length=8)
+
+
+class SetZernioKeyRequest(BaseModel):
+    zernio_api_key: str = Field(..., min_length=8)

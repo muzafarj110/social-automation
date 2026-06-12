@@ -23,6 +23,9 @@ class User(Base):
 
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Per-user Zernio key, encrypted at rest. Scopes which LinkedIn accounts the
+    # user can see/post to — the basis of multi-tenant isolation.
+    zernio_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

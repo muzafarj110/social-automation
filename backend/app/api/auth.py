@@ -20,6 +20,7 @@ from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
     SetHubKeyRequest,
+    SetZernioKeyRequest,
     TokenResponse,
     UserOut,
 )
@@ -30,6 +31,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def _user_out(user: User) -> UserOut:
     out = UserOut.model_validate(user)
     out.has_hub_key = bool(user.hub_api_key_enc)
+    out.has_zernio_key = bool(user.zernio_api_key_enc)
     return out
 
 
@@ -79,6 +81,20 @@ async def set_hub_key(
 ) -> UserOut:
     """Store the user's own AI Models Hub API key (encrypted at rest)."""
     current.hub_api_key_enc = encrypt_secret(body.hub_api_key)
+    await db.commit()
+    await db.refresh(current)
+    return _user_out(current)
+
+
+@router.put("/me/zernio-key", response_model=UserOut)
+async def set_zernio_key(
+    body: SetZernioKeyRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Store the user's own Zernio API key (encrypted at rest). This scopes
+    which LinkedIn accounts the user can see and post to."""
+    current.zernio_api_key_enc = encrypt_secret(body.zernio_api_key)
     await db.commit()
     await db.refresh(current)
     return _user_out(current)

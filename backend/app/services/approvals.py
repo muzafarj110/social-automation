@@ -93,14 +93,11 @@ async def generate_draft(
     return data, extract_draft_text(kind, data)
 
 
-def _require_zernio_key() -> str:
-    key = settings.zernio_api_key
-    if not key or key.startswith("paste-"):
-        raise DraftError("ZERNIO_API_KEY is not set — cannot execute.", status_code=503)
-    return key
-
-
-async def reply_company_comment(comment_id: str, message: str) -> dict[str, Any]:
-    """Execute a company-page comment reply via Zernio (the one compliant path)."""
-    async with ZernioClient(settings.zernio_base_url, _require_zernio_key()) as z:
+async def reply_company_comment(
+    comment_id: str, message: str, *, zernio_key: str
+) -> dict[str, Any]:
+    """Execute a company-page comment reply via the user's own Zernio key."""
+    if not zernio_key:
+        raise DraftError("Set your Zernio API key in the app first.", status_code=400)
+    async with ZernioClient(settings.zernio_base_url, zernio_key) as z:
         return await z.reply_comment(comment_id, message)

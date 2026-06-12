@@ -1,8 +1,9 @@
 """
 Publisher service — turns a Post row into a real LinkedIn action via Zernio.
 
-Zernio is app-level: one ZERNIO_API_KEY for the whole SaaS, with each user's
-LinkedIn surfaced as a different accountId (LinkedInAccount.zernio_account_id).
+Each user supplies their OWN Zernio key (User.zernio_api_key_enc), so a user can
+only publish to LinkedIn accounts under their own Zernio connection — that's the
+multi-tenant isolation boundary. The caller resolves the key and passes it in.
 
 Scheduling uses Zernio's native `scheduledFor`, so Zernio owns post timing —
 no separate scheduler process needed for publishing.
@@ -32,17 +33,13 @@ class PublishError(Exception):
         self.status_code = status_code
 
 
-def _require_zernio_key() -> str:
-    key = settings.zernio_api_key
-    if not key or key.startswith("paste-"):
+def _client(zernio_key: str) -> ZernioClient:
+    if not zernio_key:
         raise PublishError(
-            "ZERNIO_API_KEY is not set in .env — cannot publish.", status_code=503
+            "No Zernio API key for this user — set one in the app first.",
+            status_code=400,
         )
-    return key
-
-
-def _client() -> ZernioClient:
-    return ZernioClient(settings.zernio_base_url, _require_zernio_key())
+    return ZernioClient(settings.zernio_base_url, zernio_key)
 
 
 def _extract_url(zernio_post: dict[str, Any]) -> str | None:
@@ -52,14 +49,36 @@ def _extract_url(zernio_post: dict[str, Any]) -> str | None:
     return zernio_post.get("platformPostUrl")
 
 
-async def publish_now(post: Post, zernio_account_id: str) -> Post:
+def _compose_content(post: Post) -> str:
+    """Body text sent to LinkedIn, with hashtags appended.
+
+    Hashtags live in their own column for editing/analytics, but on LinkedIn
+    they're just part of the post text — so we append any that aren't already
+    present in the body.
+    """
+    body = post.body or ""
+    tags = post.hashtags or []
+    if not tags:
+        return body
+    existing = body.lower()
+    missing = []
+    for t in tags:
+        tag = t if t.startswith("#") else f"#{t}"
+        if tag.lower() not in existing:
+            missing.append(tag)
+    if not missing:
+        return body
+    sep = "\n\n" if body.strip() else ""
+    return f"{body}{sep}{' '.join(missing)}"
+
+
+async def publish_now(post: Post, zernio_account_id: str, *, zernio_key: str) -> Post:
     """Publish a post immediately. Mutates and returns the post (caller commits)."""
-    _require_zernio_key()
-    async with _client() as z:
+    async with _client(zernio_key) as z:
         try:
             result = await z.publish_linkedin_now(
                 account_id=zernio_account_id,
-                content=post.body,
+                content=_compose_content(post),
                 media_items=post.media,
                 first_comment=post.first_comment,
                 idempotency_key=f"post-{post.id}-publish",
@@ -81,14 +100,14 @@ async def publish_now(post: Post, zernio_account_id: str) -> Post:
 
 
 async def schedule(post: Post, zernio_account_id: str,
-                   scheduled_for: datetime, timezone: str = "UTC") -> Post:
+                   scheduled_for: datetime, timezone: str = "UTC",
+                   *, zernio_key: str) -> Post:
     """Schedule a post via Zernio. Mutates and returns the post (caller commits)."""
-    _require_zernio_key()
-    async with _client() as z:
+    async with _client(zernio_key) as z:
         try:
             result = await z.schedule_linkedin(
                 account_id=zernio_account_id,
-                content=post.body,
+                content=_compose_content(post),
                 scheduled_for=scheduled_for.isoformat(),
                 timezone=timezone,
                 media_items=post.media,

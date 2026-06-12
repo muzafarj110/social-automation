@@ -95,7 +95,7 @@ async def test_comment_company_reply_via_zernio(monkeypatch):
     _mock_hub(monkeypatch, text="Thanks for the kind words!")
     calls = {}
 
-    async def fake_reply(comment_id, message):
+    async def fake_reply(comment_id, message, *, zernio_key=None):
         calls["comment_id"] = comment_id
         calls["message"] = message
         return {"id": "reply_1"}

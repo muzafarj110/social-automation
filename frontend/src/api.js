@@ -75,6 +75,8 @@ export async function login(email, password) {
 
 export const me = () => apiGet("/auth/me");
 export const setHubKey = (hub_api_key) => apiSend("/auth/me/hub-key", "PUT", { hub_api_key });
+export const setZernioKey = (zernio_api_key) =>
+  apiSend("/auth/me/zernio-key", "PUT", { zernio_api_key });
 
 // --- Accounts ---
 export const listAccounts = () => apiGet("/accounts");

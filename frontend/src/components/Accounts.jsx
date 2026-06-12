@@ -5,6 +5,7 @@ import {
   linkAccount,
   unlinkAccount,
   setHubKey,
+  setZernioKey,
 } from "../api.js";
 
 export default function Accounts({ user, accounts, reloadAccounts, refreshUser }) {
@@ -12,6 +13,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [hubKey, setHubKeyInput] = useState("");
+  const [zKey, setZKeyInput] = useState("");
   const [manualId, setManualId] = useState("");
   const [manualName, setManualName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,6 +39,13 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     await setHubKey(hubKey.trim());
     setHubKeyInput("");
     setMsg("Hub key saved.");
+    refreshUser();
+  });
+
+  const saveZernioKey = wrap(async () => {
+    await setZernioKey(zKey.trim());
+    setZKeyInput("");
+    setMsg("Zernio key saved.");
     refreshUser();
   });
 
@@ -87,6 +96,26 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         />
         <div className="row" style={{ marginTop: 10 }}>
           <button className="btn-primary" disabled={busy || !hubKey.trim()} onClick={saveHubKey}>
+            Save key
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Zernio key</h2>
+        <p className="muted">
+          {user?.has_zernio_key
+            ? "Your Zernio key is set. You only see and post to LinkedIn accounts under your own Zernio connection."
+            : "No Zernio key set. Add yours to find, link, and post to your LinkedIn accounts — each user only sees their own."}
+        </p>
+        <label>Zernio API key</label>
+        <input
+          value={zKey}
+          onChange={(e) => setZKeyInput(e.target.value)}
+          placeholder="sk_..."
+        />
+        <div className="row" style={{ marginTop: 10 }}>
+          <button className="btn-primary" disabled={busy || !zKey.trim()} onClick={saveZernioKey}>
             Save key
           </button>
         </div>
