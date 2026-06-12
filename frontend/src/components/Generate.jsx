@@ -74,6 +74,63 @@ function pickOptimized(data) {
   return null;
 }
 
+// The Hub returns infographics as a self-contained HTML document — preview it
+// live in a sandboxed iframe and let the user download it.
+function InfographicResult({ data }) {
+  if (!data) return null;
+  const download = () => {
+    const blob = new Blob([data.html || ""], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = data.download_filename || "infographic.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+  return (
+    <div>
+      <div className="row" style={{ marginBottom: 8, alignItems: "center" }}>
+        <div>
+          <strong style={{ color: "var(--blue)" }}>{data.title || "Infographic"}</strong>
+          {data.type && <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>{data.type}</span>}
+        </div>
+        <div className="spacer" />
+        {Array.isArray(data.color_palette) && (
+          <div className="row" style={{ gap: 4 }}>
+            {data.color_palette.map((c, i) => (
+              <span key={i} title={c} style={{
+                width: 18, height: 18, borderRadius: 4, background: c,
+                display: "inline-block", border: "1px solid #ddd",
+              }} />
+            ))}
+          </div>
+        )}
+        {data.html && (
+          <button className="btn-secondary" onClick={download} style={{ marginLeft: 8 }}>
+            Download HTML
+          </button>
+        )}
+      </div>
+      {data.summary && <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>{data.summary}</p>}
+      {data.html ? (
+        <iframe
+          title="Infographic preview"
+          srcDoc={data.html}
+          sandbox=""
+          style={{
+            width: "100%", height: 560, border: "1px solid #e8ecf7",
+            borderRadius: "var(--radius)", background: "#fff",
+          }}
+        />
+      ) : (
+        <HubBlocks data={data} />
+      )}
+    </div>
+  );
+}
+
 export default function Generate({ accounts, onSaved, goConnect }) {
   const [form, setForm] = useState({
     topic: "",
@@ -271,7 +328,7 @@ export default function Generate({ accounts, onSaved, goConnect }) {
                 {task === "info" ? "Generating…" : "Generate infographic"}
               </button>
             </div>
-            {info && <div style={{ marginTop: 10 }}><HubBlocks data={info} /></div>}
+            {info && <div style={{ marginTop: 10 }}><InfographicResult data={info} /></div>}
           </div>
 
           <label style={{ marginTop: 14 }}>Post to account</label>
