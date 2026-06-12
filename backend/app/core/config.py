@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     )
 
     # AI Models Hub
-    hub_base_url: str = Field(..., alias="HUB_BASE_URL")
+    # Default to the known Hub URL so a missing env var never crashes boot.
+    hub_base_url: str = Field(
+        "https://ai-marketing-hub-production-fccb.up.railway.app", alias="HUB_BASE_URL"
+    )
     hub_api_key: str = Field("", alias="HUB_API_KEY")
 
     # Zernio

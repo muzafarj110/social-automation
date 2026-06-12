@@ -9,37 +9,60 @@ import {
   getUsage,
 } from "../api.js";
 
-// Pull common usage fields out of the Hub's free-form /api/me response.
+function UsageTile({ label, value }) {
+  return (
+    <div style={{
+      background: "var(--light)", borderRadius: "var(--radius)", padding: "12px 16px",
+      minWidth: 110, flex: "1 0 auto", textAlign: "center",
+    }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--blue)" }}>{value}</div>
+      <div className="muted" style={{ fontSize: 12 }}>{label}</div>
+    </div>
+  );
+}
+
+// Render the Hub's free-form /api/me response as a clean usage panel.
 function UsageCard({ data }) {
   if (!data) return null;
-  const d = data.data || data;
-  const find = (...keys) => {
-    for (const k of keys) {
-      if (d[k] !== undefined && d[k] !== null) return d[k];
-      const hit = Object.keys(d).find((x) => x.toLowerCase().includes(k));
-      if (hit && typeof d[hit] !== "object") return d[hit];
-    }
+  const d = (data.data || data) || {};
+  const norm = {};
+  for (const [k, v] of Object.entries(d)) norm[k.toLowerCase().replace(/[^a-z0-9]/g, "")] = v;
+  const g = (...keys) => {
+    for (const k of keys) if (norm[k] !== undefined && norm[k] !== null) return norm[k];
     return undefined;
   };
-  const plan = find("plan", "tier");
-  const used = find("calls_used", "usage", "used", "requests");
-  const limit = find("limit", "monthly_limit", "quota", "max");
-  const scalars = Object.entries(d).filter(([, v]) => typeof v !== "object");
+  const plan = g("plan", "tier");
+  const name = g("name", "fullname");
+  const email = g("email");
+  const today = g("callstoday", "todaycalls", "today", "dailyusage");
+  const total = g("callstotal", "totalcalls", "callsused", "usage");
+  const limit = g("dailylimit", "limit", "quota", "monthlylimit");
+  const bonus = g("bonuscalls", "bonus");
+  const refCode = g("referralcode");
+  const refCount = g("referralcount");
+  const fmt = (v) => (typeof v === "number" ? v.toLocaleString() : String(v));
+
   return (
     <div>
-      {(plan || used !== undefined || limit !== undefined) && (
-        <div className="row" style={{ gap: 10, marginBottom: 8 }}>
-          {plan && <span className="badge kind">{String(plan)}</span>}
-          {used !== undefined && (
-            <strong style={{ color: "var(--blue)" }}>
-              {String(used)}{limit !== undefined ? ` / ${limit}` : ""} calls used
-            </strong>
-          )}
+      <div className="row" style={{ alignItems: "center", marginBottom: 12 }}>
+        {plan && <span className="badge kind" style={{ textTransform: "uppercase" }}>{String(plan)}</span>}
+        <div>
+          {name && <div style={{ fontWeight: 600, color: "var(--ink)" }}>{name}</div>}
+          {email && <div className="muted" style={{ fontSize: 12 }}>{email}</div>}
+        </div>
+      </div>
+      <div className="row" style={{ gap: 10 }}>
+        {today !== undefined && <UsageTile label="Calls today" value={fmt(today)} />}
+        {total !== undefined && <UsageTile label="Calls total" value={fmt(total)} />}
+        {limit !== undefined && <UsageTile label="Daily limit" value={fmt(limit)} />}
+        {bonus !== undefined && <UsageTile label="Bonus calls" value={fmt(bonus)} />}
+      </div>
+      {(refCode || refCount !== undefined) && (
+        <div className="muted" style={{ fontSize: 12, marginTop: 12 }}>
+          {refCode && <>Referral code: <strong>{refCode}</strong></>}
+          {refCount !== undefined && <> · {fmt(refCount)} referrals</>}
         </div>
       )}
-      <div className="muted" style={{ fontSize: 12 }}>
-        {scalars.map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join("  ·  ")}
-      </div>
     </div>
   );
 }
