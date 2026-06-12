@@ -25,6 +25,54 @@ from app.schemas.analytics import InsightsRequest, ViralRequest
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
+_METRIC_KEYS = ("impressions", "reach", "likes", "comments", "shares", "saves", "clicks", "views")
+
+
+def _aggregate(zdata: dict) -> dict:
+    """Roll Zernio's per-post analytics into account totals/averages.
+
+    Zernio shape: {overview:{publishedPosts,...}, posts:[{content, status,
+    analytics:{impressions,likes,...}, platforms:[{platformPostUrl,...}]}]}.
+    """
+    overview = zdata.get("overview") or {}
+    posts = zdata.get("posts") or []
+    totals = {k: 0 for k in _METRIC_KEYS}
+    recent = []
+    for p in posts:
+        a = p.get("analytics") or {}
+        for k in _METRIC_KEYS:
+            try:
+                totals[k] += int(a.get(k) or 0)
+            except (TypeError, ValueError):
+                pass
+        url = None
+        plats = p.get("platforms") or []
+        if plats and isinstance(plats[0], dict):
+            url = plats[0].get("platformPostUrl")
+        recent.append({
+            "content": (p.get("content") or "")[:160],
+            "status": p.get("status"),
+            "impressions": (p.get("analytics") or {}).get("impressions", 0),
+            "likes": (p.get("analytics") or {}).get("likes", 0),
+            "comments": (p.get("analytics") or {}).get("comments", 0),
+            "url": url,
+        })
+    n = len(posts)
+    post_count = overview.get("publishedPosts") or overview.get("totalPosts") or n
+    denom = n or 1
+    return {
+        "post_count": post_count,
+        "impressions": totals["impressions"],
+        "reach": totals["reach"],
+        "total_likes": totals["likes"],
+        "total_comments": totals["comments"],
+        "total_shares": totals["shares"],
+        "avg_likes": round(totals["likes"] / denom),
+        "avg_comments": round(totals["comments"] / denom),
+        "avg_shares": round(totals["shares"] / denom),
+        "recent": recent[:25],
+    }
+
 
 def _hub_key_or_400(user: User) -> str:
     key = resolve_hub_key(user)
@@ -55,9 +103,10 @@ async def zernio_metrics(current: User = Depends(get_current_user)) -> dict:
         raise HTTPException(400, "Set your Zernio API key in the app first.")
     async with ZernioClient(settings.zernio_base_url, key) as z:
         try:
-            return {"ok": True, "data": await z.get_analytics(platform="linkedin")}
+            data = await z.get_analytics(platform="linkedin")
         except ZernioError as e:
             return {"ok": False, "error": e.message}
+    return {"ok": True, "summary": _aggregate(data), "data": data}
 
 
 @router.post("/insights")

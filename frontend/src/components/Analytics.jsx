@@ -37,6 +37,55 @@ function HubResult({ data }) {
   );
 }
 
+function Stat({ label, value }) {
+  return (
+    <div style={{
+      background: "var(--light)", borderRadius: "var(--radius)", padding: "12px 16px",
+      minWidth: 110, flex: "1 0 auto",
+    }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--blue)" }}>{value}</div>
+      <div className="muted" style={{ fontSize: 12 }}>{label}</div>
+    </div>
+  );
+}
+
+function Summary({ s }) {
+  const fmt = (n) => (n ?? 0).toLocaleString();
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div className="row" style={{ gap: 10 }}>
+        <Stat label="Published posts" value={fmt(s.post_count)} />
+        <Stat label="Total impressions" value={fmt(s.impressions)} />
+        <Stat label="Total likes" value={fmt(s.total_likes)} />
+        <Stat label="Total comments" value={fmt(s.total_comments)} />
+        <Stat label="Avg likes/post" value={fmt(s.avg_likes)} />
+      </div>
+      {s.recent?.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 8 }}>Recent posts</div>
+          <div className="pill-list">
+            {s.recent.map((p, i) => (
+              <div className="pill" key={i} style={{ alignItems: "flex-start", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontSize: 13 }}>{p.content || "(no text)"}{p.content?.length >= 160 ? "…" : ""}</div>
+                <div className="row" style={{ gap: 10, width: "100%" }}>
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    {p.impressions} impressions · {p.likes} likes · {p.comments} comments
+                  </span>
+                  <div className="spacer" />
+                  {p.url && (
+                    <a href={p.url} target="_blank" rel="noreferrer"
+                       style={{ color: "var(--teal)", fontSize: 12, fontWeight: 600 }}>View ↗</a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const METRIC_FIELDS = [
   ["followers", "Followers"],
   ["impressions", "Impressions"],
@@ -65,6 +114,18 @@ export default function Analytics() {
     try {
       const res = await zernioMetrics();
       setZernio(res);
+      // prefill the AI-insights form with real aggregates
+      if (res.ok && res.summary) {
+        const s = res.summary;
+        setMetrics((m) => ({
+          ...m,
+          post_count: s.post_count ?? m.post_count,
+          impressions: s.impressions ?? m.impressions,
+          avg_likes: s.avg_likes ?? m.avg_likes,
+          avg_comments: s.avg_comments ?? m.avg_comments,
+          avg_shares: s.avg_shares ?? m.avg_shares,
+        }));
+      }
     } catch (e) {
       setZernio({ ok: false, error: e.message });
     }
@@ -107,6 +168,8 @@ export default function Analytics() {
         </div>
         {zernio == null ? (
           <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
+        ) : zernio.ok && zernio.summary ? (
+          <Summary s={zernio.summary} />
         ) : zernio.ok ? (
           <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
         ) : (

@@ -51,7 +51,18 @@ class _FakeZ:
         return False
 
     async def get_analytics(self, **kw):
-        return {"followers": 1200, "impressions": 50000, "profile_views": 800}
+        return {
+            "overview": {"publishedPosts": 2},
+            "posts": [
+                {"content": "a", "status": "published",
+                 "analytics": {"impressions": 100, "likes": 5, "comments": 2},
+                 "platforms": [{"platformPostUrl": "https://li/1"}]},
+                {"content": "b", "status": "published",
+                 "analytics": {"impressions": 50, "likes": 1, "comments": 0},
+                 "platforms": [{"platformPostUrl": "https://li/2"}]},
+            ],
+            "hasAnalyticsAccess": True,
+        }
 
 
 async def _reg(c: AsyncClient, email: str, *, hub: bool = True, zernio: bool = True) -> dict:
@@ -96,7 +107,13 @@ async def test_zernio_metrics(monkeypatch):
         r = await c.get("/api/analytics/zernio", headers=auth)
         assert r.status_code == 200, r.text
         body = r.json()
-        assert body["ok"] is True and body["data"]["followers"] == 1200
+        assert body["ok"] is True
+        s = body["summary"]
+        assert s["post_count"] == 2
+        assert s["impressions"] == 150
+        assert s["total_likes"] == 6
+        assert s["avg_likes"] == 3
+        assert len(s["recent"]) == 2 and s["recent"][0]["url"] == "https://li/1"
 
 
 async def test_zernio_requires_key(monkeypatch):
