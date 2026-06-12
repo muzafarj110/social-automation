@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { zernioMetrics, getInsights, analyzeViral } from "../api.js";
 
+function objText(o) {
+  return Object.entries(o)
+    .filter(([k]) => !k.startsWith("_"))
+    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v && typeof v === "object" ? JSON.stringify(v) : v}`)
+    .join(" — ");
+}
+
 function renderValue(v) {
   if (typeof v === "string") return <p style={{ margin: "4px 0", lineHeight: 1.5 }}>{v}</p>;
   if (typeof v === "number" || typeof v === "boolean") return <span>{String(v)}</span>;
@@ -9,13 +16,22 @@ function renderValue(v) {
       <ul style={{ margin: "4px 0", paddingLeft: 18 }}>
         {v.map((x, i) => (
           <li key={i} style={{ marginBottom: 4 }}>
-            {typeof x === "string" ? x : JSON.stringify(x)}
+            {x && typeof x === "object" ? objText(x) : String(x)}
           </li>
         ))}
       </ul>
     );
   if (v && typeof v === "object")
-    return <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{JSON.stringify(v, null, 2)}</pre>;
+    return (
+      <div>
+        {Object.entries(v).filter(([k]) => !k.startsWith("_")).map(([k, vv]) => (
+          <div key={k} style={{ fontSize: 13, marginBottom: 2 }}>
+            <span style={{ fontWeight: 600, color: "var(--mid)" }}>{k.replace(/_/g, " ")}: </span>
+            {vv && typeof vv === "object" ? objText(vv) : String(vv)}
+          </div>
+        ))}
+      </div>
+    );
   return <span>{String(v)}</span>;
 }
 

@@ -15,6 +15,38 @@ const POST_TYPES = [
   "Case Study",
 ];
 
+// Flatten a small object into "key: value — key: value" readable text.
+function objText(o) {
+  return Object.entries(o)
+    .filter(([k]) => !k.startsWith("_"))
+    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v && typeof v === "object" ? JSON.stringify(v) : v}`)
+    .join(" — ");
+}
+
+function renderVal(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return <p style={{ margin: "2px 0", lineHeight: 1.5, fontSize: 13 }}>{v}</p>;
+  if (typeof v === "number" || typeof v === "boolean") return <span style={{ fontSize: 13 }}>{String(v)}</span>;
+  if (Array.isArray(v))
+    return (
+      <ul style={{ margin: "2px 0", paddingLeft: 18, fontSize: 13 }}>
+        {v.map((x, i) => <li key={i}>{x && typeof x === "object" ? objText(x) : String(x)}</li>)}
+      </ul>
+    );
+  if (typeof v === "object")
+    return (
+      <div>
+        {Object.entries(v).filter(([k]) => !k.startsWith("_")).map(([k, vv]) => (
+          <div key={k} style={{ fontSize: 13, marginBottom: 2 }}>
+            <span style={{ fontWeight: 600, color: "var(--mid)" }}>{k.replace(/_/g, " ")}: </span>
+            {vv && typeof vv === "object" ? objText(vv) : String(vv)}
+          </div>
+        ))}
+      </div>
+    );
+  return <span>{String(v)}</span>;
+}
+
 // Render a free-form Hub result object as readable key → value blocks.
 function HubBlocks({ data }) {
   if (!data) return null;
@@ -27,15 +59,7 @@ function HubBlocks({ data }) {
           <div style={{ fontWeight: 600, color: "var(--mid)", textTransform: "capitalize", fontSize: 13 }}>
             {k.replace(/_/g, " ")}
           </div>
-          {typeof v === "string" ? (
-            <p style={{ margin: "2px 0", lineHeight: 1.5, fontSize: 13 }}>{v}</p>
-          ) : Array.isArray(v) ? (
-            <ul style={{ margin: "2px 0", paddingLeft: 18, fontSize: 13 }}>
-              {v.map((x, i) => <li key={i}>{typeof x === "string" ? x : JSON.stringify(x)}</li>)}
-            </ul>
-          ) : (
-            <span style={{ fontSize: 13 }}>{String(v)}</span>
-          )}
+          {renderVal(v)}
         </div>
       ))}
     </div>
