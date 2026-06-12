@@ -88,6 +88,7 @@ export const unlinkAccount = (id) => apiSend(`/accounts/${id}`, "DELETE");
 export const generatePost = (data) => apiSend("/content/generate/post", "POST", data);
 export const createPost = (data) => apiSend("/posts", "POST", data);
 export const listPosts = () => apiGet("/posts");
+export const syncPosts = () => apiSend("/posts/sync", "POST", {});
 export const publishPost = (id) => apiSend(`/posts/${id}/publish`, "POST", {});
 export const schedulePost = (id, scheduled_for, timezone) =>
   apiSend(`/posts/${id}/schedule`, "POST", { scheduled_for, timezone });

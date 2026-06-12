@@ -156,3 +156,32 @@ async def schedule_post(
     await db.commit()
     await db.refresh(post)
     return post
+
+
+@router.post("/sync", response_model=list[PostOut])
+async def sync_posts(
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[Post]:
+    """Reconcile the user's scheduled posts with Zernio's real state (Zernio owns
+    publish timing), then return the full, up-to-date list."""
+    zkey = resolve_zernio_key(current)
+    if zkey:
+        scheduled = await db.scalars(
+            select(Post).where(
+                Post.user_id == current.id,
+                Post.status == post_status.SCHEDULED,
+                Post.zernio_post_id.is_not(None),
+            )
+        )
+        changed = False
+        for p in scheduled:
+            before = p.status
+            await publisher.sync_status(p, zkey)
+            changed = changed or p.status != before
+        if changed:
+            await db.commit()
+    rows = await db.scalars(
+        select(Post).where(Post.user_id == current.id).order_by(Post.created_at.desc())
+    )
+    return list(rows)

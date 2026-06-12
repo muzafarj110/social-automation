@@ -129,3 +129,50 @@ async def schedule(post: Post, zernio_account_id: str,
     post.timezone = timezone
     post.error = None
     return post
+
+
+# Zernio status strings mapped to ours (Zernio owns the publish clock).
+_PUBLISHED_STATES = {"published", "posted", "completed", "complete", "sent", "success", "live"}
+_FAILED_STATES = {"failed", "error", "errored", "rejected", "cancelled", "canceled"}
+
+
+def _platform_state(zp: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
+    """Return (status, url, error) from the first platform entry, if present."""
+    platforms = zp.get("platforms") or []
+    if platforms and isinstance(platforms[0], dict):
+        p0 = platforms[0]
+        st = (p0.get("status") or p0.get("state") or "")
+        return (st.lower() or None,
+                p0.get("platformPostUrl") or p0.get("postUrl"),
+                p0.get("error") or p0.get("failureReason"))
+    return (None, None, None)
+
+
+async def sync_status(post: Post, zernio_key: str) -> Post:
+    """Poll Zernio for a scheduled post's real state and reconcile ours.
+
+    Best-effort and non-fatal: on any Zernio error we leave the post unchanged
+    so listing never breaks. Mutates and returns the post (caller commits).
+    """
+    if not post.zernio_post_id or not zernio_key:
+        return post
+    async with _client(zernio_key) as z:
+        try:
+            zp = await z.get_post(post.zernio_post_id)
+        except ZernioError:
+            return post
+
+    pstat, purl, perr = _platform_state(zp)
+    status = pstat or (zp.get("status") or zp.get("state") or "").lower()
+    url = purl or _extract_url(zp)
+
+    if status in _PUBLISHED_STATES:
+        post.status = post_status.PUBLISHED
+        if url:
+            post.platform_post_url = url
+        post.error = None
+    elif status in _FAILED_STATES:
+        post.status = post_status.FAILED
+        post.error = (perr or zp.get("failureReason") or zp.get("error")
+                      or "Publishing failed on Zernio.")
+    return post

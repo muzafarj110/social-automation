@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listPosts, publishPost, schedulePost, deletePost } from "../api.js";
+import { listPosts, syncPosts, publishPost, schedulePost, deletePost } from "../api.js";
 
 function PostCard({ post, onChange }) {
   const [when, setWhen] = useState("");
@@ -26,7 +26,9 @@ function PostCard({ post, onChange }) {
     await schedulePost(post.id, iso, "UTC");
   });
 
-  const done = post.status === "published";
+  const published = post.status === "published";
+  const scheduled = post.status === "scheduled";
+  const editable = !published && !scheduled; // draft or failed
 
   return (
     <div className="card">
@@ -49,7 +51,7 @@ function PostCard({ post, onChange }) {
       {post.error && <div className="error">{post.error}</div>}
       {error && <div className="error">{error}</div>}
 
-      {!done && (
+      {editable && (
         <div className="row" style={{ marginTop: 12 }}>
           <button className="btn-primary" disabled={busy} onClick={act(() => publishPost(post.id))}>
             Publish now
@@ -69,6 +71,16 @@ function PostCard({ post, onChange }) {
           </button>
         </div>
       )}
+
+      {scheduled && (
+        <div className="row" style={{ marginTop: 12 }}>
+          <span className="muted">Scheduled — Zernio will publish it automatically at the time above.</span>
+          <div className="spacer" />
+          <button className="btn-ghost" disabled={busy} onClick={act(() => deletePost(post.id))}>
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -77,6 +89,7 @@ export default function Posts({ refreshKey }) {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     setError("");
@@ -85,6 +98,20 @@ export default function Posts({ refreshKey }) {
     } catch (e) {
       setError(e.message);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh reconciles scheduled posts with Zernio (did they publish / fail?).
+  const refresh = async () => {
+    setError("");
+    setSyncing(true);
+    try {
+      setPosts(await syncPosts());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSyncing(false);
       setLoading(false);
     }
   };
@@ -101,8 +128,8 @@ export default function Posts({ refreshKey }) {
       <div className="row" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0, color: "var(--blue)" }}>Your posts</h2>
         <div className="spacer" />
-        <button className="btn-secondary" onClick={load}>
-          Refresh
+        <button className="btn-secondary" disabled={syncing} onClick={refresh}>
+          {syncing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
       {posts.length === 0 ? (

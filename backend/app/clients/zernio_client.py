@@ -327,6 +327,15 @@ class ZernioClient:
             params["toDate"] = to_date
         return await self._request("GET", "/analytics", params=params)
 
+    async def get_post(self, post_id: str) -> dict[str, Any]:
+        """GET /posts/{id} — current state of a post (status, platform URLs).
+
+        Used to reconcile scheduled posts: Zernio owns the publish clock, so we
+        poll it to learn whether a scheduled post has published or failed.
+        """
+        body = await self._request("GET", f"/posts/{post_id}")
+        return body.get("post", body)
+
     async def list_comments(self, **params: Any) -> dict[str, Any]:
         """GET /comments — inbox comments (LinkedIn: org pages only)."""
         return await self._request("GET", "/comments", params=params)
