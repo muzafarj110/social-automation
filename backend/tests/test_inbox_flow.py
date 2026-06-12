@@ -119,6 +119,43 @@ async def test_comment_company_reply_via_zernio(monkeypatch):
         assert calls == {"comment_id": "cmt_42", "message": "Thanks for the kind words!"}
 
 
+# --- flow: compliant auto-send posts the company comment on generate -------
+async def test_auto_send_company_comment(monkeypatch):
+    await init_db()
+    _mock_hub(monkeypatch, text="Glad it helped!")
+    sent = {}
+
+    async def fake_reply(comment_id, message, *, zernio_key=None):
+        sent["comment_id"] = comment_id
+        return {"id": "r1"}
+
+    monkeypatch.setattr(svc, "reply_company_comment", fake_reply)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth = await _register(c, "inbox_auto@b.com")
+        r = await c.post("/api/inbox/generate", headers=auth, json={
+            "kind": "comment",
+            "params": {"post_topic": "x", "your_role": "y"},
+            "context": {"comment_id": "cmt_9"},
+            "auto_send": True,
+        })
+        assert r.status_code == 201, r.text
+        body = r.json()
+        assert body["status"] == "sent" and body["executed_via"] == "zernio"
+        assert sent["comment_id"] == "cmt_9"
+
+
+async def test_auto_send_ignored_without_comment_id(monkeypatch):
+    await init_db()
+    _mock_hub(monkeypatch)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth = await _register(c, "inbox_auto2@b.com")
+        r = await c.post("/api/inbox/generate", headers=auth, json={
+            "kind": "comment", "params": {}, "auto_send": True,  # no comment_id
+        })
+        # personal comment can't auto-send -> stays pending
+        assert r.json()["status"] == "pending"
+
+
 # --- flow: personal comment (no comment_id) stays manual ------------------
 async def test_personal_comment_is_manual(monkeypatch):
     await init_db()

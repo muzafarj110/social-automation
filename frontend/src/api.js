@@ -86,6 +86,10 @@ export const unlinkAccount = (id) => apiSend(`/accounts/${id}`, "DELETE");
 
 // --- Content / posts ---
 export const generatePost = (data) => apiSend("/content/generate/post", "POST", data);
+export const qaCheck = (data) => apiSend("/content/qa", "POST", data);
+export const optimizeContent = (data) => apiSend("/content/optimize", "POST", data);
+export const generateInfographic = (data) => apiSend("/content/infographic", "POST", data);
+export const getUsage = () => apiGet("/content/usage");
 export const createPost = (data) => apiSend("/posts", "POST", data);
 export const listPosts = () => apiGet("/posts");
 export const syncPosts = () => apiSend("/posts/sync", "POST", {});

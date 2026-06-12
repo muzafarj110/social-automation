@@ -46,6 +46,12 @@ ENDPOINTS: dict[str, str] = {
     "engagement_strategy": "/api/linkedin-engagement-strategy",
     "analytics": "/api/linkedin-analytics",            # interpret account metrics
     "viral_analyzer": "/api/linkedin-viral-analyzer",  # analyze one post's reach
+    # Content quality (QA) tools — not LinkedIn-specific
+    "qa": "/api/qa",                                   # quality review + criteria
+    "score_checker": "/api/score-checker",             # numeric quality score
+    "ai_detector": "/api/ai-detector",                 # flags robotic / AI-sounding text
+    "content_optimizer": "/api/content-optimizer",     # rewrite to improve
+    "infographic": "/api/infographic",                 # infographic from content points
 }
 
 
@@ -229,6 +235,18 @@ class HubClient:
             delay = self.backoff_base * (2 ** (attempt - 1))
         logger.debug("Retrying Hub call in %.2fs (attempt %d)", delay, attempt)
         await asyncio.sleep(delay)
+
+    # -- raw GET (for usage/status endpoints that aren't the data envelope) --
+    async def get_raw(self, path: str) -> dict[str, Any]:
+        """GET a Hub path and return its parsed JSON (e.g. /api/me usage)."""
+        resp = await self._client.get(path, headers={"X-API-Key": self.api_key})
+        if resp.status_code >= 400:
+            self._raise_for_status(resp)
+        try:
+            body = json.loads(resp.text, strict=False)
+        except ValueError as exc:
+            raise HubResponseError(f"Non-JSON response from {path}") from exc
+        return body if isinstance(body, dict) else {"data": body}
 
     # -- generic passthrough -------------------------------------------------
     async def call(self, name: str, payload: dict[str, Any]) -> dict[str, Any]:

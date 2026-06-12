@@ -149,6 +149,7 @@ export default function Inbox({ accounts, refreshKey }) {
   const [params, setParams] = useState({});
   const [commentId, setCommentId] = useState("");
   const [postUrl, setPostUrl] = useState("");
+  const [autoSend, setAutoSend] = useState(false);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
@@ -189,10 +190,12 @@ export default function Inbox({ accounts, refreshKey }) {
         account_id: accountId ? Number(accountId) : null,
         params: cleanParams,
         context: Object.keys(context).length ? context : null,
+        auto_send: kind === "comment" && commentId.trim() ? autoSend : false,
       });
       setParams({});
       setCommentId("");
       setPostUrl("");
+      setAutoSend(false);
       if (statusFilter !== "pending") setStatusFilter("pending");
       else load();
     } catch (e2) {
@@ -244,6 +247,13 @@ export default function Inbox({ accounts, refreshKey }) {
               <label>Company-page comment ID <span className="muted">(optional — enables auto-reply via Zernio)</span></label>
               <input value={commentId} placeholder="leave blank for a personal comment you'll post yourself"
                      onChange={(e) => setCommentId(e.target.value)} />
+              {commentId.trim() && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
+                  <input type="checkbox" checked={autoSend} style={{ width: "auto" }}
+                         onChange={(e) => setAutoSend(e.target.checked)} />
+                  <span>Auto-post this reply via Zernio (no manual approval). Company-page comments only — LinkedIn's API doesn't allow auto-sending personal comments or DMs.</span>
+                </label>
+              )}
             </>
           )}
 

@@ -6,7 +6,43 @@ import {
   unlinkAccount,
   setHubKey,
   setZernioKey,
+  getUsage,
 } from "../api.js";
+
+// Pull common usage fields out of the Hub's free-form /api/me response.
+function UsageCard({ data }) {
+  if (!data) return null;
+  const d = data.data || data;
+  const find = (...keys) => {
+    for (const k of keys) {
+      if (d[k] !== undefined && d[k] !== null) return d[k];
+      const hit = Object.keys(d).find((x) => x.toLowerCase().includes(k));
+      if (hit && typeof d[hit] !== "object") return d[hit];
+    }
+    return undefined;
+  };
+  const plan = find("plan", "tier");
+  const used = find("calls_used", "usage", "used", "requests");
+  const limit = find("limit", "monthly_limit", "quota", "max");
+  const scalars = Object.entries(d).filter(([, v]) => typeof v !== "object");
+  return (
+    <div>
+      {(plan || used !== undefined || limit !== undefined) && (
+        <div className="row" style={{ gap: 10, marginBottom: 8 }}>
+          {plan && <span className="badge kind">{String(plan)}</span>}
+          {used !== undefined && (
+            <strong style={{ color: "var(--blue)" }}>
+              {String(used)}{limit !== undefined ? ` / ${limit}` : ""} calls used
+            </strong>
+          )}
+        </div>
+      )}
+      <div className="muted" style={{ fontSize: 12 }}>
+        {scalars.map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join("  ·  ")}
+      </div>
+    </div>
+  );
+}
 
 export default function Accounts({ user, accounts, reloadAccounts, refreshUser }) {
   const [available, setAvailable] = useState(null);
@@ -17,9 +53,11 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const [manualId, setManualId] = useState("");
   const [manualName, setManualName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [usage, setUsage] = useState(null);
 
   useEffect(() => {
     reloadAccounts();
+    getUsage().then(setUsage).catch(() => setUsage({ error: true }));
   }, []); // eslint-disable-line
 
   const wrap = (fn) => async (...a) => {
@@ -80,6 +118,13 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     <>
       {error && <div className="error">{error}</div>}
       {msg && <div className="success">{msg}</div>}
+
+      {usage && usage.ok && (
+        <div className="card">
+          <h2>Hub usage</h2>
+          <UsageCard data={usage.data} />
+        </div>
+      )}
 
       <div className="card">
         <h2>AI Models Hub key</h2>

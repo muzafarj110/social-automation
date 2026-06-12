@@ -21,6 +21,9 @@ class GenerateApprovalRequest(BaseModel):
     account_id: int | None = None
     params: dict[str, Any] = Field(default_factory=dict)
     context: dict[str, Any] | None = None
+    # Only honored for company-page comment replies (the one compliant path):
+    # generate AND post the reply via Zernio in one step, no manual approval.
+    auto_send: bool = False
 
 
 class EditApprovalRequest(BaseModel):

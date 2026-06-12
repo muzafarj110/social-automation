@@ -85,6 +85,24 @@ async def generate(
         status=st.PENDING,
     )
     db.add(approval)
+    await db.flush()
+
+    # Compliant auto-send: only company-page comment replies can post without a
+    # human (LinkedIn's API allows it). Everything else stays a pending draft.
+    ctx = body.context or {}
+    if body.auto_send and body.kind == st.COMMENT and ctx.get("comment_id"):
+        try:
+            await svc.reply_company_comment(
+                str(ctx["comment_id"]), draft_text or "",
+                zernio_key=resolve_zernio_key(current) or "",
+            )
+            approval.status = st.SENT
+            approval.executed_via = st.ZERNIO
+            approval.resolved_at = datetime.now(timezone.utc)
+        except (svc.DraftError, ZernioError) as e:
+            # leave it pending so the user can review/send manually
+            approval.error = getattr(e, "message", str(e))
+
     await db.commit()
     await db.refresh(approval)
     return approval
