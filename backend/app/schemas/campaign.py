@@ -18,10 +18,12 @@ class CampaignCreate(BaseModel):
     audience: str | None = None
     tone: str = "professional but human"
     post_type: str = "Personal Story + Lesson"
+    post_types: list[str] | None = None    # angles to rotate (falls back to post_type)
     frequency_per_week: int = Field(3, ge=1, le=14)
     days: list[int] | None = None          # 0=Mon .. 6=Sun
     time_of_day: str = Field("09:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     timezone: str = "UTC"
+    ai_timing: bool = False                # let the Hub suggest posting days/times
 
 
 class CampaignUpdate(BaseModel):
@@ -34,10 +36,12 @@ class CampaignUpdate(BaseModel):
     audience: str | None = None
     tone: str | None = None
     post_type: str | None = None
+    post_types: list[str] | None = None
     frequency_per_week: int | None = Field(None, ge=1, le=14)
     days: list[int] | None = None
     time_of_day: str | None = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     timezone: str | None = None
+    ai_timing: bool | None = None
     status: str | None = Field(None, pattern="^(active|paused)$")
 
 
@@ -55,10 +59,12 @@ class CampaignOut(BaseModel):
     audience: str | None
     tone: str
     post_type: str
+    post_types: list[str] | None
     frequency_per_week: int
     days: list[int] | None
     time_of_day: str
     timezone: str
+    ai_timing: bool
     status: str
     last_run_at: datetime | None
     next_run_at: datetime | None

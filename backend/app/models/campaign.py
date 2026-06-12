@@ -53,12 +53,16 @@ class Campaign(Base):
     audience: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tone: Mapped[str] = mapped_column(String(120), default="professional but human")
     post_type: Mapped[str] = mapped_column(String(120), default="Personal Story + Lesson")
+    # content-angle rotation: list of post_types to cycle through (falls back to post_type)
+    post_types: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
 
     # cadence
     frequency_per_week: Mapped[int] = mapped_column(Integer, default=3)
     days: Mapped[list[int] | None] = mapped_column(JSON, nullable=True)  # 0=Mon..6=Sun
     time_of_day: Mapped[str] = mapped_column(String(5), default="09:00")  # "HH:MM"
     timezone: Mapped[str] = mapped_column(String(64), default="UTC")
+    # when true, the Hub's engagement-strategy suggests the posting days/times
+    ai_timing: Mapped[bool] = mapped_column(Boolean, default=False)
 
     status: Mapped[str] = mapped_column(String(20), default=ACTIVE, index=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

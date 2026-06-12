@@ -27,11 +27,12 @@ const emptyForm = {
   goal: "",
   audience: "early-stage founders",
   tone: "professional but human",
-  post_type: POST_TYPES[0],
+  post_types: [POST_TYPES[0]],
   frequency_per_week: 3,
   days: [0, 2, 4],
   time_of_day: "09:00",
   timezone: browserTz,
+  ai_timing: false,
 };
 
 function CampaignCard({ c, onChange }) {
@@ -68,7 +69,12 @@ function CampaignCard({ c, onChange }) {
         {c.topic_source === "goal"
           ? `Goal: ${c.goal || c.niche || "—"}`
           : `Topics: ${(c.topics || []).join(", ") || "—"}`}
-        {" · "}{(c.days || []).map((d) => WEEKDAYS[d]?.[0]).join("/")} at {c.time_of_day} ({c.timezone})
+        {" · "}
+        {c.ai_timing
+          ? "AI-picked times"
+          : `${(c.days || []).map((d) => WEEKDAYS[d]?.[0]).join("/")} at ${c.time_of_day} (${c.timezone})`}
+        {" · "}{(c.post_types || [c.post_type]).length} angle
+        {(c.post_types || [c.post_type]).length === 1 ? "" : "s"}
       </div>
       {c.last_error && <div className="error">{c.last_error}</div>}
       {error && <div className="error">{error}</div>}
@@ -109,6 +115,13 @@ export default function Campaigns({ accounts }) {
       ...f,
       days: f.days.includes(d) ? f.days.filter((x) => x !== d) : [...f.days, d].sort(),
     }));
+  const toggleAngle = (t) =>
+    setForm((f) => {
+      const has = f.post_types.includes(t);
+      // keep at least one angle selected
+      if (has && f.post_types.length === 1) return f;
+      return { ...f, post_types: has ? f.post_types.filter((x) => x !== t) : [...f.post_types, t] };
+    });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -121,12 +134,14 @@ export default function Campaigns({ accounts }) {
         mode: form.mode,
         topic_source: form.topic_source,
         tone: form.tone,
-        post_type: form.post_type,
+        post_type: form.post_types[0],
+        post_types: form.post_types,
         audience: form.audience || null,
         frequency_per_week: Number(form.frequency_per_week),
         days: form.days,
         time_of_day: form.time_of_day,
         timezone: form.timezone,
+        ai_timing: form.ai_timing,
       };
       if (form.topic_source === "topics") {
         payload.topics = form.topicsText.split("\n").map((s) => s.trim()).filter(Boolean);
@@ -210,42 +225,56 @@ export default function Campaigns({ accounts }) {
           <label>Audience</label>
           <input value={form.audience} onChange={set("audience")} placeholder="early-stage founders" />
 
+          <label>Tone</label>
+          <input value={form.tone} onChange={set("tone")} />
+
+          <label>Content angles to rotate <span className="muted">(pick one or more)</span></label>
           <div className="row">
-            <div style={{ flex: 1 }}>
-              <label>Tone</label>
-              <input value={form.tone} onChange={set("tone")} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label>Post type</label>
-              <select value={form.post_type} onChange={set("post_type")}>
-                {POST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+            {POST_TYPES.map((t) => (
+              <button type="button" key={t}
+                className={form.post_types.includes(t) ? "btn-primary" : "btn-secondary"}
+                onClick={() => toggleAngle(t)} style={{ padding: "8px 12px" }}>{t}</button>
+            ))}
           </div>
 
           <label>Posts per week</label>
           <input type="number" min="1" max="14" value={form.frequency_per_week}
             onChange={set("frequency_per_week")} style={{ width: 100 }} />
 
-          <label>Days</label>
+          <label style={{ marginTop: 12 }}>Posting times</label>
           <div className="row">
-            {WEEKDAYS.map(([lbl, d]) => (
-              <button type="button" key={d}
-                className={form.days.includes(d) ? "btn-primary" : "btn-secondary"}
-                onClick={() => toggleDay(d)} style={{ padding: "8px 12px" }}>{lbl}</button>
-            ))}
+            <button type="button" className={!form.ai_timing ? "btn-primary" : "btn-secondary"}
+              onClick={() => setForm({ ...form, ai_timing: false })}>I'll choose</button>
+            <button type="button" className={form.ai_timing ? "btn-primary" : "btn-secondary"}
+              onClick={() => setForm({ ...form, ai_timing: true })}>Let AI pick best times</button>
           </div>
 
-          <div className="row">
-            <div>
-              <label>Time of day</label>
-              <input type="time" value={form.time_of_day} onChange={set("time_of_day")} style={{ width: 140 }} />
+          {form.ai_timing ? (
+            <div className="muted" style={{ marginTop: 6 }}>
+              The Hub's engagement-strategy model suggests the best days/times for your niche.
             </div>
-            <div style={{ flex: 1 }}>
-              <label>Timezone</label>
-              <input value={form.timezone} onChange={set("timezone")} />
-            </div>
-          </div>
+          ) : (
+            <>
+              <label>Days</label>
+              <div className="row">
+                {WEEKDAYS.map(([lbl, d]) => (
+                  <button type="button" key={d}
+                    className={form.days.includes(d) ? "btn-primary" : "btn-secondary"}
+                    onClick={() => toggleDay(d)} style={{ padding: "8px 12px" }}>{lbl}</button>
+                ))}
+              </div>
+              <div className="row">
+                <div>
+                  <label>Time of day</label>
+                  <input type="time" value={form.time_of_day} onChange={set("time_of_day")} style={{ width: 140 }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label>Timezone</label>
+                  <input value={form.timezone} onChange={set("timezone")} />
+                </div>
+              </div>
+            </>
+          )}
 
           {error && <div className="error">{error}</div>}
           {msg && <div className="success">{msg}</div>}

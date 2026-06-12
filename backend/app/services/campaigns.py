@@ -9,6 +9,7 @@ user to approve (approve mode). Pure orchestration — no new AI.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -39,17 +40,25 @@ def _tz(name: str) -> ZoneInfo:
         return ZoneInfo("UTC")
 
 
-def next_slots(campaign: Campaign, n: int, after: datetime | None = None) -> list[datetime]:
-    """Compute the next `n` posting times (UTC, aware) from the cadence config."""
+def next_slots(
+    campaign: Campaign, n: int, after: datetime | None = None,
+    *, days: list[int] | None = None, time_of_day: str | None = None,
+) -> list[datetime]:
+    """Compute the next `n` posting times (UTC, aware) from the cadence config.
+
+    `days`/`time_of_day` override the campaign's values (used by AI timing).
+    """
     if n <= 0:
         return []
     tz = _tz(campaign.timezone)
     now_local = (after or datetime.now(timezone.utc)).astimezone(tz)
+    tod = time_of_day or campaign.time_of_day or "09:00"
     try:
-        hh, mm = (int(x) for x in (campaign.time_of_day or "09:00").split(":"))
+        hh, mm = (int(x) for x in tod.split(":"))
     except Exception:
         hh, mm = 9, 0
-    allowed = set(campaign.days) if campaign.days else None  # None = any day
+    use_days = days if days is not None else campaign.days
+    allowed = set(use_days) if use_days else None  # None = any day
     slots: list[datetime] = []
     day = now_local.date()
     for _ in range(120):  # lookahead cap
@@ -117,6 +126,76 @@ def _compute_next_run(campaign: Campaign) -> datetime:
     return datetime.now(timezone.utc) + timedelta(days=7)
 
 
+# --- AI-suggested timing ----------------------------------------------------
+_WEEKDAYS = {
+    "monday": 0, "mon": 0, "tuesday": 1, "tue": 1, "tues": 1, "wednesday": 2,
+    "wed": 2, "thursday": 3, "thu": 3, "thur": 3, "thurs": 3, "friday": 4,
+    "fri": 4, "saturday": 5, "sat": 5, "sunday": 6, "sun": 6,
+}
+_TIME_RE = re.compile(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", re.I)
+# LinkedIn best-practice fallback windows (Tue/Wed/Thu mornings, then Mon/Fri).
+_BEST_DAYS = [1, 2, 3, 0, 4]
+_BEST_TIME = "08:00"
+
+
+def _all_strings(obj: Any) -> list[str]:
+    if isinstance(obj, str):
+        return [obj]
+    if isinstance(obj, dict):
+        out: list[str] = []
+        for v in obj.values():
+            out.extend(_all_strings(v))
+        return out
+    if isinstance(obj, list):
+        out = []
+        for v in obj:
+            out.extend(_all_strings(v))
+        return out
+    return []
+
+
+def _norm_time(m: re.Match) -> str | None:
+    h = int(m.group(1))
+    mm = int(m.group(2) or 0)
+    ap = (m.group(3) or "").lower()
+    if ap == "pm" and h < 12:
+        h += 12
+    if ap == "am" and h == 12:
+        h = 0
+    if 0 <= h <= 23 and 0 <= mm <= 59:
+        return f"{h:02d}:{mm:02d}"
+    return None
+
+
+async def ai_timing(campaign: Campaign, hub: HubClient) -> tuple[list[int], str]:
+    """Ask the Hub's engagement-strategy for posting days/times; fall back to
+    LinkedIn best-practice windows. Returns (days, "HH:MM")."""
+    days: list[int] | None = None
+    time_str: str | None = None
+    try:
+        data = await hub.call("engagement_strategy", {
+            "niche": campaign.niche or campaign.audience or campaign.name,
+            "current_posting_frequency": f"{campaign.frequency_per_week}x per week",
+            "follower_goal": 5000,
+        })
+        blob = " ".join(_all_strings(data)).lower()
+        found = sorted({
+            d for name, d in _WEEKDAYS.items()
+            if re.search(r"\b" + re.escape(name) + r"\b", blob)
+        })
+        if found:
+            days = found
+        m = _TIME_RE.search(blob)
+        if m:
+            time_str = _norm_time(m)
+    except Exception:
+        pass
+    if not days:
+        count = max(1, min(campaign.frequency_per_week or 3, len(_BEST_DAYS)))
+        days = _BEST_DAYS[:count]
+    return days, (time_str or _BEST_TIME)
+
+
 async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> list[Post]:
     """Generate a batch for the campaign. Commits and returns the created posts."""
     user = await db.get(User, campaign.user_id)
@@ -135,15 +214,22 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     n = count or campaign.frequency_per_week or 3
     created: list[Post] = []
 
+    # angles to rotate through (content variety); fall back to the single type
+    angles = [a for a in (campaign.post_types or []) if a and a.strip()] or [campaign.post_type]
+
     async with HubClient(settings.hub_base_url, hub_key) as hub:
         topics = await resolve_topics(campaign, n, hub)
-        slots = next_slots(campaign, len(topics))
+        if campaign.ai_timing:
+            ai_days, ai_time = await ai_timing(campaign, hub)
+            slots = next_slots(campaign, len(topics), days=ai_days, time_of_day=ai_time)
+        else:
+            slots = next_slots(campaign, len(topics))
 
-        for topic, slot in zip(topics, slots):
+        for i, (topic, slot) in enumerate(zip(topics, slots)):
             try:
                 data = await hub.generate_text_post(
                     topic=topic,
-                    post_type=campaign.post_type,
+                    post_type=angles[i % len(angles)],
                     audience=campaign.audience or "professionals",
                     tone=campaign.tone,
                 )

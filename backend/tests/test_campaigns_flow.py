@@ -28,6 +28,9 @@ from app.services import campaigns as svc  # noqa: E402
 from app.services import publisher  # noqa: E402
 
 
+_angle_calls: list = []  # records the post_type passed to each generation
+
+
 class _FakeHub:
     """Stands in for HubClient as an async context manager."""
 
@@ -41,10 +44,11 @@ class _FakeHub:
         return False
 
     async def generate_text_post(self, *, topic, **kw):
+        _angle_calls.append(kw.get("post_type"))
         return {"full_post": f"A post about {topic}", "hashtags": ["#growth"]}
 
     async def call(self, name, payload):
-        return {}  # goal-mode calendar -> empty, orchestrator falls back
+        return {}  # calendar/engagement-strategy empty -> orchestrator falls back
 
 
 class _FakeZ:
@@ -152,3 +156,36 @@ async def test_update_pause_and_ownership(monkeypatch):
         auth_b = {"Authorization": f"Bearer {r2.json()['access_token']}"}
         assert (await c.get(f"/api/campaigns/{cid}", headers=auth_b)).status_code == 404
         assert (await c.post(f"/api/campaigns/{cid}/run", headers=auth_b)).status_code == 404
+
+
+async def test_post_type_rotation(monkeypatch):
+    await init_db()
+    _angle_calls.clear()
+    monkeypatch.setattr(svc, "HubClient", _FakeHub)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth, acc = await _bootstrap(c, "camp_rot@b.com")
+        body = {**_BASE, "name": "Rotate", "account_id": acc, "mode": "approve",
+                "frequency_per_week": 4,
+                "post_types": ["Contrarian Take", "How-to / Tips"]}
+        cid = (await c.post("/api/campaigns", headers=auth, json=body)).json()["id"]
+        r = await c.post(f"/api/campaigns/{cid}/run", headers=auth)
+        assert r.status_code == 200 and len(r.json()) == 4
+        # angles cycle across the batch
+        assert _angle_calls[:4] == [
+            "Contrarian Take", "How-to / Tips", "Contrarian Take", "How-to / Tips",
+        ]
+
+
+async def test_ai_timing_runs_with_fallback(monkeypatch):
+    await init_db()
+    monkeypatch.setattr(svc, "HubClient", _FakeHub)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth, acc = await _bootstrap(c, "camp_ai@b.com")
+        body = {**_BASE, "name": "AI Timing", "account_id": acc,
+                "mode": "approve", "ai_timing": True}
+        cid = (await c.post("/api/campaigns", headers=auth, json=body)).json()["id"]
+        r = await c.post(f"/api/campaigns/{cid}/run", headers=auth)
+        # strategy mock returns nothing parseable -> best-practice fallback still schedules
+        assert r.status_code == 200 and len(r.json()) == 3
+        for p in r.json():
+            assert p["scheduled_for"] is not None
