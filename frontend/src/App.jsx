@@ -6,6 +6,7 @@ import Generate from "./components/Generate.jsx";
 import Posts from "./components/Posts.jsx";
 import Inbox from "./components/Inbox.jsx";
 import Campaigns from "./components/Campaigns.jsx";
+import Analytics from "./components/Analytics.jsx";
 
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
@@ -66,6 +67,7 @@ export default function App() {
             ["campaigns", "Autopilot"],
             ["posts", "Posts"],
             ["inbox", "Inbox"],
+            ["analytics", "Analytics"],
             ["accounts", "Accounts"],
           ].map(([id, label]) => (
             <div
@@ -91,6 +93,7 @@ export default function App() {
         {tab === "posts" && <Posts refreshKey={postsRefresh} />}
         {tab === "campaigns" && <Campaigns accounts={accounts} />}
         {tab === "inbox" && <Inbox accounts={accounts} />}
+        {tab === "analytics" && <Analytics />}
         {tab === "accounts" && (
           <Accounts
             user={user}

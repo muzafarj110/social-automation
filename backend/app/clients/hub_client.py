@@ -44,6 +44,8 @@ ENDPOINTS: dict[str, str] = {
     "profile_optimizer": "/api/linkedin-profile",        # was -profile-optimizer (404)
     "headline_variants": "/api/linkedin-headline-variants",
     "engagement_strategy": "/api/linkedin-engagement-strategy",
+    "analytics": "/api/linkedin-analytics",            # interpret account metrics
+    "viral_analyzer": "/api/linkedin-viral-analyzer",  # analyze one post's reach
 }
 
 

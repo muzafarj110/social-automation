@@ -109,3 +109,8 @@ export const createCampaign = (data) => apiSend("/campaigns", "POST", data);
 export const updateCampaign = (id, data) => apiSend(`/campaigns/${id}`, "PATCH", data);
 export const deleteCampaign = (id) => apiSend(`/campaigns/${id}`, "DELETE");
 export const runCampaign = (id) => apiSend(`/campaigns/${id}/run`, "POST", {});
+
+// --- Analytics (feedback loop) ---
+export const zernioMetrics = () => apiGet("/analytics/zernio");
+export const getInsights = (data) => apiSend("/analytics/insights", "POST", data);
+export const analyzeViral = (data) => apiSend("/analytics/viral", "POST", data);
