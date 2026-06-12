@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,11 +39,12 @@ async def create_campaign(
     db: AsyncSession = Depends(get_db),
 ) -> Campaign:
     await _check_account(body.account_id, current, db)
+    # next_run_at stays None until the first manual "Run now" — avoids surprise
+    # auto-posting right after creation. After the first run it recurs weekly.
     c = Campaign(
         user_id=current.id,
         **body.model_dump(),
         status=cstate.ACTIVE,
-        next_run_at=datetime.now(timezone.utc),  # eligible on the next scheduler tick
     )
     db.add(c)
     await db.commit()
