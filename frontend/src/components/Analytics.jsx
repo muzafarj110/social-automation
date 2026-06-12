@@ -63,7 +63,7 @@ function Summary({ s }) {
       {s.recent?.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 8 }}>Recent posts</div>
-          <div className="pill-list">
+          <div className="pill-list" style={{ maxHeight: 320, overflowY: "auto", paddingRight: 4 }}>
             {s.recent.map((p, i) => (
               <div className="pill" key={i} style={{ alignItems: "flex-start", flexDirection: "column", gap: 4 }}>
                 <div style={{ fontSize: 13 }}>{p.content || "(no text)"}{p.content?.length >= 160 ? "…" : ""}</div>
@@ -86,23 +86,10 @@ function Summary({ s }) {
   );
 }
 
-const METRIC_FIELDS = [
-  ["followers", "Followers"],
-  ["impressions", "Impressions"],
-  ["profile_views", "Profile views"],
-  ["post_count", "Posts"],
-  ["avg_likes", "Avg likes"],
-  ["avg_comments", "Avg comments"],
-  ["avg_shares", "Avg shares"],
-];
-
 export default function Analytics() {
   const [zernio, setZernio] = useState(null);
-  const [metrics, setMetrics] = useState({
-    followers: 0, impressions: 0, profile_views: 0, post_count: 0,
-    avg_likes: 0, avg_comments: 0, avg_shares: 0,
-    timeframe: "Last 30 days", goal: "grow followers and generate leads",
-  });
+  const [goal, setGoal] = useState("grow followers and generate leads");
+  const [followers, setFollowers] = useState("");
   const [insights, setInsights] = useState(null);
   const [viral, setViral] = useState({ post: "", niche: "", impressions: 0, likes: 0, comments: 0, shares: 0 });
   const [viralResult, setViralResult] = useState(null);
@@ -112,39 +99,37 @@ export default function Analytics() {
   const loadZernio = async () => {
     setError("");
     try {
-      const res = await zernioMetrics();
-      setZernio(res);
-      // prefill the AI-insights form with real aggregates
-      if (res.ok && res.summary) {
-        const s = res.summary;
-        setMetrics((m) => ({
-          ...m,
-          post_count: s.post_count ?? m.post_count,
-          impressions: s.impressions ?? m.impressions,
-          avg_likes: s.avg_likes ?? m.avg_likes,
-          avg_comments: s.avg_comments ?? m.avg_comments,
-          avg_shares: s.avg_shares ?? m.avg_shares,
-        }));
-      }
+      setZernio(await zernioMetrics());
     } catch (e) {
       setZernio({ ok: false, error: e.message });
     }
   };
   useEffect(() => { loadZernio(); }, []); // eslint-disable-line
 
-  const setM = (k, num = true) => (e) =>
-    setMetrics({ ...metrics, [k]: num ? Number(e.target.value || 0) : e.target.value });
-  const setV = (k, num = true) => (e) =>
-    setViral({ ...viral, [k]: num ? Number(e.target.value || 0) : e.target.value });
+  const summary = zernio?.ok ? zernio.summary : null;
 
   const runInsights = async () => {
     setError(""); setBusy("insights"); setInsights(null);
     try {
-      const res = await getInsights(metrics);
+      const s = summary || {};
+      const res = await getInsights({
+        followers: Number(followers || 0),
+        impressions: s.impressions || 0,
+        profile_views: 0,
+        post_count: s.post_count || 0,
+        avg_likes: s.avg_likes || 0,
+        avg_comments: s.avg_comments || 0,
+        avg_shares: s.avg_shares || 0,
+        timeframe: "Last 30 days",
+        goal: goal || null,
+      });
       setInsights(res.data);
     } catch (e) { setError(e.message); }
     finally { setBusy(""); }
   };
+
+  const setV = (k, num = true) => (e) =>
+    setViral({ ...viral, [k]: num ? Number(e.target.value || 0) : e.target.value });
 
   const runViral = async () => {
     setError(""); setBusy("viral"); setViralResult(null);
@@ -161,48 +146,42 @@ export default function Analytics() {
       {error && <div className="error">{error}</div>}
 
       <div className="card">
+        <h2>Strategy &amp; suggestions</h2>
+        <p className="muted">
+          The AI reads your LinkedIn metrics (below) and tells you what's working, what isn't,
+          and what to do next. No numbers to enter — just set your goal and go.
+        </p>
         <div className="row">
-          <h2 style={{ margin: 0 }}>LinkedIn metrics (Zernio)</h2>
-          <div className="spacer" />
-          <button className="btn-secondary" onClick={loadZernio}>Refresh</button>
-        </div>
-        {zernio == null ? (
-          <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
-        ) : zernio.ok && zernio.summary ? (
-          <Summary s={zernio.summary} />
-        ) : zernio.ok ? (
-          <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
-        ) : (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Couldn’t load Zernio metrics ({zernio.error}). You can still enter your numbers below for AI insights.
+          <div style={{ flex: 2 }}>
+            <label>Goal</label>
+            <input value={goal} onChange={(e) => setGoal(e.target.value)} />
           </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>AI insights</h2>
-        <p className="muted">Enter your current numbers — the Hub’s analytics model interprets them and recommends what to do next.</p>
-        <div className="row">
-          {METRIC_FIELDS.map(([k, label]) => (
-            <div key={k} style={{ minWidth: 120 }}>
-              <label>{label}</label>
-              <input type="number" min="0" value={metrics[k]} onChange={setM(k)} />
-            </div>
-          ))}
+          <div style={{ flex: 1 }}>
+            <label>Followers <span className="muted">(optional)</span></label>
+            <input type="number" min="0" value={followers}
+              onChange={(e) => setFollowers(e.target.value)} placeholder="e.g. 1200" />
+          </div>
         </div>
-        <label>Goal</label>
-        <input value={metrics.goal} onChange={setM("goal", false)} />
         <div className="row" style={{ marginTop: 12 }}>
           <button className="btn-primary" disabled={busy === "insights"} onClick={runInsights}>
-            {busy === "insights" ? "Analyzing…" : "Get AI insights"}
+            {busy === "insights" ? "Analyzing…" : "Get strategy & suggestions"}
           </button>
+          {summary && (
+            <span className="muted" style={{ alignSelf: "center" }}>
+              Using {summary.post_count} posts · {(summary.impressions || 0).toLocaleString()} impressions
+            </span>
+          )}
         </div>
         {insights && <div style={{ marginTop: 14 }}><HubResult data={insights} /></div>}
       </div>
 
       <div className="card">
-        <h2>Analyze a post</h2>
-        <p className="muted">Paste a post and its numbers to see why it did (or didn’t) perform.</p>
+        <h2>Analyze a single post</h2>
+        <p className="muted">
+          Paste any post and its numbers to get a breakdown of <em>why</em> it performed the way it
+          did and how to make the next one stronger. (The card above looks at your whole account;
+          this one zooms into one post.)
+        </p>
         <label>Post text</label>
         <textarea value={viral.post} onChange={setV("post", false)} style={{ minHeight: 100 }} />
         <label>Niche <span className="muted">(optional)</span></label>
@@ -223,6 +202,25 @@ export default function Analytics() {
           </button>
         </div>
         {viralResult && <div style={{ marginTop: 14 }}><HubResult data={viralResult} /></div>}
+      </div>
+
+      <div className="card">
+        <div className="row">
+          <h2 style={{ margin: 0 }}>LinkedIn metrics (Zernio)</h2>
+          <div className="spacer" />
+          <button className="btn-secondary" onClick={loadZernio}>Refresh</button>
+        </div>
+        {zernio == null ? (
+          <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
+        ) : summary ? (
+          <Summary s={summary} />
+        ) : zernio.ok ? (
+          <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
+        ) : (
+          <div className="muted" style={{ marginTop: 8 }}>
+            Couldn’t load Zernio metrics ({zernio.error}). The strategy card still works with your goal.
+          </div>
+        )}
       </div>
     </>
   );
