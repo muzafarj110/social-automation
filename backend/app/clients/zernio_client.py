@@ -361,6 +361,28 @@ class ZernioClient:
         """GET /accounts — connected social accounts."""
         return await self._request("GET", "/accounts")
 
+    # -- OAuth connect flow (hosted by Zernio) -------------------------------
+    async def list_profiles(self) -> dict[str, Any]:
+        """GET /profiles — the user's Zernio profiles (account containers)."""
+        return await self._request("GET", "/profiles")
+
+    async def create_profile(self, *, name: str, description: str = "") -> dict[str, Any]:
+        """POST /profiles — create a profile to group connected accounts under."""
+        body = await self._request(
+            "POST", "/profiles", json={"name": name, "description": description}
+        )
+        return body.get("profile", body)
+
+    async def get_connect_url(self, *, platform: str, profile_id: str) -> dict[str, Any]:
+        """GET /connect/{platform}?profileId=… — returns a hosted OAuth authUrl.
+
+        The user authorizes on the platform; Zernio stores the connection. We
+        then re-list accounts to import it — no API key for the social account
+        ever touches our app."""
+        return await self._request(
+            "GET", f"/connect/{platform}", params={"profileId": profile_id}
+        )
+
     async def get_linkedin_organizations(self, account_id: str) -> dict[str, Any]:
         """GET /accounts/{id}/linkedin-organizations — company pages."""
         return await self._request(

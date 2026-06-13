@@ -232,23 +232,30 @@ async def qa_and_polish(hub: HubClient, content: str, tone: str) -> str:
     return content
 
 
-async def performance_signal(user: User) -> list[str]:
-    """The themes of the user's best-performing posts (Zernio analytics).
+async def performance_signal(user: User, platforms: list[str] | None = None) -> list[str]:
+    """The themes of the user's best-performing posts, across ALL given platforms.
 
     Best-effort: returns content snippets of the top posts that actually got
-    engagement, so the autopilot can double down on what works. Empty when
-    there's no Zernio key or no engagement data yet.
+    engagement (ranked across every platform), so the autopilot can double down
+    on what works. Empty when there's no Zernio key or no engagement data yet.
     """
     key = resolve_zernio_key(user)
     if not key:
         return []
+    targets = platforms or ["linkedin"]
+    posts: list[dict] = []
     try:
         async with ZernioClient(settings.zernio_base_url, key) as z:
-            data = await z.get_analytics(platform="linkedin")
+            for plat_name in targets:
+                try:
+                    data = await z.get_analytics(platform=plat_name)
+                except Exception:
+                    continue
+                posts.extend(data.get("posts") or [])
     except Exception:
         return []
     scored: list[tuple[int, str]] = []
-    for p in (data.get("posts") or []):
+    for p in posts:
         a = p.get("analytics") or {}
         eng = (int(a.get("impressions") or 0)
                + 5 * int(a.get("likes") or 0)
@@ -344,8 +351,9 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     brand_voice = (brand.voice or "").strip() if brand else ""
     brand_audience = (brand.audience or "").strip() if brand else ""
 
-    # closed loop: double down on what's already performing
-    winners = await performance_signal(user) if campaign.learn_from_analytics else []
+    # closed loop: double down on what's already performing (across all platforms)
+    winners = (await performance_signal(user, list(pacc.keys()))
+               if campaign.learn_from_analytics else [])
 
     async with HubClient(settings.hub_base_url, hub_key) as hub:
         topics = await resolve_topics(campaign, n, hub)

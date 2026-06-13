@@ -82,6 +82,7 @@ export const setZernioKey = (zernio_api_key) =>
 // --- Accounts ---
 export const listAccounts = () => apiGet("/accounts");
 export const zernioAvailable = () => apiGet("/accounts/zernio/available");
+export const connectUrl = (platform) => apiSend("/accounts/connect-url", "POST", { platform });
 export const linkAccount = (data) => apiSend("/accounts/link", "POST", data);
 export const unlinkAccount = (id) => apiSend(`/accounts/${id}`, "DELETE");
 

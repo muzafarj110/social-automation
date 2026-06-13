@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   listAccounts,
   zernioAvailable,
+  connectUrl,
   linkAccount,
   unlinkAccount,
   setHubKey,
@@ -138,6 +139,15 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     reloadAccounts();
   });
 
+  const [connectPlatform, setConnectPlatform] = useState("linkedin");
+  const doConnect = wrap(async () => {
+    const res = await connectUrl(connectPlatform);
+    if (res?.auth_url) {
+      window.open(res.auth_url, "_blank", "noopener");
+      setMsg("Authorize in the new tab, then click “Find accounts on Zernio” to import.");
+    }
+  });
+
   const doManualLink = wrap(async () => {
     await linkAccount({
       zernio_account_id: manualId.trim(), display_name: manualName.trim() || null,
@@ -243,10 +253,19 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
 
       <div className="card">
         <h2>Connect a new account</h2>
-        <p className="muted">Connect accounts in your Zernio dashboard, then pull them in here — across any of the 15 supported platforms.</p>
-        <div className="row">
+        <p className="muted">Authorize a platform below — you sign in on the platform itself, so no passwords or keys are entered here. Then import the connected account.</p>
+        <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div>
+            <label>Platform to connect</label>
+            <select value={connectPlatform} onChange={(e) => setConnectPlatform(e.target.value)}>
+              {PLATFORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <button className="btn-primary" disabled={busy} onClick={doConnect}>
+            Connect {PLATFORM_LABEL[connectPlatform] || connectPlatform}
+          </button>
           <button className="btn-secondary" disabled={busy} onClick={findZernio}>
-            Find accounts on Zernio
+            Find &amp; import connected accounts
           </button>
         </div>
         {available && available.length > 0 && (

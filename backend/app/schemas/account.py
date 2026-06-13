@@ -9,6 +9,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.core.platforms import PLATFORM_PATTERN
 
 
+class ConnectRequest(BaseModel):
+    platform: str = Field("linkedin", pattern=PLATFORM_PATTERN)
+
+
 class LinkAccountRequest(BaseModel):
     zernio_account_id: str = Field(..., min_length=1)
     platform: str = Field("linkedin", pattern=PLATFORM_PATTERN)

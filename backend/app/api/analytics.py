@@ -8,6 +8,8 @@ viral-analyzer models, so the insights can guide what the autopilot posts next.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.clients.hub_client import HubClient, HubError
@@ -15,6 +17,8 @@ from app.clients.zernio_client import ZernioClient, ZernioError
 from app.core.config import settings
 from app.core.hub_errors import hub_http
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
+from app.db.session import get_db
+from app.models.account import LinkedInAccount
 from app.models.user import User
 from app.schemas.analytics import InsightsRequest, ViralRequest
 
@@ -47,6 +51,7 @@ def _aggregate(zdata: dict) -> dict:
         recent.append({
             "content": (p.get("content") or "")[:160],
             "status": p.get("status"),
+            "platform": p.get("platform"),
             "impressions": (p.get("analytics") or {}).get("impressions", 0),
             "likes": (p.get("analytics") or {}).get("likes", 0),
             "comments": (p.get("analytics") or {}).get("comments", 0),
@@ -84,18 +89,52 @@ async def _hub_call(user: User, name: str, payload: dict) -> dict:
             raise hub_http(e) from e
 
 
+async def connected_platforms(user: User, db: AsyncSession) -> list[str]:
+    """The distinct platforms the user has connected accounts on (default LinkedIn)."""
+    rows = await db.scalars(
+        select(LinkedInAccount.platform).where(LinkedInAccount.user_id == user.id).distinct()
+    )
+    return list(rows) or ["linkedin"]
+
+
+async def fetch_all_metrics(z: ZernioClient, platforms: list[str]) -> dict:
+    """Pull analytics for each platform and merge into one combined structure.
+
+    Posts are tagged with their platform; overview counters are summed. Per-platform
+    failures are skipped so one bad platform doesn't break the whole view."""
+    merged_posts: list[dict] = []
+    merged_overview: dict = {}
+    for p in platforms:
+        try:
+            d = await z.get_analytics(platform=p)
+        except ZernioError:
+            continue
+        for post in (d.get("posts") or []):
+            post.setdefault("platform", p)
+            merged_posts.append(post)
+        for k, v in (d.get("overview") or {}).items():
+            if isinstance(v, (int, float)):
+                merged_overview[k] = merged_overview.get(k, 0) + v
+    return {"overview": merged_overview, "posts": merged_posts}
+
+
 @router.get("/zernio")
-async def zernio_metrics(current: User = Depends(get_current_user)) -> dict:
-    """Raw LinkedIn metrics from the user's Zernio account (best-effort)."""
+async def zernio_metrics(
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Reach & engagement, auto-pulled across ALL the user's connected platforms."""
     key = resolve_zernio_key(current)
     if not key:
-        raise HTTPException(400, "Set your Zernio API key in the app first.")
+        # No raw error — the UI shows a friendly "connect an account" empty state.
+        return {"ok": False, "needs_connection": True}
+    platforms = await connected_platforms(current, db)
     async with ZernioClient(settings.zernio_base_url, key) as z:
         try:
-            data = await z.get_analytics(platform="linkedin")
+            data = await fetch_all_metrics(z, platforms)
         except ZernioError as e:
             return {"ok": False, "error": e.message}
-    return {"ok": True, "summary": _aggregate(data), "data": data}
+    return {"ok": True, "summary": _aggregate(data), "data": data, "platforms": platforms}
 
 
 @router.post("/insights")
