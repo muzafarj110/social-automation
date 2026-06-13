@@ -11,14 +11,9 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.clients.hub_client import (
-    HubAuthError,
-    HubClient,
-    HubError,
-    HubPermissionError,
-    HubRateLimitError,
-)
+from app.clients.hub_client import HubClient, HubError
 from app.core.config import settings
+from app.core.hub_errors import hub_http
 
 router = APIRouter()
 
@@ -69,13 +64,7 @@ async def generate_post(req: GeneratePostRequest) -> dict[str, object]:
                 tone=req.tone,
                 include_cta=req.include_cta,
             )
-        except HubRateLimitError as e:
-            raise HTTPException(429, e.message) from e
-        except HubAuthError as e:
-            raise HTTPException(401, e.message) from e
-        except HubPermissionError as e:
-            raise HTTPException(403, e.message) from e
         except HubError as e:
-            raise HTTPException(502, f"Hub error: {e.message}") from e
+            raise hub_http(e) from e
 
     return {"ok": True, "data": data}

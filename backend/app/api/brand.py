@@ -10,14 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
-from app.clients.hub_client import (
-    HubAuthError,
-    HubClient,
-    HubError,
-    HubPermissionError,
-    HubRateLimitError,
-)
+from app.clients.hub_client import HubClient, HubError
 from app.core.config import settings
+from app.core.hub_errors import hub_http
 from app.core.user_keys import resolve_hub_key
 from app.db.session import get_db
 from app.models.brand import BrandProfile
@@ -77,12 +72,6 @@ async def generate(
     async with HubClient(settings.hub_base_url, key) as hub:
         try:
             data = await hub.call(body.tool, body.params)
-        except HubRateLimitError as e:
-            raise HTTPException(429, e.message) from e
-        except HubAuthError as e:
-            raise HTTPException(401, e.message) from e
-        except HubPermissionError as e:
-            raise HTTPException(403, e.message) from e
         except HubError as e:
-            raise HTTPException(502, f"Hub error: {e.message}") from e
+            raise hub_http(e) from e
     return {"ok": True, "data": data}

@@ -8,14 +8,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import get_current_user
-from app.clients.hub_client import (
-    HubAuthError,
-    HubClient,
-    HubError,
-    HubPermissionError,
-    HubRateLimitError,
-)
+from app.clients.hub_client import HubClient, HubError
 from app.core.config import settings
+from app.core.hub_errors import hub_http
 from app.core.user_keys import resolve_hub_key
 from app.models.user import User
 from app.schemas.profile import (
@@ -35,14 +30,8 @@ async def _call(user: User, name: str, payload: dict) -> dict:
     async with HubClient(settings.hub_base_url, key) as hub:
         try:
             return await hub.call(name, payload)
-        except HubRateLimitError as e:
-            raise HTTPException(429, e.message) from e
-        except HubAuthError as e:
-            raise HTTPException(401, e.message) from e
-        except HubPermissionError as e:
-            raise HTTPException(403, e.message) from e
         except HubError as e:
-            raise HTTPException(502, f"Hub error: {e.message}") from e
+            raise hub_http(e) from e
 
 
 @router.post("/optimize")
