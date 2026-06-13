@@ -11,6 +11,25 @@ import Campaigns from "./components/Campaigns.jsx";
 import Analytics from "./components/Analytics.jsx";
 import ProfileStudio from "./components/ProfileStudio.jsx";
 
+const NAV = [
+  { group: "Overview", items: [["home", "Home"]] },
+  { group: "Create", items: [["strategy", "Strategy"], ["generate", "Generate"], ["campaigns", "Autopilot"]] },
+  { group: "Manage", items: [["posts", "Posts"], ["inbox", "Inbox"]] },
+  { group: "Grow", items: [["profile", "Profile"], ["analytics", "Analytics"]] },
+  { group: "Settings", items: [["accounts", "Accounts"]] },
+];
+const TITLES = {
+  home: ["Home", "Your week at a glance"],
+  strategy: ["Strategy", "Your brand voice, persona and positioning"],
+  generate: ["Generate", "Create a single post with AI"],
+  campaigns: ["Autopilot", "Hands-off campaigns that post for you"],
+  posts: ["Posts", "Drafts, scheduled and published"],
+  inbox: ["Inbox", "AI-drafted replies, DMs and outreach to approve"],
+  profile: ["Profile Studio", "Optimize your LinkedIn profile"],
+  analytics: ["Analytics", "Performance and AI strategy"],
+  accounts: ["Accounts", "Keys, connected accounts and usage"],
+};
+
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
   const [user, setUser] = useState(null);
@@ -19,99 +38,77 @@ export default function App() {
   const [postsRefresh, setPostsRefresh] = useState(0);
 
   const refreshUser = async () => {
-    try {
-      setUser(await me());
-    } catch {
-      // token invalid/expired
-      logout();
-      setAuthed(false);
-    }
+    try { setUser(await me()); }
+    catch { logout(); setAuthed(false); }
   };
-
   const reloadAccounts = async () => {
-    try {
-      setAccounts(await listAccounts());
-    } catch {
-      /* ignore */
-    }
+    try { setAccounts(await listAccounts()); } catch { /* ignore */ }
   };
 
   useEffect(() => {
-    if (authed) {
-      refreshUser();
-      reloadAccounts();
-    }
+    if (authed) { refreshUser(); reloadAccounts(); }
   }, [authed]); // eslint-disable-line
 
   if (!authed) return <Auth onAuthed={() => setAuthed(true)} />;
 
-  const doLogout = () => {
-    logout();
-    setAuthed(false);
-    setUser(null);
-  };
+  const doLogout = () => { logout(); setAuthed(false); setUser(null); };
+  const [title, subtitle] = TITLES[tab] || ["", ""];
 
   return (
-    <div>
-      <div className="topbar">
-        <div>
-          <h1>LinkedIn Autopilot</h1>
-          <div className="sub">{user?.email}</div>
+    <div className="app">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="logo">A</div>
+          <div>
+            <div className="brand-name">Autopilot</div>
+            <div className="brand-sub">AI Marketing</div>
+          </div>
         </div>
-        <button className="btn-secondary" onClick={doLogout}>
-          Sign out
-        </button>
-      </div>
-
-      <div className="container">
-        <div className="tabs">
-          {[
-            ["home", "Home"],
-            ["strategy", "Strategy"],
-            ["generate", "Generate"],
-            ["campaigns", "Autopilot"],
-            ["posts", "Posts"],
-            ["inbox", "Inbox"],
-            ["profile", "Profile"],
-            ["analytics", "Analytics"],
-            ["accounts", "Accounts"],
-          ].map(([id, label]) => (
-            <div
-              key={id}
-              className={`tab ${tab === id ? "active" : ""}`}
-              onClick={() => setTab(id)}
-            >
-              {label}
+        <nav className="nav">
+          {NAV.map((section) => (
+            <div key={section.group}>
+              <div className="nav-group">{section.group}</div>
+              {section.items.map(([id, label]) => (
+                <button key={id} className={`nav-item ${tab === id ? "active" : ""}`} onClick={() => setTab(id)}>
+                  <span className="dot" /><span>{label}</span>
+                </button>
+              ))}
             </div>
           ))}
+        </nav>
+        <div className="sidebar-foot">
+          <div className="email">{user?.email}</div>
+          <button className="nav-item" onClick={doLogout}><span className="dot" /><span>Sign out</span></button>
         </div>
+      </aside>
 
-        {tab === "home" && <Home goTab={setTab} />}
-        {tab === "strategy" && <Strategy />}
-        {tab === "generate" && (
-          <Generate
-            accounts={accounts}
-            goConnect={() => setTab("accounts")}
-            onSaved={() => {
-              setPostsRefresh((n) => n + 1);
-              setTab("posts");
-            }}
-          />
-        )}
-        {tab === "posts" && <Posts refreshKey={postsRefresh} />}
-        {tab === "campaigns" && <Campaigns accounts={accounts} />}
-        {tab === "inbox" && <Inbox accounts={accounts} />}
-        {tab === "profile" && <ProfileStudio />}
-        {tab === "analytics" && <Analytics />}
-        {tab === "accounts" && (
-          <Accounts
-            user={user}
-            accounts={accounts}
-            reloadAccounts={reloadAccounts}
-            refreshUser={refreshUser}
-          />
-        )}
-      </div>
+      <main className="main">
+        <header className="page-head">
+          <div>
+            <h1>{title}</h1>
+            <div className="sub">{subtitle}</div>
+          </div>
+        </header>
+        <div className="page-body">
+          {tab === "home" && <Home goTab={setTab} />}
+          {tab === "strategy" && <Strategy />}
+          {tab === "generate" && (
+            <Generate
+              accounts={accounts}
+              goConnect={() => setTab("accounts")}
+              onSaved={() => { setPostsRefresh((n) => n + 1); setTab("posts"); }}
+            />
+          )}
+          {tab === "posts" && <Posts refreshKey={postsRefresh} />}
+          {tab === "campaigns" && <Campaigns accounts={accounts} />}
+          {tab === "inbox" && <Inbox accounts={accounts} />}
+          {tab === "profile" && <ProfileStudio />}
+          {tab === "analytics" && <Analytics />}
+          {tab === "accounts" && (
+            <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} />
+          )}
+        </div>
+      </main>
     </div>
   );
 }
