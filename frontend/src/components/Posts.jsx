@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
 import {
-  listPosts, syncPosts, publishPost, schedulePost, deletePost, getPostInfographic,
+  listPosts, syncPosts, publishPost, schedulePost, deletePost, getPostInfographic, updatePost,
 } from "../api.js";
+
+const MEDIA_REQUIRED = new Set(["instagram", "tiktok", "youtube", "pinterest", "snapchat"]);
+const PLATFORM_LABEL = {
+  linkedin: "LinkedIn", twitter: "X", instagram: "Instagram", facebook: "Facebook",
+  tiktok: "TikTok", youtube: "YouTube", pinterest: "Pinterest", reddit: "Reddit",
+  bluesky: "Bluesky", threads: "Threads", googlebusiness: "Google Business",
+  telegram: "Telegram", snapchat: "Snapchat", whatsapp: "WhatsApp", discord: "Discord",
+};
 
 function PostCard({ post, onChange }) {
   const [when, setWhen] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [mediaUrl, setMediaUrl] = useState("");
+
+  const hasMedia = Array.isArray(post.media) && post.media.length > 0;
+  const needsMedia = MEDIA_REQUIRED.has(post.platform) && !hasMedia;
 
   const viewInfographic = async () => {
     setError("");
@@ -44,7 +56,9 @@ function PostCard({ post, onChange }) {
   return (
     <div className="card">
       <div className="row">
+        <span className="badge kind">{PLATFORM_LABEL[post.platform] || post.platform}</span>
         <span className={`badge ${post.status}`}>{post.status}</span>
+        {hasMedia && <span className="badge published">📷 media</span>}
         {post.scheduled_for && (
           <span className="muted">for {new Date(post.scheduled_for).toLocaleString()}</span>
         )}
@@ -69,9 +83,36 @@ function PostCard({ post, onChange }) {
       {post.error && <div className="error">{post.error}</div>}
       {error && <div className="error">{error}</div>}
 
+      {editable && (MEDIA_REQUIRED.has(post.platform) || hasMedia) && (
+        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8,
+                      background: needsMedia ? "#fff7ed" : "#f6f7fb" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+            {needsMedia
+              ? `${PLATFORM_LABEL[post.platform] || post.platform} needs an image or video to publish`
+              : "Media attached"}
+          </div>
+          {hasMedia && (
+            <div className="muted" style={{ fontSize: 12, marginBottom: 6, wordBreak: "break-all" }}>
+              {post.media.map((m) => m.url).filter(Boolean).join(", ")}
+            </div>
+          )}
+          <div className="row">
+            <input style={{ flex: 1 }} placeholder="Paste an image or video URL…"
+              value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} />
+            <button className="btn-secondary" disabled={busy || !mediaUrl.trim()}
+              onClick={act(async () => {
+                await updatePost(post.id, { media: [{ type: "image", url: mediaUrl.trim() }] });
+                setMediaUrl("");
+              })}>
+              {hasMedia ? "Replace media" : "Attach media"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {editable && (
         <div className="row" style={{ marginTop: 12 }}>
-          <button className="btn-primary" disabled={busy} onClick={act(() => publishPost(post.id))}>
+          <button className="btn-primary" disabled={busy || needsMedia} onClick={act(() => publishPost(post.id))}>
             Publish now
           </button>
           <input
@@ -80,7 +121,7 @@ function PostCard({ post, onChange }) {
             value={when}
             onChange={(e) => setWhen(e.target.value)}
           />
-          <button className="btn-secondary" disabled={busy} onClick={doSchedule}>
+          <button className="btn-secondary" disabled={busy || needsMedia} onClick={doSchedule}>
             Schedule
           </button>
           <div className="spacer" />
