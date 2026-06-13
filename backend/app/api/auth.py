@@ -20,6 +20,7 @@ from app.core.entitlements import effective_entitlements, is_admin
 from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
+    SetAutomationRequest,
     SetHubKeyRequest,
     SetProfileRequest,
     SetZernioKeyRequest,
@@ -98,6 +99,20 @@ async def set_profile(
 ) -> UserOut:
     """Onboarding: record the user's profile type so the workspace adapts."""
     current.profile_type = body.profile_type
+    await db.commit()
+    await db.refresh(current)
+    return _user_out(current)
+
+
+@router.put("/me/automation", response_model=UserOut)
+async def set_automation(
+    body: SetAutomationRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Global pause/resume: when paused, no campaign auto-publishes — everything
+    becomes a draft to approve. The user's safety net."""
+    current.automation_paused = body.paused
     await db.commit()
     await db.refresh(current)
     return _user_out(current)

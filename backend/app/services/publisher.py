@@ -12,7 +12,7 @@ no separate scheduler process needed for publishing.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Protocol
 
 from app.clients.zernio_client import (
     ZernioClient,
@@ -23,6 +23,29 @@ from app.core import platforms as plat
 from app.core.config import settings
 from app.models import post as post_status
 from app.models.post import Post
+
+
+class SocialProvider(Protocol):
+    """The posting backend contract. Today this is Zernio; to swap providers,
+    implement these async methods on a new class and return it from
+    `make_provider()` — nothing else in the app needs to change.
+
+    Used as an async context manager. Methods may raise ZernioError-style
+    exceptions (with `.message` / `.status_code`) that the publisher maps.
+    """
+
+    async def __aenter__(self) -> "SocialProvider": ...
+    async def __aexit__(self, *exc: Any) -> None: ...
+
+    async def publish_now(self, *, platform: str, account_id: str, content: str,
+                          media_items: Any, platform_specific_data: Any,
+                          idempotency_key: str) -> dict[str, Any]: ...
+
+    async def schedule(self, *, platform: str, account_id: str, content: str,
+                       scheduled_for: str, timezone: str, media_items: Any,
+                       platform_specific_data: Any, idempotency_key: str) -> dict[str, Any]: ...
+
+    async def get_post(self, post_id: str) -> dict[str, Any]: ...
 
 
 class PublishError(Exception):
@@ -41,6 +64,17 @@ def _client(zernio_key: str) -> ZernioClient:
             status_code=400,
         )
     return ZernioClient(settings.zernio_base_url, zernio_key)
+
+
+def make_provider(key: str) -> SocialProvider:
+    """The single swap point for the posting backend.
+
+    Returns the configured provider (currently Zernio, which already satisfies
+    the SocialProvider protocol). To migrate to another provider, implement the
+    protocol and switch the return here — callers below stay unchanged. This is
+    the abstraction that keeps the app from being locked to one vendor.
+    """
+    return _client(key)
 
 
 def _extract_url(zernio_post: dict[str, Any]) -> str | None:
@@ -105,7 +139,7 @@ async def publish_now(
 ) -> Post:
     """Publish a post immediately. Mutates and returns the post (caller commits)."""
     _guard_media(post, platform)
-    async with _client(zernio_key) as z:
+    async with make_provider(zernio_key) as z:
         try:
             result = await z.publish_now(
                 platform=platform,
@@ -136,7 +170,7 @@ async def schedule(post: Post, zernio_account_id: str,
                    *, platform: str = "linkedin", zernio_key: str) -> Post:
     """Schedule a post via Zernio. Mutates and returns the post (caller commits)."""
     _guard_media(post, platform)
-    async with _client(zernio_key) as z:
+    async with make_provider(zernio_key) as z:
         try:
             result = await z.schedule(
                 platform=platform,
@@ -190,7 +224,7 @@ async def sync_status(post: Post, zernio_key: str) -> Post:
     """
     if not post.zernio_post_id or not zernio_key:
         return post
-    async with _client(zernio_key) as z:
+    async with make_provider(zernio_key) as z:
         try:
             zp = await z.get_post(post.zernio_post_id)
         except ZernioError:

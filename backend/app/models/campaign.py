@@ -43,6 +43,9 @@ class Campaign(Base):
     # Platforms this campaign posts to. Empty/None = fall back to the linked
     # account's platform (back-compat with single-platform campaigns).
     platforms: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    # The user's own content pieces for NON-LinkedIn platforms (LinkedIn is
+    # AI-written; other platforms post the user's content, AI-optimized).
+    byo_content: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     mode: Mapped[str] = mapped_column(String(20), default=APPROVE)          # auto | approve
     topic_source: Mapped[str] = mapped_column(String(20), default=TOPICS)   # topics | goal
 

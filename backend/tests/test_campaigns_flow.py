@@ -184,6 +184,52 @@ async def test_post_type_rotation(monkeypatch):
         ]
 
 
+async def test_linkedin_ai_other_platforms_use_user_content(monkeypatch):
+    """LinkedIn is AI-written; other platforms post the user's own content."""
+    await init_db()
+    monkeypatch.setattr(svc, "HubClient", _FakeHub)
+    monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ())
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth, acc = await _bootstrap(c, "camp_byo@b.com")  # links a LinkedIn account
+        # connect a second account on Twitter/X
+        r = await c.post("/api/accounts/link", headers=auth,
+                         json={"zernio_account_id": "zacc_tw", "platform": "twitter"})
+        assert r.status_code == 201, r.text
+
+        body = {**_BASE, "name": "BYO", "account_id": acc, "mode": "approve",
+                "platforms": ["linkedin", "twitter"],
+                "byo_content": ["My own launch tweet"],
+                "frequency_per_week": 2}
+        cid = (await c.post("/api/campaigns", headers=auth, json=body)).json()["id"]
+        posts = (await c.post(f"/api/campaigns/{cid}/run", headers=auth)).json()
+
+        by_platform = {}
+        for p in posts:
+            by_platform.setdefault(p["platform"], []).append(p["body"])
+        assert "linkedin" in by_platform and "twitter" in by_platform
+        # LinkedIn body is AI-written from the topic
+        assert any("A post about" in b for b in by_platform["linkedin"])
+        # Twitter body is the user's supplied content (optimized; fake hub returns it as-is)
+        assert all("My own launch tweet" in b for b in by_platform["twitter"])
+
+
+async def test_non_linkedin_without_user_content_is_skipped(monkeypatch):
+    """If the user gave no content for a non-LinkedIn platform, it's skipped with a note."""
+    await init_db()
+    monkeypatch.setattr(svc, "HubClient", _FakeHub)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth, acc = await _bootstrap(c, "camp_noc@b.com")
+        await c.post("/api/accounts/link", headers=auth,
+                     json={"zernio_account_id": "zacc_tw2", "platform": "twitter"})
+        body = {**_BASE, "name": "NoContent", "account_id": acc, "mode": "approve",
+                "platforms": ["linkedin", "twitter"], "frequency_per_week": 2}
+        cid = (await c.post("/api/campaigns", headers=auth, json=body)).json()["id"]
+        posts = (await c.post(f"/api/campaigns/{cid}/run", headers=auth)).json()
+        platforms = {p["platform"] for p in posts}
+        assert "linkedin" in platforms      # AI still writes LinkedIn
+        assert "twitter" not in platforms   # skipped — no user content
+
+
 async def test_auto_improve_polishes_low_scores(monkeypatch):
     await init_db()
 

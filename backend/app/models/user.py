@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, String, func
+from sqlalchemy import JSON, Boolean, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -24,6 +24,9 @@ class User(Base):
     profile_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     # admin per-user feature overrides (merged over plan defaults), e.g. {"autopilot": true}
     entitlements_override: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # global kill-switch: when true, no campaign auto-publishes — everything
+    # becomes a draft the user must approve. Their safety net.
+    automation_paused: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)

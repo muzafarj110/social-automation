@@ -24,6 +24,8 @@ class CampaignCreate(BaseModel):
     account_id: int
     # Platforms to post to. Empty = just the linked account's platform.
     platforms: list[str] | None = Field(None, description="e.g. ['linkedin','twitter']")
+    # Your own content for non-LinkedIn platforms (one piece each). LinkedIn is AI-written.
+    byo_content: list[str] | None = None
     mode: str = Field("approve", pattern="^(auto|approve)$")
     topic_source: str = Field("topics", pattern="^(topics|goal)$")
     topics: list[str] | None = None
@@ -51,6 +53,7 @@ class CampaignCreate(BaseModel):
 class CampaignUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     platforms: list[str] | None = None
+    byo_content: list[str] | None = None
     mode: str | None = Field(None, pattern="^(auto|approve)$")
     topic_source: str | None = Field(None, pattern="^(topics|goal)$")
     topics: list[str] | None = None
@@ -83,6 +86,7 @@ class CampaignOut(BaseModel):
     account_id: int
     name: str
     platforms: list[str] | None
+    byo_content: list[str] | None
     mode: str
     topic_source: str
     topics: list[str] | None

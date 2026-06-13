@@ -267,21 +267,28 @@ async def performance_signal(user: User, platforms: list[str] | None = None) -> 
     return [c for _, c in scored[:3]]
 
 
-async def tailor_for_platform(
+async def optimize_user_content(
     hub: HubClient, content: str, platform: str, tone: str
 ) -> str:
-    """Rewrite `content` to fit one platform's norms via the Hub content-optimizer.
+    """SEO + marketing optimization of the USER's own content for one platform.
 
-    Uses an EXISTING Hub model (no new AI in the app). Best-effort: on any
-    failure we return the original content (the publisher still trims it to the
-    platform's character limit). LinkedIn is the base voice, so we skip the
-    extra call for it.
+    For non-LinkedIn platforms the user supplies their own post; this acts as the
+    SEO/marketing agent — improving discoverability (keywords), adding relevant
+    hashtags, reformatting to the platform's norms/length, and sharpening it for
+    reach to the target audience. Uses the Hub content-optimizer (an existing
+    model). Best-effort: on failure we return the user's content unchanged.
+
+    NOTE: a dedicated SEO/keyword agent does not yet exist on the Hub — this
+    approximates it via content_optimizer. Building a real SEO agent on the Hub
+    would meaningfully improve this step.
     """
-    if platform == "linkedin":
-        return content
-    goal = (f"Rewrite this post natively for {plat.label(platform)} "
-            f"(max {plat.char_limit(platform)} characters, match the platform's "
-            f"style and conventions). Keep the core message.")
+    goal = (
+        f"Optimize this post for {plat.label(platform)} to maximize reach to the "
+        f"target audience: improve SEO/discoverability with relevant keywords, add "
+        f"fitting hashtags, and reformat to the platform's style and length "
+        f"(max {plat.char_limit(platform)} characters). Keep the author's message "
+        f"and voice intact."
+    )
     try:
         opt = await hub.call("content_optimizer",
                              {"content": content, "goal": goal, "tone": tone})
@@ -340,8 +347,17 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     if not pacc:
         raise CampaignError("No connected account for the campaign's platforms.", 400)
 
+    # Global safety: a paused user never auto-publishes — everything stays a draft.
+    auto_mode = campaign.mode == cstate.AUTO and not user.automation_paused
+
+    # LinkedIn = AI-written. Every other platform = the user's own content,
+    # optimized by AI (SEO / hashtags / reformat) — supplied on the campaign.
+    byo = [c for c in (campaign.byo_content or []) if c and c.strip()]
+    li_in_targets = "linkedin" in pacc
+
     n = count or campaign.frequency_per_week or 3
     created: list[Post] = []
+    notes: list[str] = []
 
     # angles to rotate through (content variety); fall back to the single type
     angles = [a for a in (campaign.post_types or []) if a and a.strip()] or [campaign.post_type]
@@ -368,48 +384,59 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
         else:
             slots = next_slots(campaign, len(topics))
 
-        for i, (topic, slot) in enumerate(zip(topics, slots)):
-            try:
-                data = await hub.generate_text_post(
-                    topic=topic,
-                    post_type=angles[i % len(angles)],
-                    audience=campaign.audience or brand_audience or "professionals",
-                    tone=brand_voice or campaign.tone,
-                )
-            except HubError:
-                continue  # skip this slot, keep the batch going
-
-            body_text = data.get("full_post") or data.get("hook") or topic
-            if campaign.auto_improve:
-                body_text = await qa_and_polish(hub, body_text, campaign.tone)
-
-            # One infographic per idea, shared across platform variants.
-            ig_html = None
-            if campaign.with_infographic:
+        for i, slot in enumerate(slots):
+            # --- LinkedIn: AI writes from scratch (only if it's a target) ----
+            li_body, li_tags, ig_html = None, None, None
+            if li_in_targets:
                 try:
-                    ig = await hub.call("infographic",
-                                        {"topic": topic, "content_points": body_text[:1000]})
-                    ig_html = ig.get("html")
-                except Exception:
-                    ig_html = None
+                    data = await hub.generate_text_post(
+                        topic=topics[i],
+                        post_type=angles[i % len(angles)],
+                        audience=campaign.audience or brand_audience or "professionals",
+                        tone=brand_voice or campaign.tone,
+                    )
+                    li_body = data.get("full_post") or data.get("hook") or topics[i]
+                    if campaign.auto_improve:
+                        li_body = await qa_and_polish(hub, li_body, campaign.tone)
+                    li_tags = data.get("hashtags")
+                    if campaign.with_infographic:
+                        try:
+                            ig = await hub.call("infographic",
+                                                {"topic": topics[i], "content_points": li_body[:1000]})
+                            ig_html = ig.get("html")
+                        except Exception:
+                            ig_html = None
+                except HubError:
+                    li_body = None  # skip LinkedIn this slot, keep the rest going
 
-            hashtags = data.get("hashtags")
-
-            # Fan the idea out to every target platform, tailored to each.
+            # --- Build a post per target platform ----------------------------
             for platform, acc in pacc.items():
-                variant = await tailor_for_platform(hub, body_text, platform, campaign.tone)
+                if platform == "linkedin":
+                    if not li_body:
+                        continue
+                    body, tags, ig = li_body, li_tags, ig_html
+                else:
+                    # Non-LinkedIn: optimize the USER's own supplied content.
+                    if not byo:
+                        if f"add-{platform}" not in notes:
+                            notes.append(f"add-{platform}")
+                        continue
+                    item = byo[i % len(byo)]
+                    body = await optimize_user_content(hub, item, platform, campaign.tone)
+                    tags, ig = None, None
+
                 post = Post(
                     user_id=user.id,
                     account_id=acc.id,
                     platform=platform,
-                    body=variant,
-                    hashtags=hashtags,
+                    body=body,
+                    hashtags=tags,
                     source="generated",
                     campaign_id=campaign.id,
                     status=post_status.DRAFT,
                     scheduled_for=slot,
                     timezone=campaign.timezone,
-                    infographic_html=ig_html,
+                    infographic_html=ig,
                 )
                 db.add(post)
                 await db.flush()  # assign id (used in the idempotency key)
@@ -419,7 +446,7 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
                     # user to add an image/video, even in auto mode.
                     post.error = (f"{plat.label(platform)} needs an image or video — "
                                   f"left as a draft so you can add media.")
-                elif campaign.mode == cstate.AUTO:
+                elif auto_mode:
                     try:
                         await publisher.schedule(
                             post, acc.zernio_account_id, slot,
@@ -432,7 +459,14 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
 
     campaign.last_run_at = datetime.now(timezone.utc)
     campaign.next_run_at = _compute_next_run(campaign)
-    campaign.last_error = None if created else "No posts were generated this run."
+    # Surface which platforms need the user's content added.
+    missing_msg = ""
+    if notes:
+        names = ", ".join(plat.label(p.split("add-")[1]) for p in notes)
+        missing_msg = f" Add your own content for: {names}."
+    if user.automation_paused and campaign.mode == cstate.AUTO:
+        missing_msg += " Automation is paused — posts saved as drafts."
+    campaign.last_error = (None if created else "No posts were generated this run.") if not missing_msg else missing_msg.strip()
     await db.commit()
     for p in created:
         await db.refresh(p)

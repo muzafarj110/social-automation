@@ -37,10 +37,15 @@ class UserOut(BaseModel):
     profile_type: str | None = None
     entitlements: dict[str, bool] = {}
     is_admin: bool = False
+    automation_paused: bool = False
 
 
 class SetProfileRequest(BaseModel):
     profile_type: str = Field(..., pattern="^(individual|influencer|startup|company)$")
+
+
+class SetAutomationRequest(BaseModel):
+    paused: bool
 
 
 class SetHubKeyRequest(BaseModel):

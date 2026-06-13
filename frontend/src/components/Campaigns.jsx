@@ -75,6 +75,7 @@ const emptyForm = {
   name: "",
   account_id: "",
   platforms: [],
+  byoText: "",
   mode: "approve",
   topic_source: "topics",
   topicsText: "",
@@ -241,6 +242,7 @@ export default function Campaigns({ accounts, goTab }) {
         name: form.name.trim(),
         account_id: Number(form.account_id),
         platforms: form.platforms,
+        byo_content: form.byoText.split("\n").map((s) => s.trim()).filter(Boolean),
         mode: form.mode,
         topic_source: form.topic_source,
         tone: form.tone,
@@ -316,8 +318,20 @@ export default function Campaigns({ accounts, goTab }) {
                 ))}
               </div>
               <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                One idea per slot is tailored by AI to each selected platform. 📷 platforms need an image/video, so those are saved as drafts for you to add media. Connect more accounts (Accounts tab) to post to more platforms.
+                <strong>LinkedIn</strong> posts are written by AI from your topics. For <strong>other platforms</strong>, paste your own content below — AI optimizes it for SEO, hashtags, format and reach. 📷 platforms also need an image/video (saved as drafts to add media).
               </p>
+            </>
+          )}
+
+          {form.platforms.some((p) => p !== "linkedin") && (
+            <>
+              <label>Your content for other platforms (one post per line)</label>
+              <textarea
+                value={form.byoText}
+                onChange={(e) => setForm({ ...form, byoText: e.target.value })}
+                placeholder={"Paste a post you want to share on X / Instagram / etc.\nOne per line — AI will optimize each for the platform."}
+                rows={4}
+              />
             </>
           )}
 
@@ -330,9 +344,14 @@ export default function Campaigns({ accounts, goTab }) {
           </div>
           <div className="muted" style={{ marginTop: 4 }}>
             {form.mode === "auto"
-              ? "Posts are generated and scheduled to LinkedIn automatically (needs your Zernio key)."
-              : "Posts are generated as drafts for you to review and schedule."}
+              ? "Posts are generated and scheduled automatically (needs your Zernio key)."
+              : "Posts are saved as drafts for you to review and schedule. Recommended."}
           </div>
+          {form.mode === "auto" && (
+            <div style={{ marginTop: 6, padding: "8px 12px", borderRadius: 8, background: "#fff7ed", color: "#9a3412", fontSize: 13 }}>
+              ⚠️ Auto-publish posts to your accounts <strong>without your review</strong>. You can pause all automation anytime from Accounts.
+            </div>
+          )}
 
           <label style={{ marginTop: 12 }}>Topic source</label>
           <div className="seg">

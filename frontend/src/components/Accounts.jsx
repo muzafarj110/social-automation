@@ -7,6 +7,7 @@ import {
   unlinkAccount,
   setHubKey,
   setZernioKey,
+  setAutomation,
   getUsage,
 } from "../api.js";
 
@@ -108,6 +109,11 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     }
   };
 
+  const toggleAutomation = wrap(async () => {
+    await setAutomation(!user?.automation_paused);
+    refreshUser();
+  });
+
   const saveHubKey = wrap(async () => {
     await setHubKey(hubKey.trim());
     setHubKeyInput("");
@@ -168,6 +174,24 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     <>
       {error && <div className="error">{error}</div>}
       {msg && <div className="success">{msg}</div>}
+
+      <div className="card" style={user?.automation_paused ? { borderLeft: "4px solid #d97706" } : undefined}>
+        <div className="row" style={{ alignItems: "center" }}>
+          <div>
+            <h2 style={{ margin: 0 }}>Automation {user?.automation_paused ? "is paused" : "is on"}</h2>
+            <p className="muted" style={{ margin: "4px 0 0" }}>
+              {user?.automation_paused
+                ? "Nothing publishes automatically — every campaign post is saved as a draft for you to approve."
+                : "Auto-mode campaigns publish on schedule. Pause anytime to hold everything for review."}
+            </p>
+          </div>
+          <div className="spacer" />
+          <button className={user?.automation_paused ? "btn-primary" : "btn-danger"}
+            disabled={busy} onClick={toggleAutomation}>
+            {user?.automation_paused ? "Resume automation" : "Pause all automation"}
+          </button>
+        </div>
+      </div>
 
       {usage && usage.ok && usage.managed && (
         <div className="card">
