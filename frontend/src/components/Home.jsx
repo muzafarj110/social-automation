@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listPosts, listInbox, listCampaigns, zernioMetrics } from "../api.js";
+import { listPosts, listInbox, listCampaigns, zernioMetrics, listAccounts, getBrand } from "../api.js";
 
 function Tile({ label, value }) {
   return (
@@ -13,21 +13,30 @@ function Tile({ label, value }) {
   );
 }
 
-export default function Home({ goTab }) {
+const PROFILE_LEAD = {
+  individual: "Let's get you posting consistently — mostly hands-off.",
+  influencer: "Let's build your content engine across platforms.",
+  startup: "Let's turn your brand into a lead-generating machine.",
+  company: "Let's set up your brand workspace.",
+};
+
+export default function Home({ goTab, user }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        const [posts, inbox, campaigns] = await Promise.all([
+        const [posts, inbox, campaigns, accounts, brand] = await Promise.all([
           listPosts().catch(() => []),
           listInbox("pending").catch(() => []),
           listCampaigns().catch(() => []),
+          listAccounts().catch(() => []),
+          getBrand().catch(() => ({})),
         ]);
         let metrics = null;
         try { const z = await zernioMetrics(); if (z.ok) metrics = z.summary; } catch { /* no key */ }
-        setData({ posts, inbox, campaigns, metrics });
+        setData({ posts, inbox, campaigns, accounts, brand, metrics });
       } catch (e) { setError(e.message); }
     })();
   }, []);
@@ -36,17 +45,50 @@ export default function Home({ goTab }) {
   if (!data) return <div className="empty">Loading…</div>;
 
   const weekAgo = new Date(Date.now() - 7 * 864e5);
-  const publishedThisWeek = data.posts.filter(
-    (p) => p.status === "published" && new Date(p.updated_at) >= weekAgo
-  ).length;
-  const scheduled = data.posts
-    .filter((p) => p.status === "scheduled")
-    .sort((a, b) => new Date(a.scheduled_for) - new Date(b.scheduled_for));
+  const publishedThisWeek = data.posts.filter((p) => p.status === "published" && new Date(p.updated_at) >= weekAgo).length;
+  const scheduled = data.posts.filter((p) => p.status === "scheduled").sort((a, b) => new Date(a.scheduled_for) - new Date(b.scheduled_for));
   const drafts = data.posts.filter((p) => p.status === "draft").length;
   const activeCampaigns = data.campaigns.filter((c) => c.status === "active");
 
+  const connected = !!user?.has_zernio_key && data.accounts.length > 0;
+  const brandReady = !!(data.brand && (data.brand.voice || data.brand.brand_name));
+  const hasCampaign = data.campaigns.length > 0;
+  const steps = [
+    { done: connected, title: "Connect your account", desc: "Add your Zernio key and link a LinkedIn account.", tab: "accounts", cta: "Connect" },
+    { done: brandReady, title: "Define your brand", desc: "Set your voice, audience and positioning so every post is on-brand.", tab: "strategy", cta: "Set up brand" },
+    { done: hasCampaign, title: "Launch autopilot", desc: "Create a campaign that generates and schedules posts for you.", tab: "campaigns", cta: "Create campaign" },
+  ];
+  const setupDone = steps.every((s) => s.done);
+  const lead = PROFILE_LEAD[user?.profile_type] || "A few steps to put your marketing on autopilot.";
+
   return (
     <>
+      {!setupDone && (
+        <div className="card">
+          <h2>Get set up</h2>
+          <p className="muted" style={{ marginTop: -6 }}>{lead}</p>
+          <div className="pill-list" style={{ marginTop: 10 }}>
+            {steps.map((s, i) => (
+              <div className="pill" key={i} style={{ alignItems: "center" }}>
+                <span style={{
+                  width: 24, height: 24, borderRadius: "50%", display: "grid", placeItems: "center",
+                  fontSize: 13, fontWeight: 700, flexShrink: 0,
+                  background: s.done ? "#dcfce7" : "var(--light)", color: s.done ? "#166534" : "var(--mid)",
+                }}>{s.done ? "✓" : i + 1}</span>
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--ink)" }}>{s.title}</div>
+                  <div className="muted" style={{ fontSize: 13 }}>{s.desc}</div>
+                </div>
+                <div className="spacer" />
+                {s.done
+                  ? <span className="badge published">Done</span>
+                  : <button className="btn-primary" onClick={() => goTab(s.tab)}>{s.cta}</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <h2>This week at a glance</h2>
         <div className="row" style={{ gap: 10 }}>
@@ -65,14 +107,12 @@ export default function Home({ goTab }) {
           <button className="btn-secondary" onClick={() => goTab("posts")}>All posts</button>
         </div>
         {scheduled.length === 0 ? (
-          <div className="empty">Nothing scheduled yet. Set up an Autopilot campaign to fill your queue.</div>
+          <div className="empty">Nothing scheduled yet. {hasCampaign ? "Your autopilot will fill this." : "Set up an Autopilot campaign to fill your queue."}</div>
         ) : (
           <div className="pill-list" style={{ marginTop: 8 }}>
             {scheduled.slice(0, 5).map((p) => (
               <div className="pill" key={p.id} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                <span className="muted" style={{ fontSize: 12 }}>
-                  {new Date(p.scheduled_for).toLocaleString()}
-                </span>
+                <span className="muted" style={{ fontSize: 12 }}>{new Date(p.scheduled_for).toLocaleString()}</span>
                 <span style={{ fontSize: 13 }}>{p.body.slice(0, 140)}{p.body.length > 140 ? "…" : ""}</span>
               </div>
             ))}

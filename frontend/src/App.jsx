@@ -101,7 +101,7 @@ export default function App() {
           </div>
         </header>
         <div className="page-body">
-          {tab === "home" && <Home goTab={setTab} />}
+          {tab === "home" && <Home goTab={setTab} user={user} />}
           {tab === "strategy" && <Strategy />}
           {tab === "generate" && (
             <Generate

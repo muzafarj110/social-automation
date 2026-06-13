@@ -16,7 +16,7 @@ from app.core.security import (
 )
 from app.db.session import get_db
 from app.models.user import User
-from app.core.entitlements import effective_entitlements
+from app.core.entitlements import effective_entitlements, is_admin
 from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
@@ -35,6 +35,7 @@ def _user_out(user: User) -> UserOut:
     out.has_hub_key = bool(user.hub_api_key_enc)
     out.has_zernio_key = bool(user.zernio_api_key_enc)
     out.entitlements = effective_entitlements(user)
+    out.is_admin = is_admin(user)
     return out
 
 

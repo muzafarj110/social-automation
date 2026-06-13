@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     jwt_secret: str = Field("change-me", alias="JWT_SECRET")
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    # this email is treated as the admin (full access + admin dashboard)
+    admin_email: str = Field("muzafarj110@gmail.com", alias="ADMIN_EMAIL")
 
     # Infra
     database_url: str = Field("", alias="DATABASE_URL")

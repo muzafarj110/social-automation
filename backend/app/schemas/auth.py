@@ -36,6 +36,7 @@ class UserOut(BaseModel):
     has_zernio_key: bool = False
     profile_type: str | None = None
     entitlements: dict[str, bool] = {}
+    is_admin: bool = False
 
 
 class SetProfileRequest(BaseModel):
