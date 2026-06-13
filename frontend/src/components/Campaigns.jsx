@@ -32,7 +32,7 @@ const emptyForm = {
   days: [0, 2, 4],
   time_of_day: "09:00",
   timezone: browserTz,
-  ai_timing: false,
+  ai_timing: true,
   auto_improve: true,
   with_infographic: false,
   learn_from_analytics: false,
@@ -195,7 +195,7 @@ export default function Campaigns({ accounts }) {
           )}
 
           <label>Automation level</label>
-          <div className="row">
+          <div className="seg">
             <button type="button" className={form.mode === "approve" ? "btn-primary" : "btn-secondary"}
               onClick={() => setForm({ ...form, mode: "approve" })}>Approve first</button>
             <button type="button" className={form.mode === "auto" ? "btn-primary" : "btn-secondary"}
@@ -208,7 +208,7 @@ export default function Campaigns({ accounts }) {
           </div>
 
           <label style={{ marginTop: 12 }}>Topic source</label>
-          <div className="row">
+          <div className="seg">
             <button type="button" className={form.topic_source === "topics" ? "btn-primary" : "btn-secondary"}
               onClick={() => setForm({ ...form, topic_source: "topics" })}>My topics</button>
             <button type="button" className={form.topic_source === "goal" ? "btn-primary" : "btn-secondary"}
@@ -230,11 +230,16 @@ export default function Campaigns({ accounts }) {
             </>
           )}
 
-          <label>Audience</label>
-          <input value={form.audience} onChange={set("audience")} placeholder="early-stage founders" />
-
-          <label>Tone</label>
-          <input value={form.tone} onChange={set("tone")} />
+          <div className="grid-2">
+            <div>
+              <label>Audience</label>
+              <input value={form.audience} onChange={set("audience")} placeholder="early-stage founders" />
+            </div>
+            <div>
+              <label>Tone</label>
+              <input value={form.tone} onChange={set("tone")} />
+            </div>
+          </div>
 
           <label>Content angles to rotate <span className="muted">(pick one or more)</span></label>
           <div className="row">
@@ -266,11 +271,11 @@ export default function Campaigns({ accounts }) {
             onChange={set("frequency_per_week")} style={{ width: 100 }} />
 
           <label style={{ marginTop: 12 }}>Posting times</label>
-          <div className="row">
+          <div className="seg">
+            <button type="button" className={form.ai_timing ? "btn-primary" : "btn-secondary"}
+              onClick={() => setForm({ ...form, ai_timing: true })}>Let AI decide</button>
             <button type="button" className={!form.ai_timing ? "btn-primary" : "btn-secondary"}
               onClick={() => setForm({ ...form, ai_timing: false })}>I'll choose</button>
-            <button type="button" className={form.ai_timing ? "btn-primary" : "btn-secondary"}
-              onClick={() => setForm({ ...form, ai_timing: true })}>Let AI pick best times</button>
           </div>
 
           {form.ai_timing ? (
