@@ -20,6 +20,7 @@ from app.clients.hub_client import HubClient, HubError
 from app.clients.zernio_client import ZernioClient
 from app.core import platforms as plat
 from app.core.config import settings
+from app.core.entitlements import is_admin
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
 from app.models import campaign as cstate
 from app.models import post as post_status
@@ -358,6 +359,9 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     n = count or campaign.frequency_per_week or 3
     created: list[Post] = []
     notes: list[str] = []
+    # Usage-based billing: each produced post costs a credit (admins exempt).
+    credits_left = None if is_admin(user) else user.credits
+    out_of_credits = False
 
     # angles to rotate through (content variety); fall back to the single type
     angles = [a for a in (campaign.post_types or []) if a and a.strip()] or [campaign.post_type]
@@ -411,6 +415,9 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
 
             # --- Build a post per target platform ----------------------------
             for platform, acc in pacc.items():
+                if credits_left is not None and credits_left <= 0:
+                    out_of_credits = True
+                    break
                 if platform == "linkedin":
                     if not li_body:
                         continue
@@ -456,6 +463,15 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
                         post.status = post_status.FAILED
                         post.error = e.message
                 created.append(post)
+                if credits_left is not None:
+                    credits_left -= 1
+
+            if out_of_credits:
+                break  # stop the whole run — no credits left
+
+    # Persist the user's remaining balance (credits spent this run).
+    if credits_left is not None:
+        user.credits = credits_left
 
     campaign.last_run_at = datetime.now(timezone.utc)
     campaign.next_run_at = _compute_next_run(campaign)
@@ -466,6 +482,8 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
         missing_msg = f" Add your own content for: {names}."
     if user.automation_paused and campaign.mode == cstate.AUTO:
         missing_msg += " Automation is paused — posts saved as drafts."
+    if out_of_credits:
+        missing_msg += " Out of credits — top up under Billing to generate more."
     campaign.last_error = (None if created else "No posts were generated this run.") if not missing_msg else missing_msg.strip()
     await db.commit()
     for p in created:

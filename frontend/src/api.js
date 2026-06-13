@@ -130,6 +130,10 @@ export const profileHeadlines = (data) => apiSend("/profile-studio/headlines", "
 export const profileFeatured = (data) => apiSend("/profile-studio/featured", "POST", data);
 export const profileRecommendation = (data) => apiSend("/profile-studio/recommendation", "POST", data);
 
+// --- Billing (usage-based credits) ---
+export const getBilling = () => apiGet("/billing");
+export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });
+
 // --- Admin (operator dashboard) ---
 export const adminListUsers = () => apiGet("/admin/users");
 export const adminFeatures = () => apiGet("/admin/features");

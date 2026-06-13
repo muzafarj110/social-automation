@@ -11,12 +11,15 @@ import hashlib
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.deps import get_current_user
 from app.clients.hub_client import HubClient, HubError
-from app.core import ttl_cache
+from app.core import credits, ttl_cache
 from app.core.config import settings
 from app.core.hub_errors import hub_http
 from app.core.security import decrypt_secret
+from app.db.session import get_db
 from app.models.user import User
 
 router = APIRouter(prefix="/content", tags=["content"])
@@ -49,7 +52,11 @@ class GeneratePostRequest(BaseModel):
 async def generate_post(
     req: GeneratePostRequest,
     current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
+    # Usage-based billing: must have a credit before generating (admins exempt).
+    if not credits.has_credits(current, credits.COST_GENERATE):
+        raise HTTPException(402, "You're out of credits. Top up under Billing to keep creating.")
     key = _resolve_hub_key(current)
     async with HubClient(settings.hub_base_url, key) as hub:
         try:
@@ -62,7 +69,9 @@ async def generate_post(
             )
         except HubError as e:
             raise hub_http(e) from e
-    return {"ok": True, "data": data}
+    # Only charge on success.
+    await credits.charge(db, current, credits.COST_GENERATE)
+    return {"ok": True, "data": data, "credits": current.credits}
 
 
 # --- Quality assurance on a piece of content --------------------------------

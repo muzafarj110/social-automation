@@ -13,13 +13,14 @@ import Campaigns from "./components/Campaigns.jsx";
 import Analytics from "./components/Analytics.jsx";
 import ProfileStudio from "./components/ProfileStudio.jsx";
 import Admin from "./components/Admin.jsx";
+import Billing from "./components/Billing.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
   { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["strategy", "Brand voice", "strategy"]] },
   { group: "Manage", items: [["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
   { group: "Grow", items: [["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
-  { group: "Settings", items: [["accounts", "Accounts", null]] },
+  { group: "Settings", items: [["accounts", "Accounts", null], ["billing", "Billing", null]] },
 ];
 // Admin-only nav group, appended when the user is an operator.
 const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
@@ -33,6 +34,7 @@ const TITLES = {
   profile: ["Profile Studio", "Optimize your LinkedIn profile"],
   analytics: ["Analytics", "Performance and AI strategy"],
   accounts: ["Accounts", "Keys, connected accounts and usage"],
+  billing: ["Billing", "Your credits and top-ups"],
   admin: ["Users", "Manage plans, access and account status"],
 };
 
@@ -114,6 +116,11 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
+          {!user?.is_admin && (
+            <button className="nav-item" onClick={() => setTab("billing")} title="Credits remaining">
+              <span className="dot" /><span>{user?.credits ?? 0} credits</span>
+            </button>
+          )}
           <div className="email">{user?.email}</div>
           <button className="nav-item" onClick={doLogout}><span className="dot" /><span>Sign out</span></button>
         </div>
@@ -144,6 +151,7 @@ export default function App() {
           {tab === "accounts" && (
             <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} />
           )}
+          {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}
         </div>
       </main>

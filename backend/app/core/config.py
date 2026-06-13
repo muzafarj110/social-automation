@@ -46,6 +46,36 @@ class Settings(BaseSettings):
     database_url: str = Field("", alias="DATABASE_URL")
     redis_url: str = Field("redis://localhost:6379/0", alias="REDIS_URL")
 
+    # Billing (usage-based credits via Stripe). All optional — billing is simply
+    # disabled until STRIPE_SECRET_KEY is set, so the app runs without it.
+    stripe_secret_key: str = Field("", alias="STRIPE_SECRET_KEY")
+    stripe_webhook_secret: str = Field("", alias="STRIPE_WEBHOOK_SECRET")
+    # Credit packs as "price_id:credits,price_id:credits" (Stripe Price IDs).
+    # e.g. "price_abc:100,price_def:500". Prices live in Stripe, not here.
+    stripe_credit_packs: str = Field("", alias="STRIPE_CREDIT_PACKS")
+    # Where Stripe sends the user back after checkout.
+    billing_success_url: str = Field("", alias="BILLING_SUCCESS_URL")
+    billing_cancel_url: str = Field("", alias="BILLING_CANCEL_URL")
+    # Credits granted to every new account so they can try the product.
+    free_credits: int = Field(50, alias="FREE_CREDITS")
+
+    @property
+    def billing_enabled(self) -> bool:
+        return bool(self.stripe_secret_key)
+
+    def credit_packs(self) -> dict[str, int]:
+        """Parse STRIPE_CREDIT_PACKS into {price_id: credits}."""
+        out: dict[str, int] = {}
+        for part in self.stripe_credit_packs.split(","):
+            part = part.strip()
+            if ":" in part:
+                pid, _, amt = part.partition(":")
+                try:
+                    out[pid.strip()] = int(amt)
+                except ValueError:
+                    pass
+        return out
+
 
 @lru_cache
 def get_settings() -> Settings:

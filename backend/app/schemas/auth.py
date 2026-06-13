@@ -38,6 +38,7 @@ class UserOut(BaseModel):
     entitlements: dict[str, bool] = {}
     is_admin: bool = False
     automation_paused: bool = False
+    credits: int = 0
 
 
 class SetProfileRequest(BaseModel):
