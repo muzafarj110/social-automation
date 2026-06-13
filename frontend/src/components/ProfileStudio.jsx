@@ -143,16 +143,18 @@ export default function ProfileStudio() {
         <h2>{cfg.label}</h2>
         <p className="muted">{cfg.blurb}</p>
         <form onSubmit={run}>
-          {cfg.fields.map((f) => (
-            <div key={f.name}>
-              <label>
-                {f.label} {f.req ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}
-              </label>
-              {f.area
-                ? <textarea value={form[f.name] || ""} onChange={set(f.name)} style={{ minHeight: 90 }} />
-                : <input value={form[f.name] || ""} onChange={set(f.name)} />}
-            </div>
-          ))}
+          <div className="grid-2">
+            {cfg.fields.map((f) => (
+              <div key={f.name} style={f.area ? { gridColumn: "1 / -1" } : undefined}>
+                <label>
+                  {f.label} {f.req ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}
+                </label>
+                {f.area
+                  ? <textarea value={form[f.name] || ""} onChange={set(f.name)} style={{ minHeight: 90 }} />
+                  : <input value={form[f.name] || ""} onChange={set(f.name)} />}
+              </div>
+            ))}
+          </div>
           {error && <div className="error">{error}</div>}
           <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={busy}>

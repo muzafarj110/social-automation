@@ -223,21 +223,23 @@ export default function Inbox({ accounts, refreshKey }) {
             ))}
           </div>
 
-          {fields.map((f) => (
-            <div key={f.name}>
-              <label>
-                {f.label}{" "}
-                {f.req ? <span style={{ color: "var(--teal)" }}>*</span>
-                       : <span className="muted">(optional)</span>}
-              </label>
-              <input
-                type={f.type || "text"}
-                value={params[f.name] ?? ""}
-                placeholder={f.placeholder}
-                onChange={setParam(f.name)}
-              />
-            </div>
-          ))}
+          <div className="grid-2">
+            {fields.map((f) => (
+              <div key={f.name}>
+                <label>
+                  {f.label}{" "}
+                  {f.req ? <span style={{ color: "var(--teal)" }}>*</span>
+                         : <span className="muted">(optional)</span>}
+                </label>
+                <input
+                  type={f.type || "text"}
+                  value={params[f.name] ?? ""}
+                  placeholder={f.placeholder}
+                  onChange={setParam(f.name)}
+                />
+              </div>
+            ))}
+          </div>
 
           {kind === "comment" && (
             <>

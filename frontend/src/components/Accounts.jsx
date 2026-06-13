@@ -149,6 +149,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         </div>
       )}
 
+      <div className="grid-2" style={{ alignItems: "start" }}>
       <div className="card">
         <h2>AI Models Hub key</h2>
         <p className="muted">
@@ -187,6 +188,8 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
             Save key
           </button>
         </div>
+      </div>
+
       </div>
 
       <div className="card">

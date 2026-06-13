@@ -178,21 +178,24 @@ export default function Campaigns({ accounts }) {
           <div className="error">Link a LinkedIn account first (Accounts tab).</div>
         )}
         <form onSubmit={submit}>
-          <label>Name</label>
-          <input value={form.name} onChange={set("name")} placeholder="My weekly thought leadership" />
-
-          {accounts.length > 0 && (
-            <>
-              <label>Account</label>
-              <select value={form.account_id} onChange={set("account_id")}>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.display_name || a.zernio_account_id} ({a.account_type})
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
+          <div className="grid-2">
+            <div>
+              <label>Name</label>
+              <input value={form.name} onChange={set("name")} placeholder="My weekly thought leadership" />
+            </div>
+            {accounts.length > 0 && (
+              <div>
+                <label>Account</label>
+                <select value={form.account_id} onChange={set("account_id")}>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.display_name || a.zernio_account_id} ({a.account_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
 
           <label>Automation level</label>
           <div className="seg">
@@ -222,12 +225,16 @@ export default function Campaigns({ accounts }) {
                 placeholder={"Lessons from scaling a startup\nWhy most marketing fails\nAI tools I use daily"} />
             </>
           ) : (
-            <>
-              <label>Niche</label>
-              <input value={form.niche} onChange={set("niche")} placeholder="AI consulting for SMBs" />
-              <label>Goal</label>
-              <input value={form.goal} onChange={set("goal")} placeholder="grow following and generate leads" />
-            </>
+            <div className="grid-2">
+              <div>
+                <label>Niche</label>
+                <input value={form.niche} onChange={set("niche")} placeholder="AI consulting for SMBs" />
+              </div>
+              <div>
+                <label>Goal</label>
+                <input value={form.goal} onChange={set("goal")} placeholder="grow following and generate leads" />
+              </div>
+            </div>
           )}
 
           <div className="grid-2">

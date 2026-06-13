@@ -155,14 +155,16 @@ export default function Strategy() {
       <div className="card">
         <h2>Your brand</h2>
         <p className="muted">This is your marketing brain — every campaign and post uses your voice and audience.</p>
-        {PROFILE_FIELDS.map(([k, label, area]) => (
-          <div key={k}>
-            <label>{label}</label>
-            {area
-              ? <textarea value={profile[k] || ""} onChange={setP(k)} style={{ minHeight: 70 }} />
-              : <input value={profile[k] || ""} onChange={setP(k)} />}
-          </div>
-        ))}
+        <div className="grid-2">
+          {PROFILE_FIELDS.map(([k, label, area]) => (
+            <div key={k} style={area ? { gridColumn: "1 / -1" } : undefined}>
+              <label>{label}</label>
+              {area
+                ? <textarea value={profile[k] || ""} onChange={setP(k)} style={{ minHeight: 70 }} />
+                : <input value={profile[k] || ""} onChange={setP(k)} />}
+            </div>
+          ))}
+        </div>
         <div className="row" style={{ marginTop: 12 }}>
           <button className="btn-primary" disabled={busy} onClick={save}>Save brand profile</button>
         </div>
@@ -179,14 +181,16 @@ export default function Strategy() {
         </div>
         <p className="muted" style={{ marginTop: 8 }}>{cfg.blurb}</p>
         <form onSubmit={runTool}>
-          {cfg.fields.map((f) => (
-            <div key={f.name}>
-              <label>{f.label} {f.req ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}</label>
-              {f.area
-                ? <textarea value={toolForm[f.name] || ""} onChange={setT(f.name)} style={{ minHeight: 80 }} />
-                : <input value={toolForm[f.name] || ""} onChange={setT(f.name)} />}
-            </div>
-          ))}
+          <div className="grid-2">
+            {cfg.fields.map((f) => (
+              <div key={f.name} style={f.area ? { gridColumn: "1 / -1" } : undefined}>
+                <label>{f.label} {f.req ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}</label>
+                {f.area
+                  ? <textarea value={toolForm[f.name] || ""} onChange={setT(f.name)} style={{ minHeight: 80 }} />
+                  : <input value={toolForm[f.name] || ""} onChange={setT(f.name)} />}
+              </div>
+            ))}
+          </div>
           <div className="row" style={{ marginTop: 12 }}>
             <button className="btn-primary" type="submit" disabled={busy}>{busy ? "Generating…" : "Generate"}</button>
           </div>
