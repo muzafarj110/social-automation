@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timezone
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,12 +62,15 @@ async def create_campaign(
     if max_per_week is not None and data.get("frequency_per_week", 0) > max_per_week:
         data["frequency_per_week"] = max_per_week
 
-    # next_run_at stays None until the first manual "Run now" — avoids surprise
-    # auto-posting right after creation. After the first run it recurs weekly.
+    # Schedule the first run so the campaign is truly hands-off: the background
+    # scheduler picks it up on its next tick (no manual "Run now" needed). This
+    # is safe — approve-mode only creates drafts, and auto-mode is guarded by the
+    # explicit opt-in + the global pause switch. After the first run it recurs weekly.
     c = Campaign(
         user_id=current.id,
         **data,
         status=cstate.ACTIVE,
+        next_run_at=datetime.now(timezone.utc),
     )
     db.add(c)
     await db.commit()

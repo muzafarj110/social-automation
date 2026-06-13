@@ -213,6 +213,23 @@ async def test_linkedin_ai_other_platforms_use_user_content(monkeypatch):
         assert all("My own launch tweet" in b for b in by_platform["twitter"])
 
 
+async def test_new_campaign_auto_runs_via_scheduler(monkeypatch):
+    """A new campaign is scheduled immediately and runs hands-free on the tick."""
+    from app.services import scheduler
+    await init_db()
+    monkeypatch.setattr(svc, "HubClient", _FakeHub)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
+        auth, acc = await _bootstrap(c, "camp_sched@b.com")
+        body = {**_BASE, "name": "Hands-off", "account_id": acc, "mode": "approve"}
+        camp = (await c.post("/api/campaigns", headers=auth, json=body)).json()
+        assert camp["next_run_at"] is not None      # scheduled on creation
+        # The scheduler tick runs due campaigns without any manual "Run now".
+        ran = await scheduler.run_due_campaigns()
+        assert ran >= 1
+        posts = (await c.get("/api/posts", headers=auth)).json()
+        assert len(posts) >= 1
+
+
 async def test_non_linkedin_without_user_content_is_skipped(monkeypatch):
     """If the user gave no content for a non-LinkedIn platform, it's skipped with a note."""
     await init_db()
