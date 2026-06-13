@@ -67,6 +67,8 @@ class Campaign(Base):
     auto_improve: Mapped[bool] = mapped_column(Boolean, default=True)
     # when true, generate an infographic (HTML) alongside each post
     with_infographic: Mapped[bool] = mapped_column(Boolean, default=False)
+    # when true, bias topic selection toward the user's best-performing past posts
+    learn_from_analytics: Mapped[bool] = mapped_column(Boolean, default=False)
 
     status: Mapped[str] = mapped_column(String(20), default=ACTIVE, index=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

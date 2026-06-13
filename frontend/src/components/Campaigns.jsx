@@ -35,6 +35,7 @@ const emptyForm = {
   ai_timing: false,
   auto_improve: true,
   with_infographic: false,
+  learn_from_analytics: false,
 };
 
 function CampaignCard({ c, onChange }) {
@@ -65,6 +66,7 @@ function CampaignCard({ c, onChange }) {
         <span className={`badge ${c.status === "active" ? "published" : "draft"}`}>{c.status}</span>
         <span className="badge kind">{c.mode === "auto" ? "auto-publish" : "approve first"}</span>
         {c.auto_improve && <span className="badge published">QA + polish</span>}
+        {c.learn_from_analytics && <span className="badge published">learns from analytics</span>}
         <div className="spacer" />
         <span className="muted">{c.frequency_per_week}×/week</span>
       </div>
@@ -147,6 +149,7 @@ export default function Campaigns({ accounts }) {
         ai_timing: form.ai_timing,
         auto_improve: form.auto_improve,
         with_infographic: form.with_infographic,
+        learn_from_analytics: form.learn_from_analytics,
       };
       if (form.topic_source === "topics") {
         payload.topics = form.topicsText.split("\n").map((s) => s.trim()).filter(Boolean);
@@ -251,6 +254,11 @@ export default function Campaigns({ accounts }) {
             <input type="checkbox" checked={form.with_infographic} style={{ width: "auto" }}
                    onChange={(e) => setForm({ ...form, with_infographic: e.target.checked })} />
             <span>Generate an infographic for each post <span className="muted">(preview/download from Posts; not auto-attached to LinkedIn yet)</span></span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
+            <input type="checkbox" checked={form.learn_from_analytics} style={{ width: "auto" }}
+                   onChange={(e) => setForm({ ...form, learn_from_analytics: e.target.checked })} />
+            <span>Learn from analytics <span className="muted">(double down on your best-performing past posts — needs your Zernio key)</span></span>
           </label>
 
           <label>Posts per week</label>

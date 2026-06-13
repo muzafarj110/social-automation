@@ -26,6 +26,7 @@ class CampaignCreate(BaseModel):
     ai_timing: bool = False                # let the Hub suggest posting days/times
     auto_improve: bool = True              # QA + auto-polish each generated post
     with_infographic: bool = False         # generate an infographic alongside each post
+    learn_from_analytics: bool = False     # bias topics toward best-performing posts
 
 
 class CampaignUpdate(BaseModel):
@@ -46,6 +47,7 @@ class CampaignUpdate(BaseModel):
     ai_timing: bool | None = None
     auto_improve: bool | None = None
     with_infographic: bool | None = None
+    learn_from_analytics: bool | None = None
     status: str | None = Field(None, pattern="^(active|paused)$")
 
 
@@ -71,6 +73,7 @@ class CampaignOut(BaseModel):
     ai_timing: bool
     auto_improve: bool
     with_infographic: bool
+    learn_from_analytics: bool
     status: str
     last_run_at: datetime | None
     next_run_at: datetime | None

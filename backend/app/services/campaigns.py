@@ -15,6 +15,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from app.clients.hub_client import HubClient, HubError
+from app.clients.zernio_client import ZernioClient
 from app.core.config import settings
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
 from app.models import campaign as cstate
@@ -227,6 +228,34 @@ async def qa_and_polish(hub: HubClient, content: str, tone: str) -> str:
     return content
 
 
+async def performance_signal(user: User) -> list[str]:
+    """The themes of the user's best-performing posts (Zernio analytics).
+
+    Best-effort: returns content snippets of the top posts that actually got
+    engagement, so the autopilot can double down on what works. Empty when
+    there's no Zernio key or no engagement data yet.
+    """
+    key = resolve_zernio_key(user)
+    if not key:
+        return []
+    try:
+        async with ZernioClient(settings.zernio_base_url, key) as z:
+            data = await z.get_analytics(platform="linkedin")
+    except Exception:
+        return []
+    scored: list[tuple[int, str]] = []
+    for p in (data.get("posts") or []):
+        a = p.get("analytics") or {}
+        eng = (int(a.get("impressions") or 0)
+               + 5 * int(a.get("likes") or 0)
+               + 10 * int(a.get("comments") or 0))
+        content = (p.get("content") or "").strip()
+        if content and eng > 0:
+            scored.append((eng, content))
+    scored.sort(reverse=True, key=lambda x: x[0])
+    return [c for _, c in scored[:3]]
+
+
 async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> list[Post]:
     """Generate a batch for the campaign. Commits and returns the created posts."""
     user = await db.get(User, campaign.user_id)
@@ -248,8 +277,16 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     # angles to rotate through (content variety); fall back to the single type
     angles = [a for a in (campaign.post_types or []) if a and a.strip()] or [campaign.post_type]
 
+    # closed loop: double down on what's already performing
+    winners = await performance_signal(user) if campaign.learn_from_analytics else []
+
     async with HubClient(settings.hub_base_url, hub_key) as hub:
         topics = await resolve_topics(campaign, n, hub)
+        if winners:
+            # every other slot riffs on a proven, high-performing theme
+            for i in range(0, len(topics), 2):
+                w = winners[(i // 2) % len(winners)]
+                topics[i] = f"A fresh angle on this proven, high-performing theme: {w[:200]}"
         if campaign.ai_timing:
             ai_days, ai_time = await ai_timing(campaign, hub)
             slots = next_slots(campaign, len(topics), days=ai_days, time_of_day=ai_time)
