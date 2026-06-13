@@ -8,6 +8,7 @@ import Posts from "./components/Posts.jsx";
 import Inbox from "./components/Inbox.jsx";
 import Campaigns from "./components/Campaigns.jsx";
 import Analytics from "./components/Analytics.jsx";
+import ProfileStudio from "./components/ProfileStudio.jsx";
 
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
@@ -69,6 +70,7 @@ export default function App() {
             ["campaigns", "Autopilot"],
             ["posts", "Posts"],
             ["inbox", "Inbox"],
+            ["profile", "Profile"],
             ["analytics", "Analytics"],
             ["accounts", "Accounts"],
           ].map(([id, label]) => (
@@ -96,6 +98,7 @@ export default function App() {
         {tab === "posts" && <Posts refreshKey={postsRefresh} />}
         {tab === "campaigns" && <Campaigns accounts={accounts} />}
         {tab === "inbox" && <Inbox accounts={accounts} />}
+        {tab === "profile" && <ProfileStudio />}
         {tab === "analytics" && <Analytics />}
         {tab === "accounts" && (
           <Accounts

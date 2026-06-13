@@ -115,6 +115,12 @@ export const updateCampaign = (id, data) => apiSend(`/campaigns/${id}`, "PATCH",
 export const deleteCampaign = (id) => apiSend(`/campaigns/${id}`, "DELETE");
 export const runCampaign = (id) => apiSend(`/campaigns/${id}/run`, "POST", {});
 
+// --- Profile Studio ---
+export const profileOptimize = (data) => apiSend("/profile-studio/optimize", "POST", data);
+export const profileHeadlines = (data) => apiSend("/profile-studio/headlines", "POST", data);
+export const profileFeatured = (data) => apiSend("/profile-studio/featured", "POST", data);
+export const profileRecommendation = (data) => apiSend("/profile-studio/recommendation", "POST", data);
+
 // --- Analytics (feedback loop) ---
 export const zernioMetrics = () => apiGet("/analytics/zernio");
 export const getInsights = (data) => apiSend("/analytics/insights", "POST", data);

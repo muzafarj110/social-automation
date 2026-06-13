@@ -43,6 +43,8 @@ ENDPOINTS: dict[str, str] = {
     "outreach_campaign": "/api/linkedin-outreach-campaign",
     "profile_optimizer": "/api/linkedin-profile",        # was -profile-optimizer (404)
     "headline_variants": "/api/linkedin-headline-variants",
+    "featured_section": "/api/linkedin-featured-section",   # profile featured picks
+    "recommendation": "/api/linkedin-recommendation",       # draft a recommendation
     "engagement_strategy": "/api/linkedin-engagement-strategy",
     "analytics": "/api/linkedin-analytics",            # interpret account metrics
     "viral_analyzer": "/api/linkedin-viral-analyzer",  # analyze one post's reach
