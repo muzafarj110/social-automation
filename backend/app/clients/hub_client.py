@@ -54,6 +54,13 @@ ENDPOINTS: dict[str, str] = {
     "ai_detector": "/api/ai-detector",                 # flags robotic / AI-sounding text
     "content_optimizer": "/api/content-optimizer",     # rewrite to improve
     "infographic": "/api/infographic",                 # infographic from content points
+    # Strategy brain (platform-agnostic)
+    "brand_voice": "/api/brand-voice",
+    "customer_persona": "/api/customer-persona",
+    "uvp": "/api/uvp",
+    "competitor_analysis": "/api/competitor-analysis",
+    "content_strategy": "/api/content-strategy",
+    "marketing_report": "/api/marketing-report",
 }
 
 

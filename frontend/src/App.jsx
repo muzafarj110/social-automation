@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getToken, logout, me, listAccounts } from "./api.js";
 import Auth from "./components/Auth.jsx";
 import Home from "./components/Home.jsx";
+import Strategy from "./components/Strategy.jsx";
 import Accounts from "./components/Accounts.jsx";
 import Generate from "./components/Generate.jsx";
 import Posts from "./components/Posts.jsx";
@@ -66,6 +67,7 @@ export default function App() {
         <div className="tabs">
           {[
             ["home", "Home"],
+            ["strategy", "Strategy"],
             ["generate", "Generate"],
             ["campaigns", "Autopilot"],
             ["posts", "Posts"],
@@ -85,6 +87,7 @@ export default function App() {
         </div>
 
         {tab === "home" && <Home goTab={setTab} />}
+        {tab === "strategy" && <Strategy />}
         {tab === "generate" && (
           <Generate
             accounts={accounts}

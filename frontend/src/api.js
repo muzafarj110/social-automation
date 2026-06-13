@@ -115,6 +115,11 @@ export const updateCampaign = (id, data) => apiSend(`/campaigns/${id}`, "PATCH",
 export const deleteCampaign = (id) => apiSend(`/campaigns/${id}`, "DELETE");
 export const runCampaign = (id) => apiSend(`/campaigns/${id}/run`, "POST", {});
 
+// --- Brand (strategy brain) ---
+export const getBrand = () => apiGet("/brand");
+export const saveBrand = (data) => apiSend("/brand", "PUT", data);
+export const brandGenerate = (tool, params) => apiSend("/brand/generate", "POST", { tool, params });
+
 // --- Profile Studio ---
 export const profileOptimize = (data) => apiSend("/profile-studio/optimize", "POST", data);
 export const profileHeadlines = (data) => apiSend("/profile-studio/headlines", "POST", data);

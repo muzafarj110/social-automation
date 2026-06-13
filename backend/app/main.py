@@ -20,7 +20,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import accounts, analytics, auth, campaigns, content, inbox, posts, profile, routes
+from app.api import (
+    accounts, analytics, auth, brand, campaigns, content, inbox, posts, profile, routes,
+)
 from app.core.config import settings
 from app.db.session import init_db
 
@@ -81,6 +83,8 @@ app.include_router(campaigns.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 # Profile Studio
 app.include_router(profile.router, prefix="/api")
+# Strategy brain (brand profile)
+app.include_router(brand.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------

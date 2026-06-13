@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import select
+
 from app.clients.hub_client import HubClient, HubError
 from app.clients.zernio_client import ZernioClient
 from app.core.config import settings
@@ -21,6 +23,7 @@ from app.core.user_keys import resolve_hub_key, resolve_zernio_key
 from app.models import campaign as cstate
 from app.models import post as post_status
 from app.models.account import LinkedInAccount
+from app.models.brand import BrandProfile
 from app.models.campaign import Campaign
 from app.models.post import Post
 from app.models.user import User
@@ -277,6 +280,11 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     # angles to rotate through (content variety); fall back to the single type
     angles = [a for a in (campaign.post_types or []) if a and a.strip()] or [campaign.post_type]
 
+    # strategy brain: keep every post on-brand (voice + audience)
+    brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
+    brand_voice = (brand.voice or "").strip() if brand else ""
+    brand_audience = (brand.audience or "").strip() if brand else ""
+
     # closed loop: double down on what's already performing
     winners = await performance_signal(user) if campaign.learn_from_analytics else []
 
@@ -298,8 +306,8 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
                 data = await hub.generate_text_post(
                     topic=topic,
                     post_type=angles[i % len(angles)],
-                    audience=campaign.audience or "professionals",
-                    tone=campaign.tone,
+                    audience=campaign.audience or brand_audience or "professionals",
+                    tone=brand_voice or campaign.tone,
                 )
             except HubError:
                 continue  # skip this slot, keep the batch going
