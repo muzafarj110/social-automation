@@ -58,7 +58,7 @@ class _FakeZ:
     async def __aexit__(self, *exc):
         return False
 
-    async def schedule_linkedin(self, **kw):
+    async def schedule(self, **kw):
         return {"_id": "zs1", "status": "scheduled"}
 
 

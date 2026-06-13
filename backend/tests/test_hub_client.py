@@ -130,7 +130,7 @@ async def _run_retry_exhausted():
 
 async def _run_generic_call():
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/api/linkedin-comment-writer"
+        assert request.url.path == "/api/linkedin-comment"
         return httpx.Response(200, json={"success": True, "log_id": 9, "data": {"draft": "Nice!"}})
 
     hub = make_client(handler)

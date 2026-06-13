@@ -88,7 +88,7 @@ async def link_account(
     return account
 
 
-@router.delete("/{account_id}", status_code=204)
+@router.delete("/{account_id}", status_code=204, response_model=None)
 async def unlink_account(
     account_id: int,
     current: User = Depends(get_current_user),

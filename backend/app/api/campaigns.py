@@ -87,7 +87,7 @@ async def update_campaign(
     return c
 
 
-@router.delete("/{campaign_id}", status_code=204)
+@router.delete("/{campaign_id}", status_code=204, response_model=None)
 async def delete_campaign(
     campaign_id: int,
     current: User = Depends(get_current_user),

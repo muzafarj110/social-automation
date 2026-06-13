@@ -39,13 +39,13 @@ class _FakeZ:
     async def __aexit__(self, *exc):
         return False
 
-    async def publish_linkedin_now(self, **kw):
+    async def publish_now(self, **kw):
         if self.dup:
             raise ZernioDuplicateError("dup", status_code=409,
                                        details={"existingPostId": "old"})
         return {"_id": "zp1", "platforms": [{"platformPostUrl": "https://li/p1"}]}
 
-    async def schedule_linkedin(self, **kw):
+    async def schedule(self, **kw):
         return {"_id": "zs1", "status": "scheduled"}
 
 

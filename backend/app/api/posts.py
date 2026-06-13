@@ -112,7 +112,7 @@ async def update_post(
     return post
 
 
-@router.delete("/{post_id}", status_code=204)
+@router.delete("/{post_id}", status_code=204, response_model=None)
 async def delete_post(
     post_id: int,
     current: User = Depends(get_current_user),
