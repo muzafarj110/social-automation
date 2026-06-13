@@ -16,10 +16,12 @@ from app.core.security import (
 )
 from app.db.session import get_db
 from app.models.user import User
+from app.core.entitlements import effective_entitlements
 from app.schemas.auth import (
     LoginRequest,
     RegisterRequest,
     SetHubKeyRequest,
+    SetProfileRequest,
     SetZernioKeyRequest,
     TokenResponse,
     UserOut,
@@ -32,6 +34,7 @@ def _user_out(user: User) -> UserOut:
     out = UserOut.model_validate(user)
     out.has_hub_key = bool(user.hub_api_key_enc)
     out.has_zernio_key = bool(user.zernio_api_key_enc)
+    out.entitlements = effective_entitlements(user)
     return out
 
 
@@ -81,6 +84,19 @@ async def set_hub_key(
 ) -> UserOut:
     """Store the user's own AI Models Hub API key (encrypted at rest)."""
     current.hub_api_key_enc = encrypt_secret(body.hub_api_key)
+    await db.commit()
+    await db.refresh(current)
+    return _user_out(current)
+
+
+@router.put("/me/profile", response_model=UserOut)
+async def set_profile(
+    body: SetProfileRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Onboarding: record the user's profile type so the workspace adapts."""
+    current.profile_type = body.profile_type
     await db.commit()
     await db.refresh(current)
     return _user_out(current)

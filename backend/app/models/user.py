@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import JSON, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,8 +18,12 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    plan: Mapped[str] = mapped_column(String(20), default="free")       # free | pro
+    plan: Mapped[str] = mapped_column(String(20), default="free")       # free | pro | business
     status: Mapped[str] = mapped_column(String(20), default="active")   # active | suspended
+    # set during onboarding: individual | influencer | startup | company
+    profile_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # admin per-user feature overrides (merged over plan defaults), e.g. {"autopilot": true}
+    entitlements_override: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)

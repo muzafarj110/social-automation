@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getToken, logout, me, listAccounts } from "./api.js";
 import Auth from "./components/Auth.jsx";
+import Onboarding from "./components/Onboarding.jsx";
 import Home from "./components/Home.jsx";
 import Strategy from "./components/Strategy.jsx";
 import Accounts from "./components/Accounts.jsx";
@@ -12,11 +13,11 @@ import Analytics from "./components/Analytics.jsx";
 import ProfileStudio from "./components/ProfileStudio.jsx";
 
 const NAV = [
-  { group: "Overview", items: [["home", "Home"]] },
-  { group: "Create", items: [["strategy", "Strategy"], ["generate", "Generate"], ["campaigns", "Autopilot"]] },
-  { group: "Manage", items: [["posts", "Posts"], ["inbox", "Inbox"]] },
-  { group: "Grow", items: [["profile", "Profile"], ["analytics", "Analytics"]] },
-  { group: "Settings", items: [["accounts", "Accounts"]] },
+  { group: "Overview", items: [["home", "Home", null]] },
+  { group: "Create", items: [["strategy", "Strategy", "strategy"], ["generate", "Generate", "generate"], ["campaigns", "Autopilot", "autopilot"]] },
+  { group: "Manage", items: [["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
+  { group: "Grow", items: [["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
+  { group: "Settings", items: [["accounts", "Accounts", null]] },
 ];
 const TITLES = {
   home: ["Home", "Your week at a glance"],
@@ -50,9 +51,12 @@ export default function App() {
   }, [authed]); // eslint-disable-line
 
   if (!authed) return <Auth onAuthed={() => setAuthed(true)} />;
+  if (!user) return <div className="empty" style={{ padding: 80 }}>Loading…</div>;
+  if (!user.profile_type) return <Onboarding onDone={refreshUser} />;
 
   const doLogout = () => { logout(); setAuthed(false); setUser(null); };
   const [title, subtitle] = TITLES[tab] || ["", ""];
+  const ent = user.entitlements || {};
 
   return (
     <div className="app">
@@ -68,11 +72,18 @@ export default function App() {
           {NAV.map((section) => (
             <div key={section.group}>
               <div className="nav-group">{section.group}</div>
-              {section.items.map(([id, label]) => (
-                <button key={id} className={`nav-item ${tab === id ? "active" : ""}`} onClick={() => setTab(id)}>
-                  <span className="dot" /><span>{label}</span>
-                </button>
-              ))}
+              {section.items.map(([id, label, feat]) => {
+                const locked = feat && ent[feat] === false;
+                return (
+                  <button key={id} className={`nav-item ${tab === id ? "active" : ""}`}
+                    title={locked ? "Upgrade your plan to unlock" : undefined}
+                    style={locked ? { opacity: 0.5 } : undefined}
+                    onClick={() => (locked ? setTab("accounts") : setTab(id))}>
+                    <span className="dot" /><span>{label}</span>
+                    {locked && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "#a98bff" }}>PRO</span>}
+                  </button>
+                );
+              })}
             </div>
           ))}
         </nav>

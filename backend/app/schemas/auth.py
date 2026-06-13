@@ -34,6 +34,12 @@ class UserOut(BaseModel):
     created_at: datetime
     has_hub_key: bool = False
     has_zernio_key: bool = False
+    profile_type: str | None = None
+    entitlements: dict[str, bool] = {}
+
+
+class SetProfileRequest(BaseModel):
+    profile_type: str = Field(..., pattern="^(individual|influencer|startup|company)$")
 
 
 class SetHubKeyRequest(BaseModel):
