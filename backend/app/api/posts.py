@@ -60,10 +60,13 @@ async def list_posts(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     status_filter: str | None = Query(None, alias="status"),
+    campaign_id: int | None = Query(None),
 ) -> list[Post]:
     stmt = select(Post).where(Post.user_id == current.id).order_by(Post.created_at.desc())
     if status_filter:
         stmt = stmt.where(Post.status == status_filter)
+    if campaign_id is not None:
+        stmt = stmt.where(Post.campaign_id == campaign_id)
     rows = await db.scalars(stmt)
     return list(rows)
 

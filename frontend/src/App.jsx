@@ -111,7 +111,7 @@ export default function App() {
             />
           )}
           {tab === "posts" && <Posts refreshKey={postsRefresh} />}
-          {tab === "campaigns" && <Campaigns accounts={accounts} />}
+          {tab === "campaigns" && <Campaigns accounts={accounts} goTab={setTab} />}
           {tab === "inbox" && <Inbox accounts={accounts} />}
           {tab === "profile" && <ProfileStudio />}
           {tab === "analytics" && <Analytics />}

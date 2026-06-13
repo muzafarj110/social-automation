@@ -5,7 +5,50 @@ import {
   updateCampaign,
   deleteCampaign,
   runCampaign,
+  listCampaignPosts,
+  publishPost,
+  deletePost,
 } from "../api.js";
+
+function CampaignPosts({ campaignId }) {
+  const [posts, setPosts] = useState(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(0);
+
+  const load = async () => {
+    try { setPosts(await listCampaignPosts(campaignId)); } catch (e) { setErr(e.message); }
+  };
+  useEffect(() => { load(); }, []); // eslint-disable-line
+  const act = (id, fn) => async () => {
+    setErr(""); setBusy(id);
+    try { await fn(); await load(); } catch (e) { setErr(e.message); } finally { setBusy(0); }
+  };
+
+  if (err) return <div className="error">{err}</div>;
+  if (!posts) return <div className="muted" style={{ padding: "8px 0" }}>Loading…</div>;
+  if (!posts.length) return <div className="muted" style={{ padding: "8px 0" }}>No posts generated yet — hit “Run now”.</div>;
+  return (
+    <div className="pill-list" style={{ marginTop: 10 }}>
+      {posts.map((p) => (
+        <div className="pill" key={p.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
+          <div className="row">
+            <span className={`badge ${p.status}`}>{p.status}</span>
+            {p.scheduled_for && <span className="muted" style={{ fontSize: 12 }}>for {new Date(p.scheduled_for).toLocaleString()}</span>}
+            <div className="spacer" />
+            {p.platform_post_url && <a href={p.platform_post_url} target="_blank" rel="noreferrer" style={{ color: "var(--teal)", fontSize: 12, fontWeight: 600 }}>View ↗</a>}
+          </div>
+          <div style={{ fontSize: 13, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{p.body.slice(0, 280)}{p.body.length > 280 ? "…" : ""}</div>
+          {(p.status === "draft" || p.status === "failed") && (
+            <div className="row">
+              <button className="btn-primary" style={{ padding: "5px 12px" }} disabled={busy === p.id} onClick={act(p.id, () => publishPost(p.id))}>Publish now</button>
+              <button className="btn-danger" style={{ padding: "5px 12px" }} disabled={busy === p.id} onClick={act(p.id, () => deletePost(p.id))}>Discard</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const POST_TYPES = [
   "Personal Story + Lesson",
@@ -38,19 +81,28 @@ const emptyForm = {
   learn_from_analytics: false,
 };
 
-function CampaignCard({ c, onChange }) {
+function CampaignCard({ c, onChange, goTab }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [ranCount, setRanCount] = useState(null);
   const [error, setError] = useState("");
+  const [showPosts, setShowPosts] = useState(false);
+  const [refreshPosts, setRefreshPosts] = useState(0);
 
   const run = (fn) => async () => {
-    setBusy(true); setError(""); setMsg("");
+    setBusy(true); setError(""); setMsg(""); setRanCount(null);
     try { await fn(); } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
 
   const doRun = run(async () => {
     const posts = await runCampaign(c.id);
-    setMsg(`Generated ${posts.length} post${posts.length === 1 ? "" : "s"} — see the Posts tab.`);
+    const n = posts.length;
+    setMsg(c.mode === "auto"
+      ? `Generated ${n} post${n === 1 ? "" : "s"} and scheduled them.`
+      : `Generated ${n} draft${n === 1 ? "" : "s"} — review them below before publishing.`);
+    setRanCount(n);
+    setShowPosts(true);
+    setRefreshPosts((x) => x + 1);
     onChange();
   });
   const togglePause = run(async () => {
@@ -83,20 +135,41 @@ function CampaignCard({ c, onChange }) {
       </div>
       {c.last_error && <div className="error">{c.last_error}</div>}
       {error && <div className="error">{error}</div>}
-      {msg && <div className="success">{msg}</div>}
+      {msg && (
+        <div className="success" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span>{msg}</span>
+          {ranCount > 0 && goTab && (
+            <button className="btn-secondary" style={{ padding: "4px 10px" }} onClick={() => goTab("posts")}>
+              Review in Posts →
+            </button>
+          )}
+        </div>
+      )}
       <div className="row" style={{ marginTop: 12 }}>
         <button className="btn-primary" disabled={busy} onClick={doRun}>Run now</button>
+        <button className="btn-secondary" disabled={busy} onClick={() => setShowPosts((v) => !v)}>
+          {showPosts ? "Hide posts" : "Review posts"}
+        </button>
         <button className="btn-secondary" disabled={busy} onClick={togglePause}>
           {c.status === "active" ? "Pause" : "Resume"}
         </button>
         <div className="spacer" />
         <button className="btn-danger" disabled={busy} onClick={remove}>Delete</button>
       </div>
+
+      {showPosts && (
+        <div style={{ marginTop: 12, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+            What this campaign generated — review and publish before it goes live.
+          </div>
+          <CampaignPosts key={refreshPosts} campaignId={c.id} />
+        </div>
+      )}
     </div>
   );
 }
 
-export default function Campaigns({ accounts }) {
+export default function Campaigns({ accounts, goTab }) {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
@@ -332,7 +405,7 @@ export default function Campaigns({ accounts }) {
       ) : items.length === 0 ? (
         <div className="empty">No campaigns yet. Create one above to put posting on autopilot.</div>
       ) : (
-        items.map((c) => <CampaignCard key={c.id} c={c} onChange={load} />)
+        items.map((c) => <CampaignCard key={c.id} c={c} onChange={load} goTab={goTab} />)
       )}
     </>
   );

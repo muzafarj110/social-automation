@@ -93,6 +93,7 @@ export const generateInfographic = (data) => apiSend("/content/infographic", "PO
 export const getUsage = () => apiGet("/content/usage");
 export const createPost = (data) => apiSend("/posts", "POST", data);
 export const listPosts = () => apiGet("/posts");
+export const listCampaignPosts = (campaignId) => apiGet(`/posts?campaign_id=${campaignId}`);
 export const syncPosts = () => apiSend("/posts/sync", "POST", {});
 export const getPostInfographic = (id) => apiGet(`/posts/${id}/infographic`);
 export const publishPost = (id) => apiSend(`/posts/${id}/publish`, "POST", {});

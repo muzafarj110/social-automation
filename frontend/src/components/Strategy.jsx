@@ -170,6 +170,19 @@ export default function Strategy() {
         </div>
       </div>
 
+      {profile.docs && Object.keys(profile.docs).length > 0 && (
+        <div className="card">
+          <h2>Saved strategy</h2>
+          <p className="muted" style={{ marginTop: -6 }}>What the AI has built for your brand so far.</p>
+          {Object.entries(profile.docs).map(([k, v]) => (
+            <div key={k} style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+              <h3>{TOOLS[k]?.label || k.replace(/_/g, " ")}</h3>
+              <HubBlocks data={v} />
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="card">
         <h2>Build it with AI</h2>
         <div className="row" style={{ flexWrap: "wrap" }}>
