@@ -14,12 +14,14 @@ import Analytics from "./components/Analytics.jsx";
 import ProfileStudio from "./components/ProfileStudio.jsx";
 import Admin from "./components/Admin.jsx";
 import Billing from "./components/Billing.jsx";
+import Calendar from "./components/Calendar.jsx";
+import Leads from "./components/Leads.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
   { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["strategy", "Brand voice", "strategy"]] },
-  { group: "Manage", items: [["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
-  { group: "Grow", items: [["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
+  { group: "Manage", items: [["calendar", "Calendar", null], ["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
+  { group: "Grow", items: [["leads", "Leads", null], ["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
   { group: "Settings", items: [["accounts", "Accounts", null], ["billing", "Billing", null]] },
 ];
 // Admin-only nav group, appended when the user is an operator.
@@ -33,6 +35,8 @@ const TITLES = {
   inbox: ["Inbox", "AI-drafted replies, DMs and outreach to approve"],
   profile: ["Profile Studio", "Optimize your LinkedIn profile"],
   analytics: ["Analytics", "Performance and AI strategy"],
+  calendar: ["Calendar", "Everything going out, across every platform"],
+  leads: ["Leads", "Capture leads and let AI draft outreach"],
   accounts: ["Accounts", "Keys, connected accounts and usage"],
   billing: ["Billing", "Your credits and top-ups"],
   admin: ["Users", "Manage plans, access and account status"],
@@ -151,6 +155,8 @@ export default function App() {
           {tab === "accounts" && (
             <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} />
           )}
+          {tab === "calendar" && <Calendar />}
+          {tab === "leads" && <Leads refreshUser={refreshUser} />}
           {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}
         </div>

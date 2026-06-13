@@ -21,7 +21,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import (
-    accounts, admin, analytics, auth, billing, brand, campaigns, content, inbox, posts, profile, routes,
+    accounts, admin, analytics, auth, billing, brand, campaigns, content, inbox,
+    leads, posts, profile, routes,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -89,6 +90,8 @@ app.include_router(brand.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 # Billing — usage-based credits (Stripe)
 app.include_router(billing.router, prefix="/api")
+# Leads — CRM-lite
+app.include_router(leads.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------

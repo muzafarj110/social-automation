@@ -130,6 +130,13 @@ export const profileHeadlines = (data) => apiSend("/profile-studio/headlines", "
 export const profileFeatured = (data) => apiSend("/profile-studio/featured", "POST", data);
 export const profileRecommendation = (data) => apiSend("/profile-studio/recommendation", "POST", data);
 
+// --- Leads (CRM-lite) ---
+export const listLeads = () => apiGet("/leads");
+export const createLead = (data) => apiSend("/leads", "POST", data);
+export const updateLead = (id, data) => apiSend(`/leads/${id}`, "PATCH", data);
+export const deleteLead = (id) => apiSend(`/leads/${id}`, "DELETE");
+export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POST", {});
+
 // --- Billing (usage-based credits) ---
 export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });

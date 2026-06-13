@@ -45,6 +45,31 @@ their control.
    calendar, competitor monitoring, lead-gen/CRM. _Largest gap vs. mission._
 7. **Strategic (not code):** niche positioning; read Zernio's ToS (audit kill-criteria).
 
+## Build plan: Email marketing (scoped, not yet built)
+The first dependency-heavy department function. Needs one new integration + one Hub model.
+
+**What it takes**
+1. **Sending provider** — Resend (simplest) or SendGrid. Store an API key per user
+   (encrypted, like the others) or one app-level key. ~1 client wrapper.
+2. **Hub model** — an "email copy" agent on the Hub (subject + body from a brief).
+   _Doesn't exist yet — you'd build it; for now `content_optimizer`/`content_strategy`
+   could approximate._
+3. **App pieces** — `Contact`/list model (reuse `leads`), a `Campaign`-like
+   `EmailCampaign` (subject, body, audience filter, schedule), a sender service,
+   and credit metering (1 credit per send or per N recipients).
+4. **Compliance** — unsubscribe link + suppression list (legal requirement; CAN-SPAM/GDPR).
+5. **UI** — compose screen + recipient picker from Leads + send/schedule.
+
+**Effort:** ~1–2 focused builds. **Blocker:** pick a provider + decide if you build
+the Hub email model. **Risk:** deliverability/compliance — start with low volume + a
+verified sending domain.
+
+## Recently shipped
+- Hands-off scheduler (campaigns auto-run on creation).
+- Usage-based billing (credits + Stripe checkout/webhook, guarded).
+- Cross-channel calendar (all platforms, by day).
+- Lead-gen / CRM-lite (capture + AI-drafted outreach).
+
 ## Known risks (from audits)
 - Dependency on Zernio for publishing (mitigated by provider seam; read their ToS).
 - Commodity/moat — differentiate via niche + the per-customer learning loop.
