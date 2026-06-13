@@ -116,10 +116,13 @@ async def test_zernio_metrics(monkeypatch):
         assert len(s["recent"]) == 2 and s["recent"][0]["url"] == "https://li/1"
 
 
-async def test_zernio_requires_key(monkeypatch):
+async def test_zernio_without_key_returns_friendly_empty(monkeypatch):
     await init_db()
     monkeypatch.setattr("app.api.analytics.ZernioClient", _FakeZ)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth = await _reg(c, "an_nokey@b.com", zernio=False)  # no Zernio key on file
         r = await c.get("/api/analytics/zernio", headers=auth)
-        assert r.status_code == 400, r.text
+        # No raw error — a clean signal the UI renders as a "connect an account" state.
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["ok"] is False and body.get("needs_connection") is True
