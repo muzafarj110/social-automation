@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getToken, logout, me, listAccounts } from "./api.js";
 import Auth from "./components/Auth.jsx";
 import Onboarding from "./components/Onboarding.jsx";
+import Wizard from "./components/Wizard.jsx";
 import Home from "./components/Home.jsx";
 import Strategy from "./components/Strategy.jsx";
 import Accounts from "./components/Accounts.jsx";
@@ -15,7 +16,7 @@ import Admin from "./components/Admin.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
-  { group: "Create", items: [["strategy", "Strategy", "strategy"], ["generate", "Generate", "generate"], ["campaigns", "Autopilot", "autopilot"]] },
+  { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["strategy", "Brand voice", "strategy"]] },
   { group: "Manage", items: [["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
   { group: "Grow", items: [["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
   { group: "Settings", items: [["accounts", "Accounts", null]] },
@@ -24,9 +25,9 @@ const NAV = [
 const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
 const TITLES = {
   home: ["Home", "Your week at a glance"],
-  strategy: ["Strategy", "Your brand voice, persona and positioning"],
-  generate: ["Generate", "Create a single post with AI"],
-  campaigns: ["Autopilot", "Hands-off campaigns that post for you"],
+  strategy: ["Brand voice", "Your voice, persona and positioning — used by every post"],
+  generate: ["Quick post", "Write one post right now, by hand with AI"],
+  campaigns: ["Autopilot", "Set it once — AI writes, tailors and posts on a schedule"],
   posts: ["Posts", "Drafts, scheduled and published"],
   inbox: ["Inbox", "AI-drafted replies, DMs and outreach to approve"],
   profile: ["Profile Studio", "Optimize your LinkedIn profile"],
@@ -41,6 +42,13 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [tab, setTab] = useState("home");
   const [postsRefresh, setPostsRefresh] = useState(0);
+  const [wizardSkipped, setWizardSkipped] = useState(
+    () => localStorage.getItem("wizard_skipped") === "1"
+  );
+  const dismissWizard = () => {
+    localStorage.setItem("wizard_skipped", "1");
+    setWizardSkipped(true);
+  };
 
   const refreshUser = async () => {
     try { setUser(await me()); }
@@ -57,6 +65,19 @@ export default function App() {
   if (!authed) return <Auth onAuthed={() => setAuthed(true)} />;
   if (!user) return <div className="empty" style={{ padding: 80 }}>Loading…</div>;
   if (!user.profile_type) return <Onboarding onDone={refreshUser} />;
+
+  // First-run guided setup: shown until the user connects an account or skips.
+  const connected = !!user.has_zernio_key && accounts.length > 0;
+  if (!wizardSkipped && !connected) {
+    return (
+      <Wizard
+        user={user}
+        accounts={accounts}
+        onSkip={dismissWizard}
+        goTab={(t) => { dismissWizard(); setTab(t); }}
+      />
+    );
+  }
 
   const doLogout = () => { logout(); setAuthed(false); setUser(null); };
   const [title, subtitle] = TITLES[tab] || ["", ""];

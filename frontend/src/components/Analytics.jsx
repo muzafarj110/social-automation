@@ -222,7 +222,7 @@ export default function Analytics() {
 
       <div className="card">
         <div className="row">
-          <h2 style={{ margin: 0 }}>LinkedIn metrics (Zernio)</h2>
+          <h2 style={{ margin: 0 }}>Reach &amp; engagement</h2>
           <div className="spacer" />
           <button className="btn-secondary" onClick={loadZernio}>Refresh</button>
         </div>
@@ -233,8 +233,9 @@ export default function Analytics() {
         ) : zernio.ok ? (
           <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
         ) : (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Couldn’t load Zernio metrics ({zernio.error}). The strategy card still works with your goal.
+          <div className="empty" style={{ marginTop: 8 }}>
+            No performance data yet. Connect a social account and publish a few posts —
+            your reach and engagement will show up here automatically.
           </div>
         )}
       </div>

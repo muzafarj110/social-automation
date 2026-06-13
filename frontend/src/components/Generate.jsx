@@ -287,7 +287,9 @@ export default function Generate({ accounts, onSaved, goConnect }) {
           <label>Post body (editable)</label>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} />
           {result.hashtags?.length > 0 && (
-            <div className="hashtags">{result.hashtags.join("  ")}</div>
+            <div className="hashtags">
+              {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
+            </div>
           )}
           {result.best_time_to_post && (
             <p className="muted" style={{ marginTop: 8 }}>

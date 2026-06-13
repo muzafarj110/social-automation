@@ -63,7 +63,9 @@ function PostCard({ post, onChange }) {
       </div>
 
       <div className="post-body">{post.body}</div>
-      {post.hashtags?.length > 0 && <div className="hashtags">{post.hashtags.join("  ")}</div>}
+      {post.hashtags?.length > 0 && (
+        <div className="hashtags">{post.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}</div>
+      )}
       {post.error && <div className="error">{post.error}</div>}
       {error && <div className="error">{error}</div>}
 
