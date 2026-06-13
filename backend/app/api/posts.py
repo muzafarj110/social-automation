@@ -39,10 +39,11 @@ async def create_post(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Post:
-    await _get_owned_account(body.account_id, current, db)  # ownership check
+    account = await _get_owned_account(body.account_id, current, db)  # ownership check
     post = Post(
         user_id=current.id,
         account_id=body.account_id,
+        platform=account.platform,
         body=body.body,
         hashtags=body.hashtags,
         media=body.media,
@@ -137,7 +138,8 @@ async def publish_post(
         raise HTTPException(400, "Set your Zernio API key in the app first.")
 
     try:
-        await publisher.publish_now(post, account.zernio_account_id, zernio_key=zkey)
+        await publisher.publish_now(post, account.zernio_account_id,
+                                    platform=account.platform, zernio_key=zkey)
     except publisher.PublishError as e:
         await db.commit()  # persist FAILED status/error set by the service
         raise HTTPException(e.status_code, e.message) from e
@@ -164,7 +166,8 @@ async def schedule_post(
 
     try:
         await publisher.schedule(post, account.zernio_account_id,
-                                 body.scheduled_for, body.timezone, zernio_key=zkey)
+                                 body.scheduled_for, body.timezone,
+                                 platform=account.platform, zernio_key=zkey)
     except publisher.PublishError as e:
         await db.commit()
         raise HTTPException(e.status_code, e.message) from e

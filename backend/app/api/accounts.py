@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.clients.zernio_client import ZernioClient, ZernioError
+from app.core import platforms as plat
 from app.core.config import settings
 from app.core.user_keys import resolve_zernio_key
 from app.db.session import get_db
@@ -16,6 +17,19 @@ from app.models.user import User
 from app.schemas.account import AccountOut, LinkAccountRequest
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
+
+
+@router.get("/platforms")
+async def supported_platforms() -> dict[str, object]:
+    """The platforms the app can post to (for UI pickers)."""
+    return {
+        "platforms": [
+            {"value": k, "label": v["label"],
+             "supports_hashtags": v["supports_hashtags"],
+             "char_limit": v["char_limit"], "media_required": v["media_required"]}
+            for k, v in plat.PLATFORMS.items()
+        ]
+    }
 
 
 @router.get("/zernio/available")
@@ -62,6 +76,7 @@ async def link_account(
 
     account = LinkedInAccount(
         user_id=current.id,
+        platform=plat.normalize(body.platform),
         zernio_account_id=body.zernio_account_id,
         account_type=body.account_type,
         display_name=body.display_name,

@@ -1,4 +1,8 @@
-"""Linked LinkedIn account (via Zernio)."""
+"""Linked social account (via Zernio) — any supported platform.
+
+The table/class keep their original `linkedin_accounts` / `LinkedInAccount`
+names for migration continuity, but a row now represents an account on ANY
+platform (see the `platform` column)."""
 
 from __future__ import annotations
 
@@ -20,7 +24,10 @@ class LinkedInAccount(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
-    # The account id Zernio assigns to the connected LinkedIn account.
+    # Which social platform this account is on (twitter, instagram, linkedin, …).
+    # Defaults to linkedin for rows created before multi-platform support.
+    platform: Mapped[str] = mapped_column(String(32), default="linkedin", index=True)
+    # The account id Zernio assigns to the connected account.
     zernio_account_id: Mapped[str] = mapped_column(String(128), index=True)
     account_type: Mapped[str] = mapped_column(String(20), default="personal")  # personal | organization
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

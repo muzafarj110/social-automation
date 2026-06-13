@@ -33,6 +33,7 @@ class PostOut(BaseModel):
 
     id: int
     account_id: int
+    platform: str
     body: str
     hashtags: list[str] | None
     media: list[dict[str, Any]] | None

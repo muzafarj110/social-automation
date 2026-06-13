@@ -241,6 +241,58 @@ class ZernioClient:
         return body.get("post", body)
 
     @staticmethod
+    def _platform_entry(
+        platform: str,
+        account_id: str,
+        *,
+        platform_specific_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """A generic `platforms[]` entry for any Zernio-supported platform."""
+        entry: dict[str, Any] = {"platform": platform, "accountId": account_id}
+        if platform_specific_data:
+            entry["platformSpecificData"] = platform_specific_data
+        return entry
+
+    async def publish_now(
+        self,
+        *,
+        platform: str,
+        account_id: str,
+        content: str,
+        media_items: list[dict[str, Any]] | None = None,
+        platform_specific_data: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Publish to any platform immediately."""
+        return await self.create_post(
+            platforms=[self._platform_entry(
+                platform, account_id, platform_specific_data=platform_specific_data)],
+            content=content, media_items=media_items, publish_now=True,
+            idempotency_key=idempotency_key,
+        )
+
+    async def schedule(
+        self,
+        *,
+        platform: str,
+        account_id: str,
+        content: str,
+        scheduled_for: str,
+        timezone: str = "UTC",
+        media_items: list[dict[str, Any]] | None = None,
+        platform_specific_data: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Schedule a post to any platform for a future time."""
+        return await self.create_post(
+            platforms=[self._platform_entry(
+                platform, account_id, platform_specific_data=platform_specific_data)],
+            content=content, media_items=media_items,
+            scheduled_for=scheduled_for, timezone=timezone,
+            idempotency_key=idempotency_key,
+        )
+
+    @staticmethod
     def _linkedin_platform(
         account_id: str,
         *,

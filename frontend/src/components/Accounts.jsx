@@ -9,6 +9,16 @@ import {
   getUsage,
 } from "../api.js";
 
+// The platforms the app supports (mirrors backend app/core/platforms.py).
+const PLATFORMS = [
+  ["linkedin", "LinkedIn"], ["twitter", "X (Twitter)"], ["instagram", "Instagram"],
+  ["facebook", "Facebook"], ["tiktok", "TikTok"], ["youtube", "YouTube"],
+  ["pinterest", "Pinterest"], ["reddit", "Reddit"], ["bluesky", "Bluesky"],
+  ["threads", "Threads"], ["googlebusiness", "Google Business"], ["telegram", "Telegram"],
+  ["snapchat", "Snapchat"], ["whatsapp", "WhatsApp"], ["discord", "Discord"],
+];
+const PLATFORM_LABEL = Object.fromEntries(PLATFORMS);
+
 function UsageTile({ label, value }) {
   return (
     <div style={{
@@ -75,6 +85,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const [zKey, setZKeyInput] = useState("");
   const [manualId, setManualId] = useState("");
   const [manualName, setManualName] = useState("");
+  const [manualPlatform, setManualPlatform] = useState("linkedin");
   const [busy, setBusy] = useState(false);
   const [usage, setUsage] = useState(null);
 
@@ -115,17 +126,23 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     // Zernio response shape can vary; normalize to a list.
     const list = res?.accounts || res?.data || (Array.isArray(res) ? res : []);
     setAvailable(list);
-    if (!list.length) setMsg("No connected LinkedIn accounts found under your Zernio key.");
+    if (!list.length) setMsg("No connected accounts found under your Zernio key.");
   });
 
-  const doLink = wrap(async (zernio_account_id, display_name, account_type) => {
-    await linkAccount({ zernio_account_id, display_name, account_type: account_type || "personal" });
+  const doLink = wrap(async (zernio_account_id, display_name, account_type, platform) => {
+    await linkAccount({
+      zernio_account_id, display_name, platform: platform || "linkedin",
+      account_type: account_type || "personal",
+    });
     setMsg("Account linked.");
     reloadAccounts();
   });
 
   const doManualLink = wrap(async () => {
-    await linkAccount({ zernio_account_id: manualId.trim(), display_name: manualName.trim() || null });
+    await linkAccount({
+      zernio_account_id: manualId.trim(), display_name: manualName.trim() || null,
+      platform: manualPlatform,
+    });
     setManualId("");
     setManualName("");
     setMsg("Account linked.");
@@ -174,8 +191,8 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         <h2>Zernio key</h2>
         <p className="muted">
           {user?.has_zernio_key
-            ? "Your Zernio key is set. You only see and post to LinkedIn accounts under your own Zernio connection."
-            : "No Zernio key set. Add yours to find, link, and post to your LinkedIn accounts — each user only sees their own."}
+            ? "Your Zernio key is set. You only see and post to social accounts under your own Zernio connection."
+            : "No Zernio key set. Add yours to find, link, and post to your social accounts — each user only sees their own."}
         </p>
         <label>Zernio API key</label>
         <input
@@ -193,13 +210,14 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
       </div>
 
       <div className="card">
-        <h2>Linked LinkedIn accounts</h2>
+        <h2>Linked social accounts</h2>
         {accounts.length === 0 ? (
           <div className="empty">No accounts linked yet.</div>
         ) : (
           <div className="pill-list">
             {accounts.map((a) => (
               <div className="pill" key={a.id}>
+                <span className="badge kind">{PLATFORM_LABEL[a.platform] || a.platform}</span>
                 <strong>{a.display_name || a.zernio_account_id}</strong>
                 <span className="muted">({a.account_type})</span>
                 <span className="badge published">{a.status}</span>
@@ -215,6 +233,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
 
       <div className="card">
         <h2>Connect a new account</h2>
+        <p className="muted">Connect accounts in your Zernio dashboard, then pull them in here — across any of the 15 supported platforms.</p>
         <div className="row">
           <button className="btn-secondary" disabled={busy} onClick={findZernio}>
             Find accounts on Zernio
@@ -226,12 +245,14 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
               const id = z._id || z.id || z.accountId;
               const name = z.displayName || z.username || z.name || id;
               const type = (z.accountType || z.type) === "organization" ? "organization" : "personal";
+              const platform = (z.platform || "linkedin").toLowerCase();
               return (
                 <div className="pill" key={id || i}>
+                  <span className="badge kind">{PLATFORM_LABEL[platform] || platform}</span>
                   <strong>{name}</strong>
                   <span className="muted">{id}</span>
                   <div className="spacer" />
-                  <button className="btn-primary" disabled={busy} onClick={() => doLink(id, name, type)}>
+                  <button className="btn-primary" disabled={busy} onClick={() => doLink(id, name, type, platform)}>
                     Link
                   </button>
                 </div>
@@ -241,8 +262,12 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         )}
 
         <h3 style={{ marginTop: 18 }}>Or link manually</h3>
+        <label>Platform</label>
+        <select value={manualPlatform} onChange={(e) => setManualPlatform(e.target.value)}>
+          {PLATFORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
         <label>Zernio account ID</label>
-        <input value={manualId} onChange={(e) => setManualId(e.target.value)} placeholder="zacc_..." />
+        <input value={manualId} onChange={(e) => setManualId(e.target.value)} placeholder="acc_..." />
         <label>Display name (optional)</label>
         <input value={manualName} onChange={(e) => setManualName(e.target.value)} />
         <div className="row" style={{ marginTop: 10 }}>

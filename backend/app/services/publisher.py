@@ -19,6 +19,7 @@ from app.clients.zernio_client import (
     ZernioDuplicateError,
     ZernioError,
 )
+from app.core import platforms as plat
 from app.core.config import settings
 from app.models import post as post_status
 from app.models.post import Post
@@ -49,38 +50,52 @@ def _extract_url(zernio_post: dict[str, Any]) -> str | None:
     return zernio_post.get("platformPostUrl")
 
 
-def _compose_content(post: Post) -> str:
-    """Body text sent to LinkedIn, with hashtags appended.
+def _compose_content(post: Post, platform: str) -> str:
+    """Body text sent to the platform, adapted to platform norms.
 
-    Hashtags live in their own column for editing/analytics, but on LinkedIn
-    they're just part of the post text — so we append any that aren't already
-    present in the body.
+    Hashtags live in their own column for editing/analytics. On platforms that
+    support them, any not already in the body are appended; on platforms that
+    don't (e.g. Reddit, WhatsApp), they're dropped. The result is trimmed to the
+    platform's character limit so a long LinkedIn post doesn't break a tweet.
     """
     body = post.body or ""
     tags = post.hashtags or []
-    if not tags:
-        return body
-    existing = body.lower()
-    missing = []
-    for t in tags:
-        tag = t if t.startswith("#") else f"#{t}"
-        if tag.lower() not in existing:
-            missing.append(tag)
-    if not missing:
-        return body
-    sep = "\n\n" if body.strip() else ""
-    return f"{body}{sep}{' '.join(missing)}"
+    if tags and plat.supports_hashtags(platform):
+        existing = body.lower()
+        missing = [
+            (t if t.startswith("#") else f"#{t}")
+            for t in tags
+            if (t if t.startswith("#") else f"#{t}").lower() not in existing
+        ]
+        if missing:
+            sep = "\n\n" if body.strip() else ""
+            body = f"{body}{sep}{' '.join(missing)}"
+
+    limit = plat.char_limit(platform)
+    if len(body) > limit:
+        body = body[: max(0, limit - 1)].rstrip() + "…"  # ellipsis
+    return body
 
 
-async def publish_now(post: Post, zernio_account_id: str, *, zernio_key: str) -> Post:
+def _psd_for(post: Post, platform: str) -> dict | None:
+    """Platform-specific data. LinkedIn supports a first-comment; others don't."""
+    if platform == "linkedin" and post.first_comment:
+        return {"firstComment": post.first_comment}
+    return None
+
+
+async def publish_now(
+    post: Post, zernio_account_id: str, *, platform: str = "linkedin", zernio_key: str
+) -> Post:
     """Publish a post immediately. Mutates and returns the post (caller commits)."""
     async with _client(zernio_key) as z:
         try:
-            result = await z.publish_linkedin_now(
+            result = await z.publish_now(
+                platform=platform,
                 account_id=zernio_account_id,
-                content=_compose_content(post),
+                content=_compose_content(post, platform),
                 media_items=post.media,
-                first_comment=post.first_comment,
+                platform_specific_data=_psd_for(post, platform),
                 idempotency_key=f"post-{post.id}-publish",
             )
         except ZernioDuplicateError as e:
@@ -101,17 +116,18 @@ async def publish_now(post: Post, zernio_account_id: str, *, zernio_key: str) ->
 
 async def schedule(post: Post, zernio_account_id: str,
                    scheduled_for: datetime, timezone: str = "UTC",
-                   *, zernio_key: str) -> Post:
+                   *, platform: str = "linkedin", zernio_key: str) -> Post:
     """Schedule a post via Zernio. Mutates and returns the post (caller commits)."""
     async with _client(zernio_key) as z:
         try:
-            result = await z.schedule_linkedin(
+            result = await z.schedule(
+                platform=platform,
                 account_id=zernio_account_id,
-                content=_compose_content(post),
+                content=_compose_content(post, platform),
                 scheduled_for=scheduled_for.isoformat(),
                 timezone=timezone,
                 media_items=post.media,
-                first_comment=post.first_comment,
+                platform_specific_data=_psd_for(post, platform),
                 idempotency_key=f"post-{post.id}-schedule",
             )
         except ZernioDuplicateError as e:

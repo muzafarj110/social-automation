@@ -60,9 +60,19 @@ const POST_TYPES = [
 const WEEKDAYS = [["Mon", 0], ["Tue", 1], ["Wed", 2], ["Thu", 3], ["Fri", 4], ["Sat", 5], ["Sun", 6]];
 const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
+// Platforms the app can post to (mirrors backend app/core/platforms.py).
+const PLATFORMS = [
+  ["linkedin", "LinkedIn"], ["twitter", "X (Twitter)"], ["instagram", "Instagram"],
+  ["facebook", "Facebook"], ["tiktok", "TikTok"], ["youtube", "YouTube"],
+  ["pinterest", "Pinterest"], ["reddit", "Reddit"], ["bluesky", "Bluesky"],
+  ["threads", "Threads"], ["googlebusiness", "Google Business"], ["telegram", "Telegram"],
+  ["snapchat", "Snapchat"], ["whatsapp", "WhatsApp"], ["discord", "Discord"],
+];
+
 const emptyForm = {
   name: "",
   account_id: "",
+  platforms: [],
   mode: "approve",
   topic_source: "topics",
   topicsText: "",
@@ -187,6 +197,25 @@ export default function Campaigns({ accounts, goTab }) {
     if (!form.account_id && accounts.length) setForm((f) => ({ ...f, account_id: accounts[0].id }));
   }, [accounts]); // eslint-disable-line
 
+  // Platforms the user actually has a connected account on (unique, ordered).
+  const connectedPlatforms = [...new Set(accounts.map((a) => a.platform || "linkedin"))];
+  const platformLabel = Object.fromEntries(PLATFORMS);
+
+  // Default the platform selection to the chosen account's platform.
+  useEffect(() => {
+    const acc = accounts.find((a) => String(a.id) === String(form.account_id));
+    if (acc && form.platforms.length === 0) {
+      setForm((f) => ({ ...f, platforms: [acc.platform || "linkedin"] }));
+    }
+  }, [form.account_id, accounts]); // eslint-disable-line
+
+  const togglePlatform = (p) =>
+    setForm((f) => {
+      const has = f.platforms.includes(p);
+      if (has && f.platforms.length === 1) return f; // keep at least one
+      return { ...f, platforms: has ? f.platforms.filter((x) => x !== p) : [...f.platforms, p] };
+    });
+
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const toggleDay = (d) =>
     setForm((f) => ({
@@ -205,10 +234,11 @@ export default function Campaigns({ accounts, goTab }) {
     e.preventDefault();
     setError(""); setMsg(""); setBusy(true);
     try {
-      if (!form.account_id) throw new Error("Pick a LinkedIn account.");
+      if (!form.account_id) throw new Error("Pick a social account.");
       const payload = {
         name: form.name.trim(),
         account_id: Number(form.account_id),
+        platforms: form.platforms,
         mode: form.mode,
         topic_source: form.topic_source,
         tone: form.tone,
@@ -248,7 +278,7 @@ export default function Campaigns({ accounts, goTab }) {
       <div className="card">
         <h2>New campaign</h2>
         {accounts.length === 0 && (
-          <div className="error">Link a LinkedIn account first (Accounts tab).</div>
+          <div className="error">Link a social account first (Accounts tab).</div>
         )}
         <form onSubmit={submit}>
           <div className="grid-2">
@@ -269,6 +299,24 @@ export default function Campaigns({ accounts, goTab }) {
               </div>
             )}
           </div>
+
+          {connectedPlatforms.length > 0 && (
+            <>
+              <label>Post to platforms</label>
+              <div className="seg" style={{ flexWrap: "wrap" }}>
+                {connectedPlatforms.map((p) => (
+                  <button type="button" key={p}
+                    className={form.platforms.includes(p) ? "btn-primary" : "btn-secondary"}
+                    onClick={() => togglePlatform(p)}>
+                    {platformLabel[p] || p}
+                  </button>
+                ))}
+              </div>
+              <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                One idea per slot is tailored by AI to each selected platform. Connect more accounts (Accounts tab) to post to more platforms.
+              </p>
+            </>
+          )}
 
           <label>Automation level</label>
           <div className="seg">

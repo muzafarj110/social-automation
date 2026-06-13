@@ -40,6 +40,9 @@ class Campaign(Base):
     )
 
     name: Mapped[str] = mapped_column(String(200))
+    # Platforms this campaign posts to. Empty/None = fall back to the linked
+    # account's platform (back-compat with single-platform campaigns).
+    platforms: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     mode: Mapped[str] = mapped_column(String(20), default=APPROVE)          # auto | approve
     topic_source: Mapped[str] = mapped_column(String(20), default=TOPICS)   # topics | goal
 

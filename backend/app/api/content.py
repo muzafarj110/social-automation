@@ -6,12 +6,14 @@ Authenticated content generation — uses the logged-in user's own Hub key
 from __future__ import annotations
 
 import asyncio
+import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_current_user
 from app.clients.hub_client import HubClient, HubError
+from app.core import ttl_cache
 from app.core.config import settings
 from app.core.hub_errors import hub_http
 from app.core.security import decrypt_secret
@@ -143,11 +145,20 @@ async def infographic(
 
 @router.get("/usage")
 async def usage(current: User = Depends(get_current_user)) -> dict[str, object]:
-    """The Hub key's plan + consumption (calls used / limit), for the user."""
+    """The Hub key's plan + consumption (calls used / limit), for the user.
+
+    Cached per-key for 60s so polling this view doesn't burn Hub calls. The
+    cache key is a hash of the API key, so users never see each other's usage.
+    """
     key = _resolve_hub_key(current)
+    cache_key = "usage:" + hashlib.sha256(key.encode()).hexdigest()
+    cached = ttl_cache.get(cache_key)
+    if cached is not None:
+        return {"ok": True, "data": cached, "cached": True}
     async with HubClient(settings.hub_base_url, key) as hub:
         try:
             data = await hub.get_raw("/api/me")
         except HubError as e:
             raise _map_hub_error(e) from e
+    ttl_cache.set(cache_key, data, 60)
     return {"ok": True, "data": data}

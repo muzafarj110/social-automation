@@ -30,6 +30,9 @@ class Post(Base):
         ForeignKey("linkedin_accounts.id", ondelete="CASCADE"), index=True
     )
 
+    # Platform this post targets (mirrors the linked account's platform).
+    platform: Mapped[str] = mapped_column(String(32), default="linkedin", index=True)
+
     body: Mapped[str] = mapped_column(Text)
     hashtags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     media: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)

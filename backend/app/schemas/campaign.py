@@ -4,12 +4,26 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.platforms import PLATFORMS
+
+
+def _validate_platforms(v: list[str] | None) -> list[str] | None:
+    if v is None:
+        return v
+    cleaned = [p.strip().lower() for p in v if p and p.strip().lower() in PLATFORMS]
+    # de-dupe, preserve order
+    seen: set[str] = set()
+    out = [p for p in cleaned if not (p in seen or seen.add(p))]
+    return out or None
 
 
 class CampaignCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     account_id: int
+    # Platforms to post to. Empty = just the linked account's platform.
+    platforms: list[str] | None = Field(None, description="e.g. ['linkedin','twitter']")
     mode: str = Field("approve", pattern="^(auto|approve)$")
     topic_source: str = Field("topics", pattern="^(topics|goal)$")
     topics: list[str] | None = None
@@ -28,9 +42,15 @@ class CampaignCreate(BaseModel):
     with_infographic: bool = False         # generate an infographic alongside each post
     learn_from_analytics: bool = False     # bias topics toward best-performing posts
 
+    @field_validator("platforms")
+    @classmethod
+    def _v_platforms(cls, v: list[str] | None) -> list[str] | None:
+        return _validate_platforms(v)
+
 
 class CampaignUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
+    platforms: list[str] | None = None
     mode: str | None = Field(None, pattern="^(auto|approve)$")
     topic_source: str | None = Field(None, pattern="^(topics|goal)$")
     topics: list[str] | None = None
@@ -50,6 +70,11 @@ class CampaignUpdate(BaseModel):
     learn_from_analytics: bool | None = None
     status: str | None = Field(None, pattern="^(active|paused)$")
 
+    @field_validator("platforms")
+    @classmethod
+    def _v_platforms(cls, v: list[str] | None) -> list[str] | None:
+        return _validate_platforms(v)
+
 
 class CampaignOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -57,6 +82,7 @@ class CampaignOut(BaseModel):
     id: int
     account_id: int
     name: str
+    platforms: list[str] | None
     mode: str
     topic_source: str
     topics: list[str] | None

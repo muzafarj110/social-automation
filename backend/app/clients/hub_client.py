@@ -31,6 +31,12 @@ import httpx
 
 logger = logging.getLogger("hub_client")
 
+# Bound app-wide concurrency against the Hub so traffic bursts don't slam the
+# shared rate/token budget all at once — a key scaling safeguard for a
+# multi-tenant subscription product. Calls queue here rather than failing.
+_MAX_CONCURRENT_HUB_CALLS = 6
+_hub_semaphore = asyncio.Semaphore(_MAX_CONCURRENT_HUB_CALLS)
+
 # --- Endpoint registry -------------------------------------------------------
 # Central map so callers / pipelines can reference endpoints by stable name.
 # Paths verified against the live Hub OpenAPI spec (/openapi.json).
@@ -146,6 +152,10 @@ class HubClient:
     # -- core call -----------------------------------------------------------
     async def _post(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         """POST to an endpoint, with retries, and return the unwrapped `data` dict."""
+        async with _hub_semaphore:
+            return await self._post_inner(endpoint, payload)
+
+    async def _post_inner(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         last_exc: Exception | None = None
 
         for attempt in range(1, self.max_retries + 1):

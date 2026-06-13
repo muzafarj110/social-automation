@@ -18,6 +18,7 @@ from sqlalchemy import select
 
 from app.clients.hub_client import HubClient, HubError
 from app.clients.zernio_client import ZernioClient
+from app.core import platforms as plat
 from app.core.config import settings
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
 from app.models import campaign as cstate
@@ -259,6 +260,59 @@ async def performance_signal(user: User) -> list[str]:
     return [c for _, c in scored[:3]]
 
 
+async def tailor_for_platform(
+    hub: HubClient, content: str, platform: str, tone: str
+) -> str:
+    """Rewrite `content` to fit one platform's norms via the Hub content-optimizer.
+
+    Uses an EXISTING Hub model (no new AI in the app). Best-effort: on any
+    failure we return the original content (the publisher still trims it to the
+    platform's character limit). LinkedIn is the base voice, so we skip the
+    extra call for it.
+    """
+    if platform == "linkedin":
+        return content
+    goal = (f"Rewrite this post natively for {plat.label(platform)} "
+            f"(max {plat.char_limit(platform)} characters, match the platform's "
+            f"style and conventions). Keep the core message.")
+    try:
+        opt = await hub.call("content_optimizer",
+                             {"content": content, "goal": goal, "tone": tone})
+    except Exception:
+        return content
+    for k in _OPTIMIZED_KEYS:
+        v = opt.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return content
+
+
+async def _platform_accounts(
+    campaign: Campaign, primary: LinkedInAccount, db
+) -> dict[str, LinkedInAccount]:
+    """Map each target platform to one of the user's connected accounts.
+
+    Targets = campaign.platforms (validated) or just the primary account's
+    platform. The primary account is always used for its own platform; for the
+    others we pick the user's first connected account on that platform.
+    Platforms with no connected account are simply skipped.
+    """
+    targets = [plat.normalize(p) for p in (campaign.platforms or [])] or [primary.platform]
+    mapping: dict[str, LinkedInAccount] = {primary.platform: primary}
+    missing = [p for p in targets if p not in mapping]
+    if missing:
+        rows = await db.scalars(
+            select(LinkedInAccount).where(
+                LinkedInAccount.user_id == campaign.user_id,
+                LinkedInAccount.platform.in_(missing),
+            )
+        )
+        for acc in rows:
+            mapping.setdefault(acc.platform, acc)
+    # Keep only the requested targets, in request order.
+    return {p: mapping[p] for p in targets if p in mapping}
+
+
 async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> list[Post]:
     """Generate a batch for the campaign. Commits and returns the created posts."""
     user = await db.get(User, campaign.user_id)
@@ -273,6 +327,11 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     zkey = resolve_zernio_key(user)
     if campaign.mode == cstate.AUTO and not zkey:
         raise CampaignError("Auto mode needs your Zernio key set first.", 400)
+
+    # Which platforms to post to, mapped to a connected account each.
+    pacc = await _platform_accounts(campaign, account, db)
+    if not pacc:
+        raise CampaignError("No connected account for the campaign's platforms.", 400)
 
     n = count or campaign.frequency_per_week or 3
     created: list[Post] = []
@@ -316,6 +375,7 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
             if campaign.auto_improve:
                 body_text = await qa_and_polish(hub, body_text, campaign.tone)
 
+            # One infographic per idea, shared across platform variants.
             ig_html = None
             if campaign.with_infographic:
                 try:
@@ -325,31 +385,37 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
                 except Exception:
                     ig_html = None
 
-            post = Post(
-                user_id=user.id,
-                account_id=account.id,
-                body=body_text,
-                hashtags=data.get("hashtags"),
-                source="generated",
-                campaign_id=campaign.id,
-                status=post_status.DRAFT,
-                scheduled_for=slot,
-                timezone=campaign.timezone,
-                infographic_html=ig_html,
-            )
-            db.add(post)
-            await db.flush()  # assign id (used in the idempotency key)
+            hashtags = data.get("hashtags")
 
-            if campaign.mode == cstate.AUTO:
-                try:
-                    await publisher.schedule(
-                        post, account.zernio_account_id, slot,
-                        campaign.timezone, zernio_key=zkey,
-                    )
-                except publisher.PublishError as e:
-                    post.status = post_status.FAILED
-                    post.error = e.message
-            created.append(post)
+            # Fan the idea out to every target platform, tailored to each.
+            for platform, acc in pacc.items():
+                variant = await tailor_for_platform(hub, body_text, platform, campaign.tone)
+                post = Post(
+                    user_id=user.id,
+                    account_id=acc.id,
+                    platform=platform,
+                    body=variant,
+                    hashtags=hashtags,
+                    source="generated",
+                    campaign_id=campaign.id,
+                    status=post_status.DRAFT,
+                    scheduled_for=slot,
+                    timezone=campaign.timezone,
+                    infographic_html=ig_html,
+                )
+                db.add(post)
+                await db.flush()  # assign id (used in the idempotency key)
+
+                if campaign.mode == cstate.AUTO:
+                    try:
+                        await publisher.schedule(
+                            post, acc.zernio_account_id, slot,
+                            campaign.timezone, platform=platform, zernio_key=zkey,
+                        )
+                    except publisher.PublishError as e:
+                        post.status = post_status.FAILED
+                        post.error = e.message
+                created.append(post)
 
     campaign.last_run_at = datetime.now(timezone.utc)
     campaign.next_run_at = _compute_next_run(campaign)

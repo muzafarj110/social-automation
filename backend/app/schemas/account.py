@@ -1,4 +1,4 @@
-"""LinkedIn account schemas."""
+"""Social account schemas (any platform)."""
 
 from __future__ import annotations
 
@@ -6,9 +6,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.platforms import PLATFORM_PATTERN
+
 
 class LinkAccountRequest(BaseModel):
     zernio_account_id: str = Field(..., min_length=1)
+    platform: str = Field("linkedin", pattern=PLATFORM_PATTERN)
     account_type: str = Field("personal", pattern="^(personal|organization)$")
     display_name: str | None = None
     avatar_url: str | None = None
@@ -18,6 +21,7 @@ class AccountOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    platform: str
     zernio_account_id: str
     account_type: str
     display_name: str | None
