@@ -23,11 +23,26 @@ FEATURES = [
 ]
 
 # Plan → features turned on. Anything not listed defaults to off.
+# Free includes a limited taste of the headline Autopilot feature (capped below).
 PLAN_FEATURES: dict[str, dict[str, bool]] = {
-    "free": {"generate": True, "qa": True, "analytics": True},
+    "free": {"generate": True, "qa": True, "analytics": True, "autopilot": True},
     "pro": {f: True for f in FEATURES},
     "business": {f: True for f in FEATURES},
 }
+
+# Numeric caps per plan. None = unlimited. Admin is always unlimited.
+PLAN_LIMITS: dict[str, dict[str, int | None]] = {
+    "free": {"max_campaigns": 1, "max_posts_per_week": 3},
+    "pro": {"max_campaigns": None, "max_posts_per_week": None},
+    "business": {"max_campaigns": None, "max_posts_per_week": None},
+}
+
+
+def plan_limit(user: User, key: str) -> int | None:
+    """The numeric limit for a plan feature, or None for unlimited."""
+    if is_admin(user):
+        return None
+    return PLAN_LIMITS.get(user.plan, PLAN_LIMITS["free"]).get(key)
 
 
 def effective_entitlements(user: User) -> dict[str, bool]:

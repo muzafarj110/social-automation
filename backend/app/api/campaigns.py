@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.entitlements import plan_limit
 from app.db.session import get_db
 from app.models import campaign as cstate
 from app.models.account import LinkedInAccount
@@ -39,11 +40,31 @@ async def create_campaign(
     db: AsyncSession = Depends(get_db),
 ) -> Campaign:
     await _check_account(body.account_id, current, db)
+
+    # Plan caps (free = a limited taste of Autopilot).
+    max_campaigns = plan_limit(current, "max_campaigns")
+    if max_campaigns is not None:
+        existing = await db.scalar(
+            select(func.count(Campaign.id)).where(Campaign.user_id == current.id)
+        )
+        if (existing or 0) >= max_campaigns:
+            raise HTTPException(
+                status.HTTP_402_PAYMENT_REQUIRED,
+                f"Your plan includes {max_campaigns} campaign"
+                f"{'s' if max_campaigns != 1 else ''}. Upgrade to run more.",
+            )
+
+    data = body.model_dump()
+    # Clamp posting cadence to the plan's weekly cap.
+    max_per_week = plan_limit(current, "max_posts_per_week")
+    if max_per_week is not None and data.get("frequency_per_week", 0) > max_per_week:
+        data["frequency_per_week"] = max_per_week
+
     # next_run_at stays None until the first manual "Run now" — avoids surprise
     # auto-posting right after creation. After the first run it recurs weekly.
     c = Campaign(
         user_id=current.id,
-        **body.model_dump(),
+        **data,
         status=cstate.ACTIVE,
     )
     db.add(c)

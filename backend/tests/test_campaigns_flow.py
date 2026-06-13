@@ -164,6 +164,14 @@ async def test_post_type_rotation(monkeypatch):
     monkeypatch.setattr(svc, "HubClient", _FakeHub)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth, acc = await _bootstrap(c, "camp_rot@b.com")
+        # A 4-post batch is a paid scenario (free is capped at 3/week), so put
+        # this user on the pro plan before creating the campaign.
+        from sqlalchemy import update
+        from app.db.session import SessionLocal
+        from app.models.user import User
+        async with SessionLocal() as s:
+            await s.execute(update(User).where(User.email == "camp_rot@b.com").values(plan="pro"))
+            await s.commit()
         body = {**_BASE, "name": "Rotate", "account_id": acc, "mode": "approve",
                 "frequency_per_week": 4,
                 "post_types": ["Contrarian Take", "How-to / Tips"]}
