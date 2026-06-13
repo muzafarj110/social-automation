@@ -271,6 +271,15 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
             if campaign.auto_improve:
                 body_text = await qa_and_polish(hub, body_text, campaign.tone)
 
+            ig_html = None
+            if campaign.with_infographic:
+                try:
+                    ig = await hub.call("infographic",
+                                        {"topic": topic, "content_points": body_text[:1000]})
+                    ig_html = ig.get("html")
+                except Exception:
+                    ig_html = None
+
             post = Post(
                 user_id=user.id,
                 account_id=account.id,
@@ -281,6 +290,7 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
                 status=post_status.DRAFT,
                 scheduled_for=slot,
                 timezone=campaign.timezone,
+                infographic_html=ig_html,
             )
             db.add(post)
             await db.flush()  # assign id (used in the idempotency key)

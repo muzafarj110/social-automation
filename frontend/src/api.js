@@ -93,6 +93,7 @@ export const getUsage = () => apiGet("/content/usage");
 export const createPost = (data) => apiSend("/posts", "POST", data);
 export const listPosts = () => apiGet("/posts");
 export const syncPosts = () => apiSend("/posts/sync", "POST", {});
+export const getPostInfographic = (id) => apiGet(`/posts/${id}/infographic`);
 export const publishPost = (id) => apiSend(`/posts/${id}/publish`, "POST", {});
 export const schedulePost = (id, scheduled_for, timezone) =>
   apiSend(`/posts/${id}/schedule`, "POST", { scheduled_for, timezone });

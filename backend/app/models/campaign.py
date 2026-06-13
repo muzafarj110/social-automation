@@ -65,6 +65,8 @@ class Campaign(Base):
     ai_timing: Mapped[bool] = mapped_column(Boolean, default=False)
     # when true, each generated post is QA-scored and auto-polished if below par
     auto_improve: Mapped[bool] = mapped_column(Boolean, default=True)
+    # when true, generate an infographic (HTML) alongside each post
+    with_infographic: Mapped[bool] = mapped_column(Boolean, default=False)
 
     status: Mapped[str] = mapped_column(String(20), default=ACTIVE, index=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

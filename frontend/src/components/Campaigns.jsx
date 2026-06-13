@@ -34,6 +34,7 @@ const emptyForm = {
   timezone: browserTz,
   ai_timing: false,
   auto_improve: true,
+  with_infographic: false,
 };
 
 function CampaignCard({ c, onChange }) {
@@ -145,6 +146,7 @@ export default function Campaigns({ accounts }) {
         timezone: form.timezone,
         ai_timing: form.ai_timing,
         auto_improve: form.auto_improve,
+        with_infographic: form.with_infographic,
       };
       if (form.topic_source === "topics") {
         payload.topics = form.topicsText.split("\n").map((s) => s.trim()).filter(Boolean);
@@ -244,6 +246,11 @@ export default function Campaigns({ accounts }) {
             <input type="checkbox" checked={form.auto_improve} style={{ width: "auto" }}
                    onChange={(e) => setForm({ ...form, auto_improve: e.target.checked })} />
             <span>Auto quality-check &amp; polish each post before it's scheduled <span className="muted">(recommended)</span></span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
+            <input type="checkbox" checked={form.with_infographic} style={{ width: "auto" }}
+                   onChange={(e) => setForm({ ...form, with_infographic: e.target.checked })} />
+            <span>Generate an infographic for each post <span className="muted">(preview/download from Posts; not auto-attached to LinkedIn yet)</span></span>
           </label>
 
           <label>Posts per week</label>

@@ -52,6 +52,12 @@ class Post(Base):
     campaign_id: Mapped[int | None] = mapped_column(
         ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # optional infographic (self-contained HTML) generated alongside the post
+    infographic_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    @property
+    def has_infographic(self) -> bool:
+        return bool(self.infographic_html)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

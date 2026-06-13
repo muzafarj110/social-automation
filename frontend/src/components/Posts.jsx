@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
-import { listPosts, syncPosts, publishPost, schedulePost, deletePost } from "../api.js";
+import {
+  listPosts, syncPosts, publishPost, schedulePost, deletePost, getPostInfographic,
+} from "../api.js";
 
 function PostCard({ post, onChange }) {
   const [when, setWhen] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const viewInfographic = async () => {
+    setError("");
+    try {
+      const { html } = await getPostInfographic(post.id);
+      const w = window.open("", "_blank");
+      if (w) { w.document.write(html || ""); w.document.close(); }
+    } catch (e) { setError(e.message); }
+  };
 
   const act = (fn) => async () => {
     setError("");
@@ -36,6 +47,11 @@ function PostCard({ post, onChange }) {
         <span className={`badge ${post.status}`}>{post.status}</span>
         {post.scheduled_for && (
           <span className="muted">for {new Date(post.scheduled_for).toLocaleString()}</span>
+        )}
+        {post.has_infographic && (
+          <button className="btn-ghost" style={{ padding: "2px 8px", fontSize: 12 }} onClick={viewInfographic}>
+            View infographic
+          </button>
         )}
         <div className="spacer" />
         {post.platform_post_url && (

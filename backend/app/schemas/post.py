@@ -44,5 +44,6 @@ class PostOut(BaseModel):
     platform_post_url: str | None
     error: str | None
     source: str
+    has_infographic: bool = False
     created_at: datetime
     updated_at: datetime
