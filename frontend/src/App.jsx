@@ -11,6 +11,7 @@ import Inbox from "./components/Inbox.jsx";
 import Campaigns from "./components/Campaigns.jsx";
 import Analytics from "./components/Analytics.jsx";
 import ProfileStudio from "./components/ProfileStudio.jsx";
+import Admin from "./components/Admin.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
@@ -19,6 +20,8 @@ const NAV = [
   { group: "Grow", items: [["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
   { group: "Settings", items: [["accounts", "Accounts", null]] },
 ];
+// Admin-only nav group, appended when the user is an operator.
+const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
 const TITLES = {
   home: ["Home", "Your week at a glance"],
   strategy: ["Strategy", "Your brand voice, persona and positioning"],
@@ -29,6 +32,7 @@ const TITLES = {
   profile: ["Profile Studio", "Optimize your LinkedIn profile"],
   analytics: ["Analytics", "Performance and AI strategy"],
   accounts: ["Accounts", "Keys, connected accounts and usage"],
+  admin: ["Users", "Manage plans, access and account status"],
 };
 
 export default function App() {
@@ -57,6 +61,7 @@ export default function App() {
   const doLogout = () => { logout(); setAuthed(false); setUser(null); };
   const [title, subtitle] = TITLES[tab] || ["", ""];
   const ent = user.entitlements || {};
+  const nav = user.is_admin ? [...NAV, ADMIN_NAV] : NAV;
 
   return (
     <div className="app">
@@ -69,7 +74,7 @@ export default function App() {
           </div>
         </div>
         <nav className="nav">
-          {NAV.map((section) => (
+          {nav.map((section) => (
             <div key={section.group}>
               <div className="nav-group">{section.group}</div>
               {section.items.map(([id, label, feat]) => {
@@ -118,6 +123,7 @@ export default function App() {
           {tab === "accounts" && (
             <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} />
           )}
+          {tab === "admin" && user.is_admin && <Admin />}
         </div>
       </main>
     </div>

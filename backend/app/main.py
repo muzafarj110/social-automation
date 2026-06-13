@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import (
-    accounts, analytics, auth, brand, campaigns, content, inbox, posts, profile, routes,
+    accounts, admin, analytics, auth, brand, campaigns, content, inbox, posts, profile, routes,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -85,6 +85,8 @@ app.include_router(analytics.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 # Strategy brain (brand profile)
 app.include_router(brand.router, prefix="/api")
+# Admin dashboard (operator-only)
+app.include_router(admin.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------

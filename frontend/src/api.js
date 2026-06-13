@@ -128,6 +128,11 @@ export const profileHeadlines = (data) => apiSend("/profile-studio/headlines", "
 export const profileFeatured = (data) => apiSend("/profile-studio/featured", "POST", data);
 export const profileRecommendation = (data) => apiSend("/profile-studio/recommendation", "POST", data);
 
+// --- Admin (operator dashboard) ---
+export const adminListUsers = () => apiGet("/admin/users");
+export const adminFeatures = () => apiGet("/admin/features");
+export const adminUpdateUser = (id, data) => apiSend(`/admin/users/${id}`, "PATCH", data);
+
 // --- Analytics (feedback loop) ---
 export const zernioMetrics = () => apiGet("/analytics/zernio");
 export const getInsights = (data) => apiSend("/analytics/insights", "POST", data);

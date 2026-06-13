@@ -41,4 +41,13 @@ async def get_current_user(
     return user
 
 
-__all__ = ["get_current_user", "oauth2_scheme"]
+async def require_admin(current: User = Depends(get_current_user)) -> User:
+    """Gate admin-only endpoints. Admin is determined by the configured email."""
+    from app.core.entitlements import is_admin  # local import avoids cycle
+
+    if not is_admin(current):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+    return current
+
+
+__all__ = ["get_current_user", "require_admin", "oauth2_scheme"]
