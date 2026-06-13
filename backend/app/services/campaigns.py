@@ -406,7 +406,12 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
                 db.add(post)
                 await db.flush()  # assign id (used in the idempotency key)
 
-                if campaign.mode == cstate.AUTO:
+                if publisher.needs_media(post, platform):
+                    # IG/TikTok/etc. reject text-only — keep as a draft for the
+                    # user to add an image/video, even in auto mode.
+                    post.error = (f"{plat.label(platform)} needs an image or video — "
+                                  f"left as a draft so you can add media.")
+                elif campaign.mode == cstate.AUTO:
                     try:
                         await publisher.schedule(
                             post, acc.zernio_account_id, slot,

@@ -159,7 +159,17 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
       {error && <div className="error">{error}</div>}
       {msg && <div className="success">{msg}</div>}
 
-      {usage && usage.ok && (
+      {usage && usage.ok && usage.managed && (
+        <div className="card">
+          <h2>AI capacity</h2>
+          <p className="muted">
+            You're running on Autopilot's managed AI capacity — no setup needed.
+            Add your own Hub key below for dedicated limits and usage reporting.
+          </p>
+        </div>
+      )}
+
+      {usage && usage.ok && !usage.managed && (
         <div className="card">
           <h2>Hub usage</h2>
           <UsageCard data={usage.data} />

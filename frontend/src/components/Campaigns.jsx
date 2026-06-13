@@ -68,6 +68,8 @@ const PLATFORMS = [
   ["threads", "Threads"], ["googlebusiness", "Google Business"], ["telegram", "Telegram"],
   ["snapchat", "Snapchat"], ["whatsapp", "WhatsApp"], ["discord", "Discord"],
 ];
+// Platforms that reject text-only posts (need an image/video).
+const MEDIA_REQUIRED = new Set(["instagram", "tiktok", "youtube", "pinterest", "snapchat"]);
 
 const emptyForm = {
   name: "",
@@ -307,13 +309,14 @@ export default function Campaigns({ accounts, goTab }) {
                 {connectedPlatforms.map((p) => (
                   <button type="button" key={p}
                     className={form.platforms.includes(p) ? "btn-primary" : "btn-secondary"}
+                    title={MEDIA_REQUIRED.has(p) ? "This platform needs an image or video — posts are saved as drafts to add media" : undefined}
                     onClick={() => togglePlatform(p)}>
-                    {platformLabel[p] || p}
+                    {platformLabel[p] || p}{MEDIA_REQUIRED.has(p) ? " 📷" : ""}
                   </button>
                 ))}
               </div>
               <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                One idea per slot is tailored by AI to each selected platform. Connect more accounts (Accounts tab) to post to more platforms.
+                One idea per slot is tailored by AI to each selected platform. 📷 platforms need an image/video, so those are saved as drafts for you to add media. Connect more accounts (Accounts tab) to post to more platforms.
               </p>
             </>
           )}

@@ -145,17 +145,33 @@ async def infographic(
 
 @router.get("/usage")
 async def usage(current: User = Depends(get_current_user)) -> dict[str, object]:
-    """The Hub key's plan + consumption (calls used / limit), for the user.
+    """The user's Hub plan + consumption — only when they use their OWN key.
 
-    Cached per-key for 60s so polling this view doesn't burn Hub calls. The
-    cache key is a hash of the API key, so users never see each other's usage.
+    SECURITY: when a user has no personal Hub key, generation falls back to the
+    shared/managed server key. We must NOT call the Hub's /api/me in that case,
+    because it would return the shared key owner's account (email, plan, referral
+    code, usage) to every user. Instead we return a generic "managed" payload.
+
+    For users with their own key, results are cached per-key for 60s (cache key
+    is a hash of the API key, so users never see each other's usage).
     """
-    key = _resolve_hub_key(current)
-    cache_key = "usage:" + hashlib.sha256(key.encode()).hexdigest()
+    own_key = None
+    if current.hub_api_key_enc:
+        own_key = decrypt_secret(current.hub_api_key_enc)
+
+    if not own_key:
+        # Shared/managed capacity — never expose the owner's Hub account.
+        return {
+            "ok": True,
+            "managed": True,
+            "data": {"managed": True, "plan": current.plan},
+        }
+
+    cache_key = "usage:" + hashlib.sha256(own_key.encode()).hexdigest()
     cached = ttl_cache.get(cache_key)
     if cached is not None:
         return {"ok": True, "data": cached, "cached": True}
-    async with HubClient(settings.hub_base_url, key) as hub:
+    async with HubClient(settings.hub_base_url, own_key) as hub:
         try:
             data = await hub.get_raw("/api/me")
         except HubError as e:

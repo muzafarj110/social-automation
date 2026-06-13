@@ -84,10 +84,27 @@ def _psd_for(post: Post, platform: str) -> dict | None:
     return None
 
 
+def needs_media(post: Post, platform: str) -> bool:
+    """True if the platform requires media but the post has none.
+
+    Instagram, TikTok, YouTube, Pinterest and Snapchat reject text-only posts,
+    so we block publishing rather than send something Zernio will fail."""
+    return plat.meta(platform)["media_required"] and not post.media
+
+
+def _guard_media(post: Post, platform: str) -> None:
+    if needs_media(post, platform):
+        post.status = post_status.FAILED
+        post.error = (f"{plat.label(platform)} requires an image or video. "
+                      f"Add media to this post before publishing.")
+        raise PublishError(post.error, status_code=400)
+
+
 async def publish_now(
     post: Post, zernio_account_id: str, *, platform: str = "linkedin", zernio_key: str
 ) -> Post:
     """Publish a post immediately. Mutates and returns the post (caller commits)."""
+    _guard_media(post, platform)
     async with _client(zernio_key) as z:
         try:
             result = await z.publish_now(
@@ -118,6 +135,7 @@ async def schedule(post: Post, zernio_account_id: str,
                    scheduled_for: datetime, timezone: str = "UTC",
                    *, platform: str = "linkedin", zernio_key: str) -> Post:
     """Schedule a post via Zernio. Mutates and returns the post (caller commits)."""
+    _guard_media(post, platform)
     async with _client(zernio_key) as z:
         try:
             result = await z.schedule(
