@@ -129,6 +129,8 @@ async def test_run_auto_mode_schedules(monkeypatch):
 
 async def test_auto_mode_requires_zernio_key(monkeypatch):
     await init_db()
+    # Legacy (per-user-key) mode: no app key, so auto needs a per-user connection.
+    monkeypatch.setattr("app.core.config.settings.zernio_api_key", "")
     monkeypatch.setattr(svc, "HubClient", _FakeHub)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth, acc = await _bootstrap(c, "camp_c@b.com", zernio=False)

@@ -140,6 +140,8 @@ async def test_ownership_isolation(monkeypatch, zernio_key):
 async def test_publish_without_zernio_key_blocked(monkeypatch, zernio_key):
     """A user with no Zernio key on file cannot publish (isolation gate)."""
     await init_db()
+    # Legacy (per-user-key) mode: no app key, so publishing needs a per-user connection.
+    monkeypatch.setattr("app.core.config.settings.zernio_api_key", "")
     monkeypatch.setattr(publisher, "_client", lambda *a, **k: _FakeZ())
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         r = await c.post("/api/auth/register",

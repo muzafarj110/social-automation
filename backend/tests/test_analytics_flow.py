@@ -118,6 +118,8 @@ async def test_zernio_metrics(monkeypatch):
 
 async def test_zernio_without_key_returns_friendly_empty(monkeypatch):
     await init_db()
+    # Legacy (per-user-key) mode: no app-level key, so "no connection" = empty.
+    monkeypatch.setattr("app.core.config.settings.zernio_api_key", "")
     monkeypatch.setattr("app.api.analytics.ZernioClient", _FakeZ)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c:
         auth = await _reg(c, "an_nokey@b.com", zernio=False)  # no Zernio key on file
