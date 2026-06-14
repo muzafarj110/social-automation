@@ -31,6 +31,8 @@ class _FakeZ:
     def __init__(self, *a, **k): pass
     async def __aenter__(self): return self
     async def __aexit__(self, *e): return False
+    async def list_profiles(self):
+        return {"profiles": []}  # none yet → ensure_profile will create
     async def create_profile(self, *, name, description=""):
         return {"_id": "profA"}
     async def list_accounts(self, *, profile_id=None):

@@ -12,26 +12,58 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.clients.zernio_client import ZernioClient
+from app.clients.zernio_client import ZernioClient, ZernioError
 from app.core.config import settings
 from app.core.user_keys import is_white_label, resolve_zernio_key
 from app.models.user import User
 
 
-async def ensure_profile(user: User, db) -> str | None:
-    """The customer's Zernio Profile id, creating it on first use.
+def _find_profile_id(profiles_resp: dict, name: str) -> str | None:
+    plist = profiles_resp.get("profiles") or profiles_resp.get("data") or []
+    if not isinstance(plist, list):
+        return None
+    for p in plist:
+        if isinstance(p, dict) and p.get("name") == name:
+            return p.get("_id") or p.get("id")
+    return None
 
-    Returns None in legacy/dev mode (no app key) — callers then fall back to the
-    per-user key path. In white-label mode a profile is always returned."""
+
+async def ensure_profile(user: User, db) -> str | None:
+    """The customer's Zernio Profile id — idempotent find-or-create.
+
+    Returns None in legacy/dev mode (no app key), or if we can't establish the
+    profile (callers then fail closed). Never raises into the endpoint: any Zernio
+    error is swallowed and surfaced as "no profile yet". The profile name is
+    derived from the user id, so it's stable across calls and recoverable if our
+    stored id was lost.
+    """
     if not is_white_label():
         return None
     if user.zernio_profile_id:
         return user.zernio_profile_id
-    async with ZernioClient(settings.zernio_base_url, settings.zernio_api_key) as z:
-        created = await z.create_profile(
-            name=f"user-{user.id}", description=user.email or f"user {user.id}"
-        )
-    pid = created.get("_id") or created.get("id")
+
+    name = f"user-{user.id}"
+    pid: str | None = None
+    try:
+        async with ZernioClient(settings.zernio_base_url, settings.zernio_api_key) as z:
+            # 1) reuse an existing profile with our name (avoids duplicate-name errors)
+            try:
+                pid = _find_profile_id(await z.list_profiles(), name)
+            except ZernioError:
+                pid = None
+            # 2) otherwise create it; if it races/already-exists, re-list and find it
+            if not pid:
+                try:
+                    created = await z.create_profile(name=name, description=user.email or name)
+                    pid = created.get("_id") or created.get("id")
+                except ZernioError:
+                    try:
+                        pid = _find_profile_id(await z.list_profiles(), name)
+                    except ZernioError:
+                        pid = None
+    except Exception:  # network/transport — fail closed, never 500 the endpoint
+        return user.zernio_profile_id
+
     if pid:
         user.zernio_profile_id = str(pid)
         await db.commit()
