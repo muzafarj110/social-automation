@@ -73,6 +73,13 @@ export async function login(email, password) {
   return body;
 }
 
+export const forgotPassword = (email) => apiSend("/auth/forgot-password", "POST", { email });
+export async function resetPassword(token, new_password) {
+  const body = await apiSend("/auth/reset-password", "POST", { token, new_password });
+  setToken(body.access_token);
+  return body;
+}
+
 export const me = () => apiGet("/auth/me");
 export const setProfile = (profile_type) => apiSend("/auth/me/profile", "PUT", { profile_type });
 export const setHubKey = (hub_api_key) => apiSend("/auth/me/hub-key", "PUT", { hub_api_key });

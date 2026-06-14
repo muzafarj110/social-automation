@@ -59,6 +59,15 @@ class Settings(BaseSettings):
     # Credits granted to every new account so they can try the product.
     free_credits: int = Field(50, alias="FREE_CREDITS")
 
+    # Email (Resend) — for password-reset links. Inert until RESEND_API_KEY is set.
+    resend_api_key: str = Field("", alias="RESEND_API_KEY")
+    resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
+    app_base_url: str = Field("", alias="APP_BASE_URL")
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.resend_api_key)
+
     @property
     def billing_enabled(self) -> bool:
         return bool(self.stripe_secret_key)
