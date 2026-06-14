@@ -54,7 +54,7 @@ export default function Home({ goTab, user }) {
   const brandReady = !!(data.brand && (data.brand.voice || data.brand.brand_name));
   const hasCampaign = data.campaigns.length > 0;
   const steps = [
-    { done: connected, title: "Connect your account", desc: "Add your Zernio key and link a LinkedIn account.", tab: "accounts", cta: "Connect" },
+    { done: connected, title: "Connect your channels", desc: "Connect your channels and link a social account.", tab: "accounts", cta: "Connect" },
     { done: brandReady, title: "Define your brand", desc: "Set your voice, audience and positioning so every post is on-brand.", tab: "strategy", cta: "Set up brand" },
     { done: hasCampaign, title: "Launch autopilot", desc: "Create a campaign that generates and schedules posts for you.", tab: "campaigns", cta: "Create campaign" },
   ];

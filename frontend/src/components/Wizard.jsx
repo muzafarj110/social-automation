@@ -28,7 +28,7 @@ export default function Wizard({ user, accounts = [], goTab, onSkip }) {
     { done: true, title: "Tell us who you are",
       desc: `You're set up as a ${user?.profile_type || "creator"}. Your workspace is tailored to that.` },
     { done: connected, title: "Connect a social account", tab: "accounts", cta: "Connect account",
-      desc: "Add your Zernio key and link an account on any of 15 platforms — this is how Autopilot posts for you." },
+      desc: "Connect your channels and link an account on any of 15 platforms — this is how Autopilot posts for you." },
     { done: brandReady, optional: true, title: "Set your brand voice", tab: "strategy", cta: "Set brand voice",
       desc: "Optional: tell the AI your voice and audience so every post sounds like you." },
     { done: hasCampaign, title: "Launch your first campaign", tab: "campaigns", cta: "Create campaign",

@@ -77,6 +77,8 @@ export const me = () => apiGet("/auth/me");
 export const setProfile = (profile_type) => apiSend("/auth/me/profile", "PUT", { profile_type });
 export const setHubKey = (hub_api_key) => apiSend("/auth/me/hub-key", "PUT", { hub_api_key });
 export const setAutomation = (paused) => apiSend("/auth/me/automation", "PUT", { paused });
+export const changePassword = (current_password, new_password) =>
+  apiSend("/auth/me/password", "PUT", { current_password, new_password });
 export const setZernioKey = (zernio_api_key) =>
   apiSend("/auth/me/zernio-key", "PUT", { zernio_api_key });
 

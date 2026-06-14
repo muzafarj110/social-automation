@@ -253,7 +253,7 @@ export default function Inbox({ accounts, refreshKey }) {
                 <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
                   <input type="checkbox" checked={autoSend} style={{ width: "auto" }}
                          onChange={(e) => setAutoSend(e.target.checked)} />
-                  <span>Auto-post this reply via Zernio (no manual approval). Company-page comments only — LinkedIn's API doesn't allow auto-sending personal comments or DMs.</span>
+                  <span>Auto-post this reply (no manual approval). Company-page comments only — LinkedIn's API doesn't allow auto-sending personal comments or DMs.</span>
                 </label>
               )}
             </>

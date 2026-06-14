@@ -49,6 +49,11 @@ class SetAutomationRequest(BaseModel):
     paused: bool
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
 class SetHubKeyRequest(BaseModel):
     hub_api_key: str = Field(..., min_length=8)
 

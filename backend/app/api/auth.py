@@ -18,6 +18,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.core.entitlements import effective_entitlements, is_admin
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RegisterRequest,
     SetAutomationRequest,
@@ -99,6 +100,21 @@ async def set_profile(
 ) -> UserOut:
     """Onboarding: record the user's profile type so the workspace adapts."""
     current.profile_type = body.profile_type
+    await db.commit()
+    await db.refresh(current)
+    return _user_out(current)
+
+
+@router.put("/me/password", response_model=UserOut)
+async def change_password(
+    body: ChangePasswordRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Change password while logged in (verifies the current password first)."""
+    if not verify_password(body.current_password, current.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect.")
+    current.password_hash = hash_password(body.new_password)
     await db.commit()
     await db.refresh(current)
     return _user_out(current)

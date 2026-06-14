@@ -8,6 +8,7 @@ import {
   setHubKey,
   setZernioKey,
   setAutomation,
+  changePassword,
   getUsage,
 } from "../api.js";
 
@@ -124,7 +125,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const saveZernioKey = wrap(async () => {
     await setZernioKey(zKey.trim());
     setZKeyInput("");
-    setMsg("Zernio key saved.");
+    setMsg("Channels connected.");
     refreshUser();
   });
 
@@ -133,7 +134,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     // Zernio response shape can vary; normalize to a list.
     const list = res?.accounts || res?.data || (Array.isArray(res) ? res : []);
     setAvailable(list);
-    if (!list.length) setMsg("No connected accounts found under your Zernio key.");
+    if (!list.length) setMsg("No connected accounts found yet.");
   });
 
   const doLink = wrap(async (zernio_account_id, display_name, account_type, platform) => {
@@ -150,7 +151,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     const res = await connectUrl(connectPlatform);
     if (res?.auth_url) {
       window.open(res.auth_url, "_blank", "noopener");
-      setMsg("Authorize in the new tab, then click “Find accounts on Zernio” to import.");
+      setMsg("Authorize in the new tab, then click “Find & import accounts” to import.");
     }
   });
 
@@ -168,6 +169,14 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const doUnlink = wrap(async (id) => {
     await unlinkAccount(id);
     reloadAccounts();
+  });
+
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const doChangePassword = wrap(async () => {
+    await changePassword(curPw, newPw);
+    setCurPw(""); setNewPw("");
+    setMsg("Password updated.");
   });
 
   return (
@@ -193,60 +202,46 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         </div>
       </div>
 
-      {usage && usage.ok && usage.managed && (
+      {usage && usage.ok && (
         <div className="card">
-          <h2>AI capacity</h2>
-          <p className="muted">
-            You're running on Autopilot's managed AI capacity — no setup needed.
-            Add your own Hub key below for dedicated limits and usage reporting.
-          </p>
-        </div>
-      )}
-
-      {usage && usage.ok && !usage.managed && (
-        <div className="card">
-          <h2>Hub usage</h2>
-          <UsageCard data={usage.data} />
+          <h2>AI usage</h2>
+          {usage.managed
+            ? <p className="muted">Your AI runs on Autopilot's managed capacity — no setup needed.</p>
+            : <UsageCard data={usage.data} />}
         </div>
       )}
 
       <div className="grid-2" style={{ alignItems: "start" }}>
       <div className="card">
-        <h2>AI Models Hub key</h2>
+        <h2>Channel connection</h2>
         <p className="muted">
-          {user?.has_hub_key
-            ? "A personal Hub key is set. Generation uses your key."
-            : "No personal Hub key set — generation falls back to the server key (dev). Add yours for production."}
+          {user?.has_zernio_key
+            ? "Your channels are connected. Connect or import accounts below."
+            : "Enter your connection key to link and post to your social channels. You only ever see your own."}
         </p>
-        <label>Hub API key</label>
+        <label>Connection key</label>
         <input
-          value={hubKey}
-          onChange={(e) => setHubKeyInput(e.target.value)}
-          placeholder="amh_..."
+          value={zKey}
+          onChange={(e) => setZKeyInput(e.target.value)}
+          placeholder="Paste your connection key"
         />
         <div className="row" style={{ marginTop: 10 }}>
-          <button className="btn-primary" disabled={busy || !hubKey.trim()} onClick={saveHubKey}>
-            Save key
+          <button className="btn-primary" disabled={busy || !zKey.trim()} onClick={saveZernioKey}>
+            Save
           </button>
         </div>
       </div>
 
       <div className="card">
-        <h2>Zernio key</h2>
-        <p className="muted">
-          {user?.has_zernio_key
-            ? "Your Zernio key is set. You only see and post to social accounts under your own Zernio connection."
-            : "No Zernio key set. Add yours to find, link, and post to your social accounts — each user only sees their own."}
-        </p>
-        <label>Zernio API key</label>
-        <input
-          value={zKey}
-          onChange={(e) => setZKeyInput(e.target.value)}
-          placeholder="sk_..."
-        />
+        <h2>Change password</h2>
+        <p className="muted">Update the password you use to sign in.</p>
+        <label>Current password</label>
+        <input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
+        <label>New password</label>
+        <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="At least 8 characters" />
         <div className="row" style={{ marginTop: 10 }}>
-          <button className="btn-primary" disabled={busy || !zKey.trim()} onClick={saveZernioKey}>
-            Save key
+          <button className="btn-primary" disabled={busy || !curPw || newPw.length < 8} onClick={doChangePassword}>
+            Update password
           </button>
         </div>
       </div>
@@ -319,7 +314,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         <select value={manualPlatform} onChange={(e) => setManualPlatform(e.target.value)}>
           {PLATFORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
-        <label>Zernio account ID</label>
+        <label>Account ID</label>
         <input value={manualId} onChange={(e) => setManualId(e.target.value)} placeholder="acc_..." />
         <label>Display name (optional)</label>
         <input value={manualName} onChange={(e) => setManualName(e.target.value)} />
