@@ -234,8 +234,8 @@ export default function Generate({ accounts, onSaved, goConnect }) {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
-      {msg && <div className="success">{msg}</div>}
+      {error && <div className="flash error">{error}</div>}
+      {msg && <div className="flash success">{msg}</div>}
 
       <div className="card">
         <h2>Generate a LinkedIn post</h2>

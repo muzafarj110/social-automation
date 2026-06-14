@@ -155,7 +155,7 @@ export default function ProfileStudio() {
               </div>
             ))}
           </div>
-          {error && <div className="error">{error}</div>}
+          {error && <div className="flash error">{error}</div>}
           <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={busy}>
               {busy ? "Generating…" : "Generate"}

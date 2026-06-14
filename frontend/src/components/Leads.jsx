@@ -30,7 +30,7 @@ export default function Leads({ refreshUser }) {
 
   return (
     <>
-      {err && <div className="error">{err}</div>}
+      {err && <div className="flash error">{err}</div>}
 
       <div className="card">
         <h2>Add a lead</h2>

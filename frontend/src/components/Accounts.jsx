@@ -181,8 +181,8 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
-      {msg && <div className="success">{msg}</div>}
+      {error && <div className="flash error">{error}</div>}
+      {msg && <div className="flash success">{msg}</div>}
 
       <div className="card" style={user?.automation_paused ? { borderLeft: "4px solid #d97706" } : undefined}>
         <div className="row" style={{ alignItems: "center" }}>

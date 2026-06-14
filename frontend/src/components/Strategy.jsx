@@ -149,7 +149,7 @@ export default function Strategy() {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="flash error">{error}</div>}
       {savedMsg && <div className="success">{savedMsg}</div>}
 
       <div className="card">

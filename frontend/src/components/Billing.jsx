@@ -26,7 +26,7 @@ export default function Billing({ user }) {
 
   return (
     <>
-      {err && <div className="error">{err}</div>}
+      {err && <div className="flash error">{err}</div>}
 
       <div className="card">
         <h2>Your credits</h2>

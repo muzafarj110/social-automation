@@ -183,3 +183,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
   .brand-name, .brand-sub, .nav-group, .nav-item span:not(.dot), .sidebar-foot .email { display: none; }
   .page-body, .page-head { padding-left: 18px; padding-right: 18px; }
 }
+
+/* Floating toast — always visible regardless of scroll position. */
+.flash {
+  position: fixed; top: 76px; left: 50%; transform: translateX(-50%);
+  z-index: 2000; min-width: 280px; max-width: 92%;
+  box-shadow: 0 8px 28px rgba(20, 20, 40, 0.20);
+  animation: flashIn 0.18s ease-out;
+}
+@keyframes flashIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }

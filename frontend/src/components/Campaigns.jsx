@@ -147,7 +147,7 @@ function CampaignCard({ c, onChange, goTab }) {
         {(c.post_types || [c.post_type]).length === 1 ? "" : "s"}
       </div>
       {c.last_error && <div className="error">{c.last_error}</div>}
-      {error && <div className="error">{error}</div>}
+      {error && <div className="flash error">{error}</div>}
       {msg && (
         <div className="success" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span>{msg}</span>
@@ -455,8 +455,8 @@ export default function Campaigns({ accounts, goTab }) {
             </>
           )}
 
-          {error && <div className="error">{error}</div>}
-          {msg && <div className="success">{msg}</div>}
+          {error && <div className="flash error">{error}</div>}
+          {msg && <div className="flash success">{msg}</div>}
           <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={busy || accounts.length === 0}>
               {busy ? "Saving…" : "Create campaign"}
