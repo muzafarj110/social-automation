@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Autopilot — UI preview (all pages)</title>
+<style>
+  :root{--violet:#7c5cfc;--ink:#14152a;--mut:#6b6f86;--bg:#f4f4fb;--card:#fff;--line:#ececf3;
+    --grad:linear-gradient(135deg,#7c5cfc 0%,#9d7bff 50%,#6ad0ff 100%)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:100vh}
+  .side{width:248px;flex-shrink:0;background:linear-gradient(180deg,#181a2e,#15162a);color:#cfd2e6;padding:22px 16px;display:flex;flex-direction:column;gap:5px}
+  .brand{display:flex;align-items:center;gap:12px;padding:6px 8px 16px}
+  .logo{width:40px;height:40px;border-radius:12px;background:var(--grad);display:grid;place-items:center;font-weight:800;color:#fff;font-size:20px;box-shadow:0 6px 20px rgba(124,92,252,.45)}
+  .bname{font-weight:700;color:#fff;font-size:16px}.bsub{font-size:11px;color:#8a8ea8;letter-spacing:.08em;text-transform:uppercase}
+  .ngroup{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6a6e8c;margin:12px 8px 3px}
+  .nav{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:11px;color:#b9bcd4;font-size:14px;font-weight:500;cursor:pointer;transition:all .18s}
+  .nav:hover{background:rgba(255,255,255,.06);color:#fff;transform:translateX(2px)}
+  .nav.active{background:linear-gradient(135deg,rgba(124,92,252,.95),rgba(157,123,255,.9));color:#fff;box-shadow:0 6px 18px rgba(124,92,252,.4)}
+  .nav .ic{width:18px;text-align:center}.nav .pro{margin-left:auto;font-size:9px;font-weight:800;color:#cdbcff;background:rgba(124,92,252,.2);padding:2px 6px;border-radius:6px}
+  .sfoot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+  .credits{display:flex;align-items:center;gap:8px;background:rgba(124,92,252,.14);border:1px solid rgba(124,92,252,.3);border-radius:10px;padding:8px 11px;font-size:13px;color:#dcd6ff}.credits b{color:#fff}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:16px;padding:15px 28px;background:rgba(255,255,255,.75);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .search{flex:1;max-width:380px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 13px;color:var(--mut);font-size:13px}
+  .pill-ai{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#efeaff,#e7f6ff);border:1px solid #e0d8ff;color:#5b46c9;font-size:12px;font-weight:600;padding:7px 12px;border-radius:20px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  .av{width:36px;height:36px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+  .body{padding:24px 28px;overflow:auto}
+  .ph{font-size:22px;font-weight:800;margin-bottom:3px}.psub{color:var(--mut);font-size:13px;margin-bottom:18px}
+  .hero{position:relative;overflow:hidden;border-radius:20px;padding:24px 26px;margin-bottom:20px;background:var(--grad);color:#fff;box-shadow:0 14px 40px rgba(124,92,252,.3)}
+  .hero h1{font-size:23px;font-weight:800;margin-bottom:6px}.hero p{opacity:.92;font-size:14px;max-width:560px;line-height:1.5}
+  .hero .orb{position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.35),transparent 70%)}
+  .cta{margin-top:14px;display:inline-flex;align-items:center;gap:8px;background:#fff;color:#5b46c9;font-weight:700;font-size:14px;padding:10px 18px;border-radius:12px;cursor:pointer;transition:transform .15s}.cta:hover{transform:translateY(-2px)}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .row2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:rise .5s ease both}
+  .stat:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(20,20,50,.1)}
+  .stat .lab{font-size:12px;color:var(--mut);font-weight:600;display:flex;align-items:center;gap:7px}
+  .ico{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:14px}
+  .num{font-size:28px;font-weight:800;margin-top:8px;letter-spacing:-.02em}.trend{font-size:12px;font-weight:700;margin-top:2px}.up{color:#16a34a}
+  .spark{position:absolute;right:12px;bottom:10px;width:70px;height:28px}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+  .card h2{font-size:16px;font-weight:700;margin-bottom:2px}.card .sub{font-size:12px;color:var(--mut);margin-bottom:14px}
+  .aicard{background:linear-gradient(135deg,#faf8ff,#f2f7ff);border:1px solid #e8e2ff;position:relative;overflow:hidden}
+  .aicard::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(157,123,255,.1) 50%,transparent 70%);transform:translateX(-100%);animation:shimmer 3.2s infinite}
+  @keyframes shimmer{to{transform:translateX(100%)}}
+  .sugg{display:flex;gap:11px;align-items:flex-start;padding:11px;border-radius:12px;background:#fff;border:1px solid #eee9ff;margin-bottom:9px;transition:transform .15s}.sugg:hover{transform:translateX(3px)}
+  .sbadge{width:30px;height:30px;border-radius:9px;background:var(--grad);display:grid;place-items:center;color:#fff;font-size:14px;flex-shrink:0;box-shadow:0 4px 12px rgba(124,92,252,.4)}
+  .sugg .t{font-size:13px;font-weight:600}.sugg .d{font-size:12px;color:var(--mut)}
+  label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin:12px 0 5px}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:11px;font-size:14px;font-family:inherit;background:#fff;transition:border .15s,box-shadow .15s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,92,252,.15)}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .btn-p{background:var(--grad);color:#fff;box-shadow:0 6px 18px rgba(124,92,252,.35)}.btn-p:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(124,92,252,.45)}
+  .btn-s{background:#f3f1fb;color:#5b46c9}.btn-s:hover{background:#ece8fb}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px}
+  .b-li{background:#e7f0ff;color:#1f6fd0}.b-x{background:#e9eef5;color:#374151}.b-ig{background:#fdeaf3;color:#c2317e}
+  .b-draft{background:#f1eefc;color:#6a5af0}.b-sched{background:#e7f6ff;color:#1f8fd0}.b-pub{background:#eafced;color:#16a34a}
+  .seg{display:inline-flex;background:#f1eefb;border-radius:11px;padding:4px;gap:4px}
+  .seg b{font-size:13px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;color:#6a5af0}
+  .seg b.on{background:#fff;color:var(--violet);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+  .pill{display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:13px;margin-bottom:10px;background:#fff;transition:transform .15s,box-shadow .15s}.pill:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(20,20,50,.07)}
+  .chip{margin-left:auto;font-size:12px;color:var(--mut)}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--mut);margin-top:10px}.lg{display:inline-flex;align-items:center;gap:6px}.sw{width:10px;height:10px;border-radius:3px}
+  .platrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .plat{font-size:13px;font-weight:600;padding:8px 13px;border-radius:11px;border:1px solid var(--line);cursor:pointer;background:#fff;color:#555}
+  .plat.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(124,92,252,.35)}
+  .toast{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:#eafced;color:#166534;border:1px solid #bbf7d0;padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:50;display:none}
+  .ham{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer;align-items:center;justify-content:center}
+  .ovl{display:none;position:absolute;inset:0;background:rgba(10,10,25,.45);z-index:15}
+  .switch{position:fixed;top:14px;right:18px;z-index:99;display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:5px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+  .switch button{border:none;background:transparent;font-size:13px;font-weight:700;padding:7px 13px;border-radius:8px;cursor:pointer;color:#6b6f86}
+  .switch button.on{background:var(--grad);color:#fff}
+
+  /* ---- Mobile (toggled via body.mobile, and real phones via media query) ---- */
+  body.mobile{background:#dfe0ec}
+  body.mobile .app{width:392px;height:780px;margin:54px auto;border-radius:34px;overflow:hidden;position:relative;border:10px solid #14152a;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+  body.mobile .side{position:absolute;top:0;left:0;height:100%;width:232px;transform:translateX(-100%);transition:transform .26s ease;z-index:20}
+  body.mobile.drawer .side{transform:translateX(0)}
+  body.mobile.drawer .ovl{display:block}
+  body.mobile .main{height:100%;overflow:auto}
+  body.mobile .ham{display:flex}
+  body.mobile .search{display:none}
+  body.mobile .grid4{grid-template-columns:1fr 1fr}
+  body.mobile .row2,body.mobile .grid2{grid-template-columns:1fr}
+  body.mobile .body{padding:18px 16px}
+  body.mobile .topbar{padding:13px 16px}
+
+  @media(max-width:760px){
+    .switch{display:none}
+    .side{position:fixed;top:0;left:0;height:100%;width:240px;transform:translateX(-100%);transition:transform .26s ease;z-index:20}
+    body.drawer .side{transform:translateX(0)}
+    body.drawer .ovl{display:block;position:fixed}
+    .ham{display:flex}.search{display:none}
+    .grid4{grid-template-columns:1fr 1fr}.row2,.grid2{grid-template-columns:1fr}
+    .body{padding:16px 14px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">A</div><div><div class="bname">Autopilot</div><div class="bsub">AI Marketing</div></div></div>
+    <div class="ngroup">Overview</div>
+    <div class="nav active" data-p="home"><span class="ic">◎</span> Home</div>
+    <div class="ngroup">Create</div>
+    <div class="nav" data-p="autopilot"><span class="ic">✦</span> Autopilot</div>
+    <div class="nav" data-p="quick"><span class="ic">✎</span> Quick post</div>
+    <div class="nav" data-p="brand"><span class="ic">◈</span> Brand voice</div>
+    <div class="ngroup">Manage</div>
+    <div class="nav" data-p="calendar"><span class="ic">▦</span> Calendar</div>
+    <div class="nav" data-p="posts"><span class="ic">≡</span> Posts</div>
+    <div class="nav" data-p="inbox"><span class="ic">✉</span> Inbox</div>
+    <div class="ngroup">Grow</div>
+    <div class="nav" data-p="leads"><span class="ic">◆</span> Leads</div>
+    <div class="nav" data-p="analytics"><span class="ic">▲</span> Analytics</div>
+    <div class="ngroup">Settings</div>
+    <div class="nav" data-p="accounts"><span class="ic">⚙</span> Accounts</div>
+    <div class="nav" data-p="billing"><span class="ic">✨</span> Billing</div>
+    <div class="sfoot"><div class="credits"><span>✨</span><span><b>50</b> credits</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <button class="ham" onclick="toggleDrawer()" aria-label="Menu">☰</button>
+      <div class="search"><span>⌕</span> Search posts, leads, campaigns…</div>
+      <div style="flex:1"></div><div class="pill-ai"><span class="dot"></span> AI is active</div><div class="av">MJ</div>
+    </div>
+    <div class="body" id="view"></div>
+  </div>
+  <div class="ovl" onclick="toggleDrawer()"></div>
+</div>
+<div class="switch"><button id="mDesk" class="on" onclick="setMode(false)">💻 Desktop</button><button id="mMob" onclick="setMode(true)">📱 Mobile</button></div>
+<div class="toast" id="toast">Saved ✓</div>
+<script>
+function spark(c){return '<svg class="spark" viewBox="0 0 70 28"><polyline fill="none" stroke="'+c+'" stroke-width="2.5" points="0,22 12,18 24,20 36,11 48,13 60,5 70,7"/></svg>';}
+function chart(){return '<svg viewBox="0 0 560 200" style="width:100%;height:200px"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c5cfc" stop-opacity=".35"/><stop offset="1" stop-color="#7c5cfc" stop-opacity="0"/></linearGradient></defs><path d="M0,150 C60,120 110,140 170,100 C230,60 290,90 350,70 C410,52 470,80 560,40 L560,200 L0,200 Z" fill="url(#g)"/><path d="M0,150 C60,120 110,140 170,100 C230,60 290,90 350,70 C410,52 470,80 560,40" fill="none" stroke="#7c5cfc" stroke-width="3"/><path d="M0,170 C60,160 120,165 180,150 C240,135 300,150 360,140 C420,128 480,140 560,118" fill="none" stroke="#2bb3ff" stroke-width="2.5" stroke-dasharray="5 4"/></svg><div class="legend"><span class="lg"><span class="sw" style="background:#7c5cfc"></span>Engagement</span><span class="lg"><span class="sw" style="background:#2bb3ff"></span>Reach</span></div>';}
+
+var pages={
+ home:`<div class="hero"><div class="orb"></div><h1>Good morning, Mr J 👋</h1><p>Your AI team has 3 posts queued and 2 drafts waiting for review. Reach is up 18% this week.</p><div class="cta">✦ Launch a campaign</div></div>
+  <div class="grid4">
+   <div class="stat"><div class="lab"><span class="ico" style="background:#eef0ff;color:#6a5af0">↑</span> Published (7d)</div><div class="num" data-to="24">0</div><div class="trend up">▲ 18%</div>${spark('#7c5cfc')}</div>
+   <div class="stat" style="animation-delay:.06s"><div class="lab"><span class="ico" style="background:#e7f6ff;color:#1f8fd0">◷</span> Scheduled</div><div class="num" data-to="9">0</div><div class="trend up">▲ 3 today</div>${spark('#2bb3ff')}</div>
+   <div class="stat" style="animation-delay:.12s"><div class="lab"><span class="ico" style="background:#eafced;color:#16a34a">✓</span> Engagement</div><div class="num" data-to="1280">0</div><div class="trend up">▲ 24%</div>${spark('#22c55e')}</div>
+   <div class="stat" style="animation-delay:.18s"><div class="lab"><span class="ico" style="background:#fff0e6;color:#d97706">◆</span> New leads</div><div class="num" data-to="7">0</div><div class="trend up">▲ 2</div>${spark('#f59e0b')}</div></div>
+  <div class="row2"><div class="card"><h2>Performance</h2><div class="sub">Across all channels — last 14 days</div>${chart()}</div>
+   <div class="card aicard"><h2>AI suggestions</h2><div class="sub">Your team recommends</div>
+    <div class="sugg"><div class="sbadge">✦</div><div><div class="t">Post a contrarian take Thu 8am</div><div class="d">Audience engages 2× on bold opinions.</div></div></div>
+    <div class="sugg"><div class="sbadge">↻</div><div><div class="t">Repurpose your top post for X</div><div class="d">"Scaling lessons" drove 320 likes.</div></div></div>
+    <div class="sugg"><div class="sbadge">◆</div><div><div class="t">3 leads ready for outreach</div><div class="d">AI drafted personalized DMs.</div></div></div></div></div>`,
+
+ autopilot:`<div class="ph">Autopilot</div><div class="psub">Set it once — AI writes, tailors and posts on a schedule</div>
+  <div class="card aicard"><h2>New campaign</h2><div class="sub">LinkedIn is AI-written; other platforms post your content, optimized</div>
+   <label>Campaign name</label><input value="Weekly thought leadership"/>
+   <label>Post to platforms</label><div class="platrow"><span class="plat on">LinkedIn</span><span class="plat on">X (Twitter)</span><span class="plat">Instagram 📷</span><span class="plat">Facebook</span></div>
+   <label>Automation level</label><div class="seg"><b class="on">Approve first</b><b>Auto-publish</b></div>
+   <div style="margin-top:16px"><span class="btn btn-p">✦ Create campaign</span></div></div>
+  <div class="card"><div style="display:flex;align-items:center"><div><h2>My weekly thought leadership</h2><div class="sub" style="margin:0">LinkedIn + X · 3×/week · AI-picked times</div></div><div style="flex:1"></div><span class="badge b-pub">active</span></div>
+   <div style="margin-top:14px"><span class="btn btn-p">Run now</span> <span class="btn btn-s">Review posts</span></div></div>`,
+
+ quick:`<div class="ph">Quick post</div><div class="psub">Write one post right now, with AI</div>
+  <div class="grid2"><div class="card"><h2>Generate</h2>
+   <label>Topic</label><textarea rows="2">Lessons from scaling our team to 50</textarea>
+   <label>Tone</label><input value="professional but human"/>
+   <div style="margin-top:14px"><span class="btn btn-p">✦ Generate</span></div></div>
+   <div class="card aicard"><h2>Result</h2><div class="sub">Edit, then save or publish</div>
+    <div style="background:#fff;border:1px solid #eee9ff;border-radius:12px;padding:14px;font-size:13px;line-height:1.6">I still remember the day we went from 10 to 50 people. The hardest part wasn't hiring — it was keeping the culture intact…</div>
+    <div style="margin-top:8px;font-size:12px;color:#6a5af0">#scaling #startups #leadership</div>
+    <div style="margin-top:14px"><span class="btn btn-p">Save draft</span> <span class="btn btn-s">Run quality check</span></div></div></div>`,
+
+ calendar:`<div class="ph">Calendar</div><div class="psub">Everything going out, across every platform</div>
+  <div class="card"><h2>Thursday, Jun 19</h2>
+   <div class="pill"><span class="badge b-li">LinkedIn</span><span style="color:var(--mut);font-size:12px;min-width:52px">08:00</span><span style="flex:1;font-size:13px">Lessons from scaling our team to 50…</span><span class="badge b-sched">scheduled</span></div>
+   <div class="pill"><span class="badge b-x">X</span><span style="color:var(--mut);font-size:12px;min-width:52px">12:30</span><span style="flex:1;font-size:13px">The one hiring mistake founders repeat…</span><span class="badge b-sched">scheduled</span></div></div>
+  <div class="card"><h2>Friday, Jun 20</h2>
+   <div class="pill"><span class="badge b-ig">Instagram</span><span style="color:var(--mut);font-size:12px;min-width:52px">—</span><span style="flex:1;font-size:13px">Behind the scenes (needs image 📷)</span><span class="badge b-draft">draft</span></div></div>`,
+
+ posts:`<div class="ph">Posts</div><div class="psub">Drafts, scheduled and published</div>
+  <div class="card"><div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="badge b-li">LinkedIn</span><span class="badge b-pub">published</span><span class="badge b-pub">📷 media</span><span class="chip">View on LinkedIn ↗</span></div>
+   <div style="font-size:13px;line-height:1.6">I still remember the day we went from 10 to 50 people…</div><div style="margin-top:6px;font-size:12px;color:#6a5af0">#scaling #startups #leadership</div></div>
+  <div class="card"><div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="badge b-ig">Instagram</span><span class="badge b-draft">draft</span></div>
+   <div style="background:#fff7ed;border-radius:11px;padding:11px;font-size:13px;color:#9a3412;font-weight:600">Instagram needs an image or video to publish</div>
+   <div style="display:flex;gap:8px;margin-top:10px"><input placeholder="Paste an image or video URL…" style="flex:1"/><span class="btn btn-s">Attach media</span></div></div>`,
+
+ leads:`<div class="ph">Leads</div><div class="psub">Capture leads and let AI draft outreach</div>
+  <div class="card"><h2>Add a lead</h2><div class="grid2"><div><label>Name</label><input value="Jane Doe"/></div><div><label>Handle / email</label><input value="@janedoe"/></div></div><div style="margin-top:14px"><span class="btn btn-p">Add lead</span></div></div>
+  <div class="card"><h2>Your leads</h2>
+   <div class="pill"><strong>Jane Doe</strong><span style="color:var(--mut);font-size:13px">@janedoe</span><span class="badge b-li">linkedin</span><div style="flex:1"></div><span class="badge b-sched">qualified</span><span class="btn btn-s" style="padding:6px 12px">Draft outreach</span></div>
+   <div style="background:#faf8ff;border:1px solid #ece9fb;border-radius:12px;padding:12px;font-size:13px;margin-top:-2px"><div style="font-size:11px;color:#6a5af0;margin-bottom:4px">AI-DRAFTED OUTREACH</div>Hi Jane — loved your post on remote culture. We're building…</div></div>`,
+
+ analytics:`<div class="ph">Analytics</div><div class="psub">Performance and AI strategy</div>
+  <div class="grid4"><div class="stat"><div class="lab">Impressions</div><div class="num" data-to="42800">0</div><div class="trend up">▲ 31%</div></div>
+   <div class="stat" style="animation-delay:.06s"><div class="lab">Total likes</div><div class="num" data-to="1860">0</div><div class="trend up">▲ 22%</div></div>
+   <div class="stat" style="animation-delay:.12s"><div class="lab">Comments</div><div class="num" data-to="240">0</div><div class="trend up">▲ 14%</div></div>
+   <div class="stat" style="animation-delay:.18s"><div class="lab">Avg / post</div><div class="num" data-to="78">0</div><div class="trend up">▲ 9%</div></div></div>
+  <div class="card"><h2>Reach &amp; engagement</h2><div class="sub">All connected channels</div>${chart()}</div>`,
+
+ billing:`<div class="ph">Billing</div><div class="psub">Your credits and top-ups</div>
+  <div class="card aicard"><h2>Your credits</h2><div style="font-size:42px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">50</div><div class="sub">Each AI action uses 1 credit.</div></div>
+  <div class="card"><h2>Buy more credits</h2><div class="sub">Secure checkout by Stripe</div>
+   <div class="grid2"><div class="pill" style="flex-direction:column;align-items:flex-start;gap:6px"><strong style="font-size:18px">100 credits</strong><span class="btn btn-p" style="width:100%;justify-content:center">Buy</span></div>
+   <div class="pill" style="flex-direction:column;align-items:flex-start;gap:6px"><strong style="font-size:18px">500 credits</strong><span class="btn btn-p" style="width:100%;justify-content:center">Buy</span></div></div></div>`,
+
+ accounts:`<div class="ph">Accounts</div><div class="psub">Connections, automation and usage</div>
+  <div class="card" style="border-left:4px solid #22c55e"><div style="display:flex;align-items:center"><div><h2>Automation is on</h2><div class="sub" style="margin:0">Auto-mode campaigns publish on schedule.</div></div><div style="flex:1"></div><span class="btn btn-s">Pause all automation</span></div></div>
+  <div class="card aicard"><h2>AI usage</h2><div class="sub" style="margin:0">Your AI runs on Autopilot's managed capacity — no setup needed.</div></div>
+  <div class="card"><h2>Connect a new account</h2><div class="sub">Authorize on the platform — no keys, no copying IDs</div>
+   <label>Platform</label><div class="platrow"><span class="plat on">LinkedIn</span><span class="plat">X</span><span class="plat">Instagram</span><span class="plat">TikTok</span></div>
+   <div style="margin-top:8px"><span class="btn btn-p">Connect LinkedIn</span></div></div>`,
+
+ brand:`<div class="ph">Brand voice</div><div class="psub">Your voice, persona and positioning — used by every post</div>
+  <div class="card"><h2>Brand profile</h2><div class="grid2"><div><label>Brand name</label><input value="Autopilot"/></div><div><label>Audience</label><input value="early-stage founders"/></div></div><label>Voice</label><textarea rows="2">Confident, practical, warm — no jargon.</textarea><div style="margin-top:14px"><span class="btn btn-p">✦ Build my brand voice</span></div></div>`,
+
+ inbox:`<div class="ph">Inbox</div><div class="psub">AI-drafted replies to approve</div>
+  <div class="card"><div class="pill" style="flex-direction:column;align-items:stretch"><div style="display:flex;gap:8px;align-items:center"><span class="badge b-li">LinkedIn comment</span><div style="flex:1"></div><span class="badge b-draft">pending</span></div>
+   <div style="font-size:13px;margin-top:8px;color:var(--mut)">"How did you handle onboarding at that scale?"</div>
+   <div style="background:#faf8ff;border:1px solid #ece9fb;border-radius:11px;padding:11px;font-size:13px;margin-top:8px">Great question! We built a 30-day buddy system…</div>
+   <div style="display:flex;gap:8px;margin-top:10px"><span class="btn btn-p" style="padding:7px 14px">Approve &amp; send</span><span class="btn btn-s" style="padding:7px 14px">Edit</span></div></div></div>`
+};
+
+function animate(){document.querySelectorAll('.num').forEach(function(el){var to=+el.getAttribute('data-to'),t0=performance.now();function s(t){var p=Math.min(1,(t-t0)/900),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString();if(p<1)requestAnimationFrame(s);}requestAnimationFrame(s);});}
+function render(p){document.getElementById('view').innerHTML=pages[p]||('<div class="ph">'+p+'</div><div class="psub">Mock coming up…</div>');animate();}
+function toggleDrawer(){document.body.classList.toggle('drawer');}
+function setMode(mobile){document.body.classList.toggle('mobile',mobile);document.body.classList.remove('drawer');document.getElementById('mMob').classList.toggle('on',mobile);document.getElementById('mDesk').classList.toggle('on',!mobile);}
+document.querySelectorAll('.nav').forEach(function(n){n.addEventListener('click',function(){document.querySelectorAll('.nav').forEach(function(x){x.classList.remove('active')});n.classList.add('active');render(n.getAttribute('data-p'));document.body.classList.remove('drawer');});});
+render('home');
+</script>
+</body>
+</html>
