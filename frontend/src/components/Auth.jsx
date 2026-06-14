@@ -44,7 +44,7 @@ export default function Auth({ onAuthed }) {
             <div className="auth-point" key={p}><span className="tick">✓</span><span>{p}</span></div>
           ))}
         </div>
-        <div className="auth-trust">Built on the AI Models Hub · Your data stays yours · Ban-safe automation</div>
+        <div className="auth-trust">Powered by AI · Your data stays yours · Ban-safe automation</div>
       </div>
 
       <div className="auth-form-wrap">

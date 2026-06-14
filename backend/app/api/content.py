@@ -37,7 +37,7 @@ def _resolve_hub_key(user: User) -> str:
     # Dev fallback so the endpoint works before per-user keys are set.
     if settings.hub_api_key and not settings.hub_api_key.startswith("paste-"):
         return settings.hub_api_key
-    raise HTTPException(400, "No Hub API key on file. Set one via PUT /api/auth/me/hub-key.")
+    raise HTTPException(400, "AI is temporarily unavailable. Please try again.")
 
 
 class GeneratePostRequest(BaseModel):
@@ -120,7 +120,7 @@ async def qa_check(
             _safe("ai_detector", {"content": req.content, "content_type": "linkedin post"}),
         )
     if score is None and review is None and ai is None:
-        raise HTTPException(502, "Quality check failed — the Hub didn't respond.")
+        raise HTTPException(502, "Quality check failed — the AI service didn't respond.")
     return {"ok": True, "score": score, "qa": review, "ai_detection": ai}
 
 

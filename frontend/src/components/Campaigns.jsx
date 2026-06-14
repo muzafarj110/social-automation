@@ -344,7 +344,7 @@ export default function Campaigns({ accounts, goTab }) {
           </div>
           <div className="muted" style={{ marginTop: 4 }}>
             {form.mode === "auto"
-              ? "Posts are generated and scheduled automatically (needs your Zernio key)."
+              ? "Posts are generated and scheduled automatically (needs your channels connected)."
               : "Posts are saved as drafts for you to review and schedule. Recommended."}
           </div>
           {form.mode === "auto" && (
@@ -413,7 +413,7 @@ export default function Campaigns({ accounts, goTab }) {
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
             <input type="checkbox" checked={form.learn_from_analytics} style={{ width: "auto" }}
                    onChange={(e) => setForm({ ...form, learn_from_analytics: e.target.checked })} />
-            <span>Learn from analytics <span className="muted">(double down on your best-performing past posts — needs your Zernio key)</span></span>
+            <span>Learn from analytics <span className="muted">(double down on your best-performing past posts — needs your channels connected)</span></span>
           </label>
 
           <label>Posts per week</label>

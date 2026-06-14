@@ -60,7 +60,7 @@ class PublishError(Exception):
 def _client(zernio_key: str) -> ZernioClient:
     if not zernio_key:
         raise PublishError(
-            "No Zernio API key for this user — set one in the app first.",
+            "Connect your channels first.",
             status_code=400,
         )
     return ZernioClient(settings.zernio_base_url, zernio_key)

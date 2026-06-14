@@ -337,11 +337,11 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
 
     hub_key = resolve_hub_key(user)
     if not hub_key:
-        raise CampaignError("No Hub API key on file — set one in the app first.", 400)
+        raise CampaignError("AI is temporarily unavailable. Please try again.", 400)
 
     zkey = resolve_zernio_key(user)
     if campaign.mode == cstate.AUTO and not zkey:
-        raise CampaignError("Auto mode needs your Zernio key set first.", 400)
+        raise CampaignError("Auto mode needs your channels connected first.", 400)
 
     # Which platforms to post to, mapped to a connected account each.
     pacc = await _platform_accounts(campaign, account, db)

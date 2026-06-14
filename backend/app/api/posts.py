@@ -135,7 +135,7 @@ async def publish_post(
     account = await _get_owned_account(post.account_id, current, db)
     zkey = resolve_zernio_key(current)
     if not zkey:
-        raise HTTPException(400, "Set your Zernio API key in the app first.")
+        raise HTTPException(400, "Connect your channels first.")
 
     try:
         await publisher.publish_now(post, account.zernio_account_id,
@@ -162,7 +162,7 @@ async def schedule_post(
     account = await _get_owned_account(post.account_id, current, db)
     zkey = resolve_zernio_key(current)
     if not zkey:
-        raise HTTPException(400, "Set your Zernio API key in the app first.")
+        raise HTTPException(400, "Connect your channels first.")
 
     try:
         await publisher.schedule(post, account.zernio_account_id,

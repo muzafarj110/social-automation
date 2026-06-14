@@ -26,7 +26,7 @@ router = APIRouter(prefix="/profile-studio", tags=["profile"])
 async def _call(user: User, name: str, payload: dict) -> dict:
     key = resolve_hub_key(user)
     if not key:
-        raise HTTPException(400, "No Hub API key on file — set one in the app first.")
+        raise HTTPException(400, "AI is temporarily unavailable. Please try again.")
     async with HubClient(settings.hub_base_url, key) as hub:
         try:
             return await hub.call(name, payload)

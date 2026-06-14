@@ -54,7 +54,7 @@ def resolve_hub_key(user: User) -> str:
     if settings.hub_api_key and not settings.hub_api_key.startswith("paste-"):
         return settings.hub_api_key
     raise DraftError(
-        "No Hub API key on file. Set one via PUT /api/auth/me/hub-key.", status_code=400
+        "AI is temporarily unavailable. Please try again.", status_code=400
     )
 
 
@@ -98,6 +98,6 @@ async def reply_company_comment(
 ) -> dict[str, Any]:
     """Execute a company-page comment reply via the user's own Zernio key."""
     if not zernio_key:
-        raise DraftError("Set your Zernio API key in the app first.", status_code=400)
+        raise DraftError("Connect your channels first.", status_code=400)
     async with ZernioClient(settings.zernio_base_url, zernio_key) as z:
         return await z.reply_comment(comment_id, message)

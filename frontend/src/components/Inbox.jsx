@@ -246,7 +246,7 @@ export default function Inbox({ accounts, refreshKey }) {
               <label>Target post URL <span className="muted">(optional — for your reference)</span></label>
               <input value={postUrl} placeholder="https://linkedin.com/posts/…"
                      onChange={(e) => setPostUrl(e.target.value)} />
-              <label>Company-page comment ID <span className="muted">(optional — enables auto-reply via Zernio)</span></label>
+              <label>Company-page comment ID <span className="muted">(optional — enables auto-reply)</span></label>
               <input value={commentId} placeholder="leave blank for a personal comment you'll post yourself"
                      onChange={(e) => setCommentId(e.target.value)} />
               {commentId.trim() && (

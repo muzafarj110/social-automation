@@ -40,7 +40,7 @@ async def zernio_available_accounts(
     the accountId to link. Each user only sees their own Zernio connection."""
     key = resolve_zernio_key(current)
     if not key:
-        raise HTTPException(400, "Set your Zernio API key in the app first.")
+        raise HTTPException(400, "Connect your channels first.")
     async with ZernioClient(settings.zernio_base_url, key) as z:
         try:
             return await z.list_accounts()
@@ -61,7 +61,7 @@ async def connect_url(
     """
     key = resolve_zernio_key(current)
     if not key:
-        raise HTTPException(400, "Set your Zernio API key in the app first.")
+        raise HTTPException(400, "Connect your channels first.")
     platform = plat.normalize(body.platform)
     async with ZernioClient(settings.zernio_base_url, key) as z:
         try:

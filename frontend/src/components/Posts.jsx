@@ -133,7 +133,7 @@ function PostCard({ post, onChange }) {
 
       {scheduled && (
         <div className="row" style={{ marginTop: 12 }}>
-          <span className="muted">Scheduled — Zernio will publish it automatically at the time above.</span>
+          <span className="muted">Scheduled — it will publish automatically at the time above.</span>
           <div className="spacer" />
           <button className="btn-ghost" disabled={busy} onClick={act(() => deletePost(post.id))}>
             Cancel

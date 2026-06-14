@@ -68,7 +68,7 @@ async def generate(
     """Run a Hub strategy model (brand voice, persona, UVP, etc.)."""
     key = resolve_hub_key(current)
     if not key:
-        raise HTTPException(400, "No Hub API key on file — set one in the app first.")
+        raise HTTPException(400, "AI is temporarily unavailable. Please try again.")
     async with HubClient(settings.hub_base_url, key) as hub:
         try:
             data = await hub.call(body.tool, body.params)

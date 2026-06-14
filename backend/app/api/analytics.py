@@ -77,7 +77,7 @@ def _aggregate(zdata: dict) -> dict:
 def _hub_key_or_400(user: User) -> str:
     key = resolve_hub_key(user)
     if not key:
-        raise HTTPException(400, "No Hub API key on file — set one in the app first.")
+        raise HTTPException(400, "AI is temporarily unavailable. Please try again.")
     return key
 
 

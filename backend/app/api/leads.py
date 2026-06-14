@@ -98,7 +98,7 @@ async def draft_outreach(
         raise HTTPException(402, "You're out of credits. Top up under Billing to keep creating.")
     key = resolve_hub_key(current)
     if not key:
-        raise HTTPException(400, "No Hub API key on file — set one in the app first.")
+        raise HTTPException(400, "AI is temporarily unavailable. Please try again.")
 
     payload = {
         "recipient": lead.name,
