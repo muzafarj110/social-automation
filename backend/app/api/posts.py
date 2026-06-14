@@ -48,6 +48,7 @@ async def create_post(
         hashtags=body.hashtags,
         media=body.media,
         first_comment=body.first_comment,
+        infographic_html=body.infographic_html,
         status=post_status.DRAFT,
     )
     db.add(post)

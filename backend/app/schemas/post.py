@@ -14,6 +14,7 @@ class PostCreate(BaseModel):
     hashtags: list[str] | None = None
     media: list[dict[str, Any]] | None = None
     first_comment: str | None = None
+    infographic_html: str | None = None
 
 
 class PostUpdate(BaseModel):

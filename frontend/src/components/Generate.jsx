@@ -222,8 +222,11 @@ export default function Generate({ accounts, onSaved, goConnect }) {
         account_id: Number(accountId),
         body,
         hashtags: result?.hashtags || null,
+        infographic_html: info?.html || null,
       });
-      setMsg("Saved as draft. Find it under Posts to publish or schedule.");
+      setMsg(info?.html
+        ? "Saved as draft with its infographic. Find it under Posts to publish or schedule."
+        : "Saved as draft. Find it under Posts to publish or schedule.");
       onSaved?.();
     } catch (err) {
       setError(err.message);
