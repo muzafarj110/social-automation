@@ -11,6 +11,8 @@ from app.core.platforms import PLATFORM_PATTERN
 
 class ConnectRequest(BaseModel):
     platform: str = Field("linkedin", pattern=PLATFORM_PATTERN)
+    # Where to send the user back after they authorize (the app's own URL).
+    redirect_url: str | None = None
 
 
 class LinkAccountRequest(BaseModel):

@@ -147,13 +147,40 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   });
 
   const [connectPlatform, setConnectPlatform] = useState("linkedin");
+  const returnUrl = (typeof window !== "undefined")
+    ? window.location.origin + window.location.pathname + "#accounts" : "";
   const doConnect = wrap(async () => {
-    const res = await connectUrl(connectPlatform);
-    if (res?.auth_url) {
-      window.open(res.auth_url, "_blank", "noopener");
-      setMsg("Authorize in the new tab, then click “Find & import accounts” to import.");
-    }
+    const res = await connectUrl(connectPlatform, returnUrl);
+    if (res?.auth_url) window.location.href = res.auth_url; // full-page; returns here after auth
   });
+
+  // Pull this customer's connected accounts and link any not already linked.
+  const doImport = wrap(async () => {
+    const res = await zernioAvailable();
+    const list = res?.accounts || res?.data || (Array.isArray(res) ? res : []);
+    setAvailable(list);
+    const have = new Set(accounts.map((a) => a.zernio_account_id));
+    let linked = 0;
+    for (const z of list) {
+      const id = z._id || z.id || z.accountId;
+      if (id && !have.has(id)) {
+        const platform = (z.platform || "linkedin").toLowerCase();
+        const name = z.displayName || z.username || z.name || id;
+        const type = (z.accountType || z.type) === "organization" ? "organization" : "personal";
+        try { await linkAccount({ zernio_account_id: id, display_name: name, platform, account_type: type }); linked++; } catch { /* skip */ }
+      }
+    }
+    if (linked) { setMsg(`Imported ${linked} account${linked === 1 ? "" : "s"}.`); reloadAccounts(); }
+    else if (!list.length) setMsg("No connected accounts found yet — click Connect above.");
+  });
+
+  // When the user returns from the platform's OAuth (?connected=…), auto-import.
+  useEffect(() => {
+    if (typeof window !== "undefined" && /[?&]connected=/.test(window.location.search)) {
+      doImport();
+      window.history.replaceState({}, "", window.location.origin + window.location.pathname + "#accounts");
+    }
+  }, []); // eslint-disable-line
 
   const doManualLink = wrap(async () => {
     await linkAccount({
@@ -211,43 +238,6 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         </div>
       )}
 
-      <div className="grid-2" style={{ alignItems: "start" }}>
-      <div className="card">
-        <h2>Channel connection</h2>
-        <p className="muted">
-          {user?.has_zernio_key
-            ? "Your channels are connected. Connect or import accounts below."
-            : "Enter your connection key to link and post to your social channels. You only ever see your own."}
-        </p>
-        <label>Connection key</label>
-        <input
-          value={zKey}
-          onChange={(e) => setZKeyInput(e.target.value)}
-          placeholder="Paste your connection key"
-        />
-        <div className="row" style={{ marginTop: 10 }}>
-          <button className="btn-primary" disabled={busy || !zKey.trim()} onClick={saveZernioKey}>
-            Save
-          </button>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2>Change password</h2>
-        <p className="muted">Update the password you use to sign in.</p>
-        <label>Current password</label>
-        <input type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
-        <label>New password</label>
-        <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="At least 8 characters" />
-        <div className="row" style={{ marginTop: 10 }}>
-          <button className="btn-primary" disabled={busy || !curPw || newPw.length < 8} onClick={doChangePassword}>
-            Update password
-          </button>
-        </div>
-      </div>
-
-      </div>
-
       <div className="card">
         <h2>Linked social accounts</h2>
         {accounts.length === 0 ? (
@@ -272,10 +262,10 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
 
       <div className="card">
         <h2>Connect a new account</h2>
-        <p className="muted">Authorize a platform below — you sign in on the platform itself, so no passwords or keys are entered here. Then import the connected account.</p>
+        <p className="muted">Pick a platform and click Connect. You sign in on the platform itself — no keys, no copying IDs — then you're brought right back here.</p>
         <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
-            <label>Platform to connect</label>
+            <label>Platform</label>
             <select value={connectPlatform} onChange={(e) => setConnectPlatform(e.target.value)}>
               {PLATFORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -283,8 +273,8 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
           <button className="btn-primary" disabled={busy} onClick={doConnect}>
             Connect {PLATFORM_LABEL[connectPlatform] || connectPlatform}
           </button>
-          <button className="btn-secondary" disabled={busy} onClick={findZernio}>
-            Find &amp; import connected accounts
+          <button className="btn-secondary" disabled={busy} onClick={doImport}>
+            Refresh connected accounts
           </button>
         </div>
         {available && available.length > 0 && (
@@ -294,35 +284,20 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
               const name = z.displayName || z.username || z.name || id;
               const type = (z.accountType || z.type) === "organization" ? "organization" : "personal";
               const platform = (z.platform || "linkedin").toLowerCase();
+              const linked = accounts.some((a) => a.zernio_account_id === id);
               return (
                 <div className="pill" key={id || i}>
                   <span className="badge kind">{PLATFORM_LABEL[platform] || platform}</span>
                   <strong>{name}</strong>
-                  <span className="muted">{id}</span>
                   <div className="spacer" />
-                  <button className="btn-primary" disabled={busy} onClick={() => doLink(id, name, type, platform)}>
-                    Link
-                  </button>
+                  {linked
+                    ? <span className="badge published">Linked</span>
+                    : <button className="btn-primary" disabled={busy} onClick={() => doLink(id, name, type, platform)}>Link</button>}
                 </div>
               );
             })}
           </div>
         )}
-
-        <h3 style={{ marginTop: 18 }}>Or link manually</h3>
-        <label>Platform</label>
-        <select value={manualPlatform} onChange={(e) => setManualPlatform(e.target.value)}>
-          {PLATFORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <label>Account ID</label>
-        <input value={manualId} onChange={(e) => setManualId(e.target.value)} placeholder="acc_..." />
-        <label>Display name (optional)</label>
-        <input value={manualName} onChange={(e) => setManualName(e.target.value)} />
-        <div className="row" style={{ marginTop: 10 }}>
-          <button className="btn-primary" disabled={busy || !manualId.trim()} onClick={doManualLink}>
-            Link account
-          </button>
-        </div>
       </div>
     </>
   );

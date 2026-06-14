@@ -29,6 +29,9 @@ class User(Base):
     automation_paused: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # usage-based billing: AI actions spend credits; bought via Stripe.
     credits: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
+    # white-label: this customer's Zernio Profile id (their isolated container of
+    # connected channels under the app-level key). None until first connect.
+    zernio_profile_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)

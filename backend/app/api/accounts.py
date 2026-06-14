@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.models.account import LinkedInAccount
 from app.models.user import User
 from app.schemas.account import AccountOut, ConnectRequest, LinkAccountRequest
+from app.services.channels import ensure_profile, list_customer_accounts
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -35,23 +36,21 @@ async def supported_platforms() -> dict[str, object]:
 @router.get("/zernio/available")
 async def zernio_available_accounts(
     current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
-    """List LinkedIn accounts under THIS user's own Zernio key, so they can find
-    the accountId to link. Each user only sees their own Zernio connection."""
-    key = resolve_zernio_key(current)
-    if not key:
-        raise HTTPException(400, "Connect your channels first.")
-    async with ZernioClient(settings.zernio_base_url, key) as z:
-        try:
-            return await z.list_accounts()
-        except ZernioError as e:
-            raise HTTPException(e.status_code or 502, e.message) from e
+    """Connected accounts for THIS customer only — fail-closed, profile-scoped."""
+    try:
+        accounts = await list_customer_accounts(current, db)
+    except ZernioError as e:
+        raise HTTPException(e.status_code or 502, e.message) from e
+    return {"accounts": accounts}
 
 
 @router.post("/connect-url")
 async def connect_url(
     body: ConnectRequest,
     current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
     """Start an in-app OAuth connect for a platform via Zernio's hosted flow.
 
@@ -61,19 +60,17 @@ async def connect_url(
     """
     key = resolve_zernio_key(current)
     if not key:
-        raise HTTPException(400, "Connect your channels first.")
+        raise HTTPException(400, "Channel connections aren't configured yet.")
     platform = plat.normalize(body.platform)
+    profile_id = await ensure_profile(current, db)
+    if not profile_id:
+        raise HTTPException(503, "Channel connections aren't configured yet.")
     async with ZernioClient(settings.zernio_base_url, key) as z:
         try:
-            profs = await z.list_profiles()
-            plist = profs.get("profiles") or profs.get("data") or []
-            if isinstance(plist, list) and plist:
-                first = plist[0]
-                profile_id = first.get("_id") or first.get("id")
-            else:
-                created = await z.create_profile(name="Autopilot")
-                profile_id = created.get("_id") or created.get("id")
-            res = await z.get_connect_url(platform=platform, profile_id=str(profile_id))
+            res = await z.get_connect_url(
+                platform=platform, profile_id=str(profile_id),
+                redirect_url=body.redirect_url or None,
+            )
         except ZernioError as e:
             raise HTTPException(e.status_code or 502, e.message) from e
     auth_url = res.get("authUrl") or res.get("auth_url") or res.get("url")

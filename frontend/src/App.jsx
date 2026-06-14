@@ -73,7 +73,7 @@ export default function App() {
   if (!user.profile_type) return <Onboarding onDone={refreshUser} />;
 
   // First-run guided setup: shown until the user connects an account or skips.
-  const connected = !!user.has_zernio_key && accounts.length > 0;
+  const connected = accounts.length > 0;
   if (!wizardSkipped && !connected) {
     return (
       <Wizard

@@ -357,9 +357,14 @@ class ZernioClient:
         )
 
     # -- accounts / orgs / analytics / comments ------------------------------
-    async def list_accounts(self) -> dict[str, Any]:
-        """GET /accounts — connected social accounts."""
-        return await self._request("GET", "/accounts")
+    async def list_accounts(self, *, profile_id: str | None = None) -> dict[str, Any]:
+        """GET /accounts — connected social accounts.
+
+        Pass profile_id to scope to ONE profile (one customer). Omitting it under
+        an app-level key returns accounts across ALL profiles — never do that for
+        a per-customer view."""
+        params = {"profileId": profile_id} if profile_id else None
+        return await self._request("GET", "/accounts", params=params)
 
     # -- OAuth connect flow (hosted by Zernio) -------------------------------
     async def list_profiles(self) -> dict[str, Any]:
@@ -373,15 +378,18 @@ class ZernioClient:
         )
         return body.get("profile", body)
 
-    async def get_connect_url(self, *, platform: str, profile_id: str) -> dict[str, Any]:
+    async def get_connect_url(
+        self, *, platform: str, profile_id: str, redirect_url: str | None = None
+    ) -> dict[str, Any]:
         """GET /connect/{platform}?profileId=… — returns a hosted OAuth authUrl.
 
-        The user authorizes on the platform; Zernio stores the connection. We
-        then re-list accounts to import it — no API key for the social account
-        ever touches our app."""
-        return await self._request(
-            "GET", f"/connect/{platform}", params={"profileId": profile_id}
-        )
+        The user authorizes on the platform; Zernio stores the connection and
+        redirects them back to `redirect_url` (appending ?connected=…&accountId=…)
+        so they land back in our app, not stranded on Zernio."""
+        params: dict[str, Any] = {"profileId": profile_id}
+        if redirect_url:
+            params["redirect_url"] = redirect_url
+        return await self._request("GET", f"/connect/{platform}", params=params)
 
     async def get_linkedin_organizations(self, account_id: str) -> dict[str, Any]:
         """GET /accounts/{id}/linkedin-organizations — company pages."""
@@ -390,11 +398,16 @@ class ZernioClient:
         )
 
     async def get_analytics(
-        self, *, platform: str = "linkedin",
+        self, *, platform: str = "linkedin", profile_id: str | None = None,
         from_date: str | None = None, to_date: str | None = None,
     ) -> dict[str, Any]:
-        """GET /analytics — post metrics for a platform/date range."""
+        """GET /analytics — post metrics for a platform/date range.
+
+        profileId defaults to "all" on Zernio's side, so pass profile_id to scope
+        to one customer — omitting it under an app key leaks across customers."""
         params: dict[str, Any] = {"platform": platform}
+        if profile_id:
+            params["profileId"] = profile_id
         if from_date:
             params["fromDate"] = from_date
         if to_date:

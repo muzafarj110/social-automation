@@ -22,6 +22,7 @@ from app.core import platforms as plat
 from app.core.config import settings
 from app.core.entitlements import is_admin
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
+from app.services.channels import ensure_profile
 from app.models import campaign as cstate
 from app.models import post as post_status
 from app.models.account import LinkedInAccount
@@ -233,7 +234,8 @@ async def qa_and_polish(hub: HubClient, content: str, tone: str) -> str:
     return content
 
 
-async def performance_signal(user: User, platforms: list[str] | None = None) -> list[str]:
+async def performance_signal(user: User, platforms: list[str] | None = None,
+                             profile_id: str | None = None) -> list[str]:
     """The themes of the user's best-performing posts, across ALL given platforms.
 
     Best-effort: returns content snippets of the top posts that actually got
@@ -249,7 +251,7 @@ async def performance_signal(user: User, platforms: list[str] | None = None) -> 
         async with ZernioClient(settings.zernio_base_url, key) as z:
             for plat_name in targets:
                 try:
-                    data = await z.get_analytics(platform=plat_name)
+                    data = await z.get_analytics(platform=plat_name, profile_id=profile_id)
                 except Exception:
                     continue
                 posts.extend(data.get("posts") or [])
@@ -371,8 +373,10 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     brand_voice = (brand.voice or "").strip() if brand else ""
     brand_audience = (brand.audience or "").strip() if brand else ""
 
-    # closed loop: double down on what's already performing (across all platforms)
-    winners = (await performance_signal(user, list(pacc.keys()))
+    # closed loop: double down on what's already performing (across all platforms),
+    # scoped to this customer's channel profile (fail-closed in white-label mode).
+    profile_id = await ensure_profile(user, db)
+    winners = (await performance_signal(user, list(pacc.keys()), profile_id)
                if campaign.learn_from_analytics else [])
 
     async with HubClient(settings.hub_base_url, hub_key) as hub:

@@ -20,7 +20,7 @@ export default function Wizard({ user, accounts = [], goTab, onSkip }) {
     getBrand().then(setBrand).catch(() => setBrand({}));
   }, []);
 
-  const connected = !!user?.has_zernio_key && accounts.length > 0;
+  const connected = accounts.length > 0;
   const brandReady = !!(brand && (brand.voice || brand.brand_name));
   const hasCampaign = (campaigns?.length || 0) > 0;
 

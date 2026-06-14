@@ -50,7 +50,7 @@ export default function Home({ goTab, user }) {
   const drafts = data.posts.filter((p) => p.status === "draft").length;
   const activeCampaigns = data.campaigns.filter((c) => c.status === "active");
 
-  const connected = !!user?.has_zernio_key && data.accounts.length > 0;
+  const connected = data.accounts.length > 0;
   const brandReady = !!(data.brand && (data.brand.voice || data.brand.brand_name));
   const hasCampaign = data.campaigns.length > 0;
   const steps = [

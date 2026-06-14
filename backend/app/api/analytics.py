@@ -16,11 +16,12 @@ from app.clients.hub_client import HubClient, HubError
 from app.clients.zernio_client import ZernioClient, ZernioError
 from app.core.config import settings
 from app.core.hub_errors import hub_http
-from app.core.user_keys import resolve_hub_key, resolve_zernio_key
+from app.core.user_keys import is_white_label, resolve_hub_key, resolve_zernio_key
 from app.db.session import get_db
 from app.models.account import LinkedInAccount
 from app.models.user import User
 from app.schemas.analytics import InsightsRequest, ViralRequest
+from app.services.channels import ensure_profile
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -97,16 +98,18 @@ async def connected_platforms(user: User, db: AsyncSession) -> list[str]:
     return list(rows) or ["linkedin"]
 
 
-async def fetch_all_metrics(z: ZernioClient, platforms: list[str]) -> dict:
+async def fetch_all_metrics(z: ZernioClient, platforms: list[str],
+                            profile_id: str | None = None) -> dict:
     """Pull analytics for each platform and merge into one combined structure.
 
-    Posts are tagged with their platform; overview counters are summed. Per-platform
+    profile_id scopes to one customer (required in white-label mode). Posts are
+    tagged with their platform; overview counters are summed. Per-platform
     failures are skipped so one bad platform doesn't break the whole view."""
     merged_posts: list[dict] = []
     merged_overview: dict = {}
     for p in platforms:
         try:
-            d = await z.get_analytics(platform=p)
+            d = await z.get_analytics(platform=p, profile_id=profile_id)
         except ZernioError:
             continue
         for post in (d.get("posts") or []):
@@ -128,10 +131,14 @@ async def zernio_metrics(
     if not key:
         # No raw error — the UI shows a friendly "connect an account" empty state.
         return {"ok": False, "needs_connection": True}
+    # White-label: scope to this customer's profile, fail-closed (no profile → nothing).
+    profile_id = await ensure_profile(current, db)
+    if is_white_label() and not profile_id:
+        return {"ok": False, "needs_connection": True}
     platforms = await connected_platforms(current, db)
     async with ZernioClient(settings.zernio_base_url, key) as z:
         try:
-            data = await fetch_all_metrics(z, platforms)
+            data = await fetch_all_metrics(z, platforms, profile_id)
         except ZernioError as e:
             return {"ok": False, "error": e.message}
     return {"ok": True, "summary": _aggregate(data), "data": data, "platforms": platforms}
