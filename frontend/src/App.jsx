@@ -48,6 +48,7 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [tab, setTab] = useState("home");
   const [postsRefresh, setPostsRefresh] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [wizardSkipped, setWizardSkipped] = useState(
     () => localStorage.getItem("wizard_skipped") === "1"
   );
@@ -89,9 +90,11 @@ export default function App() {
   const [title, subtitle] = TITLES[tab] || ["", ""];
   const ent = user.entitlements || {};
   const nav = user.is_admin ? [...NAV, ADMIN_NAV] : NAV;
+  const go = (t) => { setTab(t); setMenuOpen(false); };  // navigate + close mobile drawer
 
   return (
-    <div className="app">
+    <div className={`app ${menuOpen ? "drawer" : ""}`}>
+      <div className="scrim" onClick={() => setMenuOpen(false)} />
       <aside className="sidebar">
         <div className="brand">
           <div className="logo">A</div>
@@ -110,7 +113,7 @@ export default function App() {
                   <button key={id} className={`nav-item ${tab === id ? "active" : ""}`}
                     title={locked ? "Upgrade your plan to unlock" : undefined}
                     style={locked ? { opacity: 0.5 } : undefined}
-                    onClick={() => (locked ? setTab("accounts") : setTab(id))}>
+                    onClick={() => (locked ? go("accounts") : go(id))}>
                     <span className="dot" /><span>{label}</span>
                     {locked && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "#a98bff" }}>PRO</span>}
                   </button>
@@ -121,7 +124,7 @@ export default function App() {
         </nav>
         <div className="sidebar-foot">
           {!user?.is_admin && (
-            <button className="nav-item" onClick={() => setTab("billing")} title="Credits remaining">
+            <button className="nav-item" onClick={() => go("billing")} title="Credits remaining">
               <span className="dot" /><span>{user?.credits ?? 0} credits</span>
             </button>
           )}
@@ -132,7 +135,8 @@ export default function App() {
 
       <main className="main">
         <header className="page-head">
-          <div>
+          <button className="menu-btn" aria-label="Menu" onClick={() => setMenuOpen(true)}>☰</button>
+          <div style={{ flex: 1 }}>
             <h1>{title}</h1>
             <div className="sub">{subtitle}</div>
           </div>
