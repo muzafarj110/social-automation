@@ -24,6 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core import credits
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -78,6 +79,14 @@ async def billing_overview(current: User = Depends(get_current_user)) -> dict:
             "renews_at": current.subscription_renews_at.isoformat()
             if current.subscription_renews_at else None,
         }
+    free = None
+    if not credits.is_subscribed(current):
+        free = {
+            "daily_limit": settings.free_daily_limit,
+            "remaining_today": credits.free_remaining(current),
+            "trial_ends_at": current.trial_ends_at.isoformat() if current.trial_ends_at else None,
+            "trial_expired": credits.trial_expired(current),
+        }
     return {
         "enabled": settings.billing_enabled,
         "subscriptions_enabled": settings.subscriptions_enabled,
@@ -85,6 +94,7 @@ async def billing_overview(current: User = Depends(get_current_user)) -> dict:
         "plans": plans,
         "packs": packs,
         "subscription": sub,
+        "free": free,
     }
 
 

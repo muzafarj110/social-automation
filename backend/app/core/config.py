@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     billing_cancel_url: str = Field("", alias="BILLING_CANCEL_URL")
     # Credits granted to every new account so they can try the product.
     free_credits: int = Field(50, alias="FREE_CREDITS")
+    # Free trial: this many credits per day for this many days, then must subscribe.
+    free_daily_limit: int = Field(5, alias="FREE_DAILY_LIMIT")
+    free_trial_days: int = Field(14, alias="FREE_TRIAL_DAYS")
     # Subscription plans as "price_id:tier:credits" (RECURRING Stripe Prices).
     # e.g. "price_a:starter:100,price_b:growth:400,price_c:pro:1200".
     # Each cycle the user's credits reset to their tier's monthly allowance.

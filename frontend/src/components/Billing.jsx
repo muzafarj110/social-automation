@@ -59,18 +59,31 @@ export default function Billing({ user }) {
             <div className="spacer" />
             <button className="btn-secondary" disabled={busy} onClick={manage}>Manage plan</button>
           </div>
+        ) : data?.free ? (
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--teal)" }}>Free trial</div>
+            <p className="muted" style={{ margin: "4px 0 0" }}>
+              {data.free.trial_expired
+                ? "Your free trial has ended — subscribe below to keep creating."
+                : `${data.free.remaining_today} of ${data.free.daily_limit} free credits left today`
+                  + (data.free.trial_ends_at ? ` · trial ends ${new Date(data.free.trial_ends_at).toLocaleDateString()}` : "")}
+            </p>
+          </div>
         ) : (
-          <p className="muted" style={{ margin: 0 }}>
-            You're on the free plan. Pick a plan below to get a monthly credit allowance.
-          </p>
+          <p className="muted" style={{ margin: 0 }}>You're on the free plan. Pick a plan below.</p>
         )}
       </div>
 
       <div className="card">
-        <h2>Credits</h2>
-        <div style={{ fontSize: 40, fontWeight: 800, color: "var(--teal)" }}>{credits}</div>
+        <h2>{active ? "Credits" : "Free credits today"}</h2>
+        <div style={{ fontSize: 40, fontWeight: 800, color: "var(--teal)" }}>
+          {active ? credits : (data?.free?.remaining_today ?? 0)}
+          {!active && data?.free && <span style={{ fontSize: 18, color: "var(--muted)" }}> / {data.free.daily_limit}</span>}
+        </div>
         <p className="muted" style={{ marginTop: 4 }}>
-          Each AI action — a generated post, or each post a campaign produces — uses 1 credit.
+          {active
+            ? "Each AI action — a generated post, or each post a campaign produces — uses 1 credit."
+            : "Free credits reset daily during your trial. Subscribe for a larger monthly allowance."}
           {user?.is_admin ? " As an admin, your usage is unlimited." : ""}
         </p>
       </div>

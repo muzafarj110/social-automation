@@ -39,6 +39,10 @@ class UserOut(BaseModel):
     is_admin: bool = False
     automation_paused: bool = False
     credits: int = 0
+    email_verified: bool = True
+    subscribed: bool = False
+    free_today_remaining: int = 0
+    trial_ends_at: datetime | None = None
 
 
 class SetProfileRequest(BaseModel):
@@ -61,6 +65,14 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str = Field(..., min_length=8)
     new_password: str = Field(..., min_length=8, max_length=128)
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(..., min_length=8)
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 
 class SetHubKeyRequest(BaseModel):

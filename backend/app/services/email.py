@@ -37,6 +37,20 @@ async def send_email(*, to: str, subject: str, html: str) -> bool:
         return False
 
 
+def verification_email_html(verify_url: str) -> str:
+    return (
+        f"<div style='font-family:system-ui,sans-serif;max-width:480px'>"
+        f"<h2>Confirm your email</h2>"
+        f"<p>Welcome to Autopilot! Click the button below to verify your email "
+        f"address and activate your account. This link expires in 24 hours.</p>"
+        f"<p><a href='{verify_url}' style='display:inline-block;background:#7c5cfc;"
+        f"color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none'>"
+        f"Verify my email</a></p>"
+        f"<p style='color:#666;font-size:13px'>If you didn't create this account, "
+        f"you can safely ignore this email.</p></div>"
+    )
+
+
 def reset_email_html(reset_url: str) -> str:
     return (
         f"<div style='font-family:system-ui,sans-serif;max-width:480px'>"

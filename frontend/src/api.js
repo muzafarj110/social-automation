@@ -61,9 +61,16 @@ export async function apiSend(path, method, data) {
 // --- Auth ---
 export async function register(email, password, full_name) {
   const body = await apiSend("/auth/register", "POST", { email, password, full_name });
+  if (body.access_token) setToken(body.access_token);   // admin auto-verifies; others must confirm
+  return body;
+}
+
+export async function verifyEmail(token) {
+  const body = await apiSend("/auth/verify-email", "POST", { token });
   setToken(body.access_token);
   return body;
 }
+export const resendVerification = (email) => apiSend("/auth/resend-verification", "POST", { email });
 
 export async function login(email, password) {
   // OAuth2 password flow expects form-encoded `username`/`password`.

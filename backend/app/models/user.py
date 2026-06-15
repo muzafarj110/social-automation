@@ -42,6 +42,13 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # Email verification — login is blocked until the address is confirmed.
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Free trial: a daily credit allowance until trial_ends_at, then must subscribe.
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    free_used_today: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    free_quota_date: Mapped[str | None] = mapped_column(String(10), nullable=True)  # YYYY-MM-DD
+
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # Per-user Zernio key, encrypted at rest. Scopes which LinkedIn accounts the

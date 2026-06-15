@@ -142,7 +142,10 @@ export default function App() {
         <div className="sidebar-foot">
           {!user?.is_admin && (
             <button className="nav-item" onClick={() => go("billing")} title="Credits remaining">
-              <span className="dot" /><span>{user?.credits ?? 0} credits</span>
+              <span className="dot" />
+              <span>{user?.subscribed
+                ? `${user?.credits ?? 0} credits`
+                : `${user?.free_today_remaining ?? 0} free today`}</span>
             </button>
           )}
           <div className="email">{user?.email}</div>
