@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { studioRun } from "../api.js";
 
 // Tool catalog — grouped by category. `a` = textarea, `n` = number, else text.
@@ -6,9 +6,9 @@ const CATEGORIES = [
   {
     name: "Reports & insights",
     tools: {
-      marketing_report: { label: "Marketing report", blurb: "A full performance report with what's working and what to do next.",
+      marketing_report: { label: "Marketing report", blurb: "Performance report + what to do next.",
         fields: [["metrics_data", "Paste your metrics (or describe them)", true, "a"], ["period", "Period"], ["channel", "Channel"]] },
-      ab_test: { label: "A/B test analysis", blurb: "Compare two variants and get a recommendation.",
+      ab_test: { label: "A/B test analysis", blurb: "Compare two variants, get a winner.",
         fields: [["variant_a", "Variant A", true, "a"], ["variant_b", "Variant B", true, "a"], ["metric", "Primary metric"]] },
       funnel_gap: { label: "Funnel gap finder", blurb: "Find where your funnel leaks.",
         fields: [["funnel_data", "Funnel metrics (traffic, leads, conversions…)", true, "a"], ["business_type", "Business type"]] },
@@ -17,7 +17,7 @@ const CATEGORIES = [
   {
     name: "Email",
     tools: {
-      email_sequence: { label: "Email sequence", blurb: "A multi-email sequence (welcome, nurture, sales…).",
+      email_sequence: { label: "Email sequence", blurb: "Welcome, nurture or sales series.",
         fields: [["product", "Product / service", true], ["sequence_type", "Type (welcome/nurture/sales)"], ["audience", "Audience"], ["num_emails", "Number of emails", false, "n"]] },
       subject_line: { label: "Subject-line optimizer", blurb: "Punch up a subject line.",
         fields: [["subject_line", "Current subject line", true], ["email_type", "Email type"], ["audience", "Audience"]] },
@@ -32,24 +32,24 @@ const CATEGORIES = [
         fields: [["topic", "Topic", true], ["keywords", "Keywords"], ["content_type", "Type (blog/article/landing)"], ["tone", "Tone"], ["word_count", "Word count", false, "n"]] },
       keyword_research: { label: "Keyword research", blurb: "Keywords to target.",
         fields: [["topic", "Topic / seed keyword", true], ["goal", "Goal"], ["market", "Market"]] },
-      technical_seo: { label: "Technical SEO audit", blurb: "On-page / technical recommendations.",
+      technical_seo: { label: "Technical SEO audit", blurb: "On-page / technical fixes.",
         fields: [["target", "URL or page description", true], ["page_type", "Page type"], ["primary_keyword", "Primary keyword"]] },
     },
   },
   {
     name: "LinkedIn formats",
     tools: {
-      linkedin_article: { label: "Article", blurb: "A long-form LinkedIn article.",
+      linkedin_article: { label: "Article", blurb: "Long-form LinkedIn article.",
         fields: [["topic", "Topic", true], ["audience", "Audience", true], ["angle", "Angle"], ["word_count", "Word count", false, "n"]] },
-      linkedin_carousel: { label: "Carousel / document", blurb: "A multi-slide carousel.",
+      linkedin_carousel: { label: "Carousel", blurb: "A multi-slide carousel.",
         fields: [["topic", "Topic", true], ["audience", "Audience", true], ["goal", "Goal"], ["num_slides", "Slides", false, "n"]] },
-      linkedin_newsletter: { label: "Newsletter", blurb: "A LinkedIn newsletter issue.",
+      linkedin_newsletter: { label: "Newsletter", blurb: "A newsletter issue.",
         fields: [["topic", "Topic", true], ["audience", "Audience", true], ["newsletter_name", "Newsletter name"], ["tone", "Tone"]] },
       linkedin_poll: { label: "Poll", blurb: "An engagement poll.",
         fields: [["topic", "Topic", true], ["audience", "Audience", true], ["goal", "Goal"], ["poll_type", "Poll type"]] },
       linkedin_video: { label: "Video script", blurb: "A short video script.",
         fields: [["topic", "Topic", true], ["audience", "Audience", true], ["goal", "Goal"], ["duration", "Seconds", false, "n"], ["style", "Style"]] },
-      linkedin_repurpose: { label: "Repurpose content", blurb: "Turn existing content into a LinkedIn post.",
+      linkedin_repurpose: { label: "Repurpose", blurb: "Turn content into a post.",
         fields: [["original_content", "Original content", true, "a"], ["source_type", "Source type"], ["target_audience", "Audience"]] },
       linkedin_url_post: { label: "URL → post", blurb: "Turn a link into a post.",
         fields: [["url", "Article / page URL", true], ["audience", "Audience"], ["tone", "Tone"]] },
@@ -59,24 +59,33 @@ const CATEGORIES = [
         fields: [["topic", "Topic", true], ["niche", "Niche"], ["audience", "Audience"]] },
       post_series: { label: "Post series", blurb: "A connected multi-post series.",
         fields: [["topic", "Topic", true], ["audience", "Audience"], ["series_length", "Posts", false, "n"], ["series_goal", "Goal"]] },
-      outreach_campaign: { label: "Outreach sequence", blurb: "A multi-touch DM/outreach sequence.",
+      outreach_campaign: { label: "Outreach sequence", blurb: "A multi-touch outreach sequence.",
         fields: [["your_offer", "Your offer", true], ["target_role", "Target role", true], ["num_touchpoints", "Touchpoints", false, "n"]] },
-      linkedin_brand_audit: { label: "Profile brand audit", blurb: "Score and improve your LinkedIn brand.",
+      linkedin_brand_audit: { label: "Profile brand audit", blurb: "Score & improve your brand.",
         fields: [["headline", "Headline", true], ["about_section", "About section", true, "a"], ["niche", "Niche"], ["goal", "Goal"]] },
     },
   },
   {
     name: "Graphics",
     tools: {
-      social_card: { label: "Social graphic", blurb: "A branded square graphic from a line of text.",
+      social_card: { label: "Social graphic", blurb: "A branded graphic from text.",
         fields: [["text", "The message / quote", true, "a"], ["theme", "Theme (modern/bold/minimal…)"], ["brand_name", "Brand name"]] },
-      ad_creative: { label: "Ad creative", blurb: "Ad copy + matching image per platform.",
+      ad_creative: { label: "Ad creative", blurb: "Ad copy + matching image.",
         fields: [["product", "Product / service", true], ["offer", "Offer"], ["platform", "Platform"], ["count", "Variations", false, "n"]] },
-      infographic: { label: "Infographic", blurb: "An infographic image from your key points.",
+      infographic: { label: "Infographic", blurb: "An infographic image from points.",
         fields: [["topic", "Topic", true], ["content_points", "Key points to visualize", true, "a"], ["infographic_type", "Type"], ["color_scheme", "Color scheme"], ["brand_name", "Brand name"]] },
     },
   },
 ];
+
+// Module-level cache so results + in-flight generations + the selected tool
+// survive switching tools, switching app tabs (unmount), and coming back.
+const FIRST = Object.keys(CATEGORIES[0].tools)[0];
+const CACHE = { result: {}, inflight: {}, cat: 0, tool: FIRST, form: {} };
+
+function findCat(toolKey) {
+  return Math.max(0, CATEGORIES.findIndex((c) => toolKey in c.tools));
+}
 
 function val(v) {
   if (v === null || v === undefined) return null;
@@ -89,12 +98,12 @@ function val(v) {
   if (typeof v === "object") return <Blocks data={v} />;
   return <span>{String(v)}</span>;
 }
-function Blocks({ data }) {
+function Blocks({ data, top }) {
   const entries = Object.entries(data).filter(([k, v]) => !k.startsWith("_") && k !== "image_url" && k !== "html" && v !== null && v !== "");
   return (
     <div>
       {entries.map(([k, v]) => (
-        <div key={k} style={{ marginBottom: 8 }}>
+        <div key={k} className={top ? "res-section" : undefined} style={top ? undefined : { marginBottom: 8 }}>
           <div style={{ fontWeight: 600, color: "var(--mid)", textTransform: "capitalize", fontSize: 13 }}>{k.replace(/_/g, " ")}</div>
           {val(v)}
         </div>
@@ -104,25 +113,42 @@ function Blocks({ data }) {
 }
 
 export default function Studio() {
-  const [cat, setCat] = useState(0);
-  const [toolKey, setToolKey] = useState(Object.keys(CATEGORIES[0].tools)[0]);
-  const [form, setForm] = useState({});
-  const [result, setResult] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [cat, setCat] = useState(CACHE.cat);
+  const [toolKey, setToolKey] = useState(CACHE.tool);
+  const [form, setForm] = useState(CACHE.form[CACHE.tool] || {});
+  const [result, setResult] = useState(CACHE.result[CACHE.tool] || null);
+  const [busy, setBusy] = useState(Boolean(CACHE.inflight[CACHE.tool]));
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
   const tools = CATEGORIES[cat].tools;
   const tool = tools[toolKey];
-  const imageUrl = result?.image_url;
 
-  const pickCat = (i) => { setCat(i); const k = Object.keys(CATEGORIES[i].tools)[0]; setToolKey(k); setForm({}); setResult(null); setError(""); };
-  const pickTool = (k) => { setToolKey(k); setForm({}); setResult(null); setError(""); };
-  const set = (name) => (e) => setForm({ ...form, [name]: e.target.value });
+  // Load the selected tool's cached result, and re-attach to any in-flight run.
+  useEffect(() => {
+    setResult(CACHE.result[toolKey] || null);
+    setError(""); setCopied(false);
+    const p = CACHE.inflight[toolKey];
+    if (p) {
+      setBusy(true);
+      p.then((data) => { if (CACHE.tool === toolKey) { setResult(data); setBusy(false); } })
+       .catch((e) => { if (CACHE.tool === toolKey) { setError(e.message); setBusy(false); } });
+    } else {
+      setBusy(false);
+    }
+  }, [toolKey]); // eslint-disable-line
+
+  const pickCat = (i) => { const k = Object.keys(CATEGORIES[i].tools)[0]; setCat(i); CACHE.cat = i; selectTool(k); };
+  const selectTool = (k) => { setToolKey(k); CACHE.tool = k; setForm(CACHE.form[k] || {}); };
+  const pickTool = (k) => { setCat(findCat(k)); CACHE.cat = findCat(k); selectTool(k); };
+  const set = (name) => (e) => {
+    const f = { ...form, [name]: e.target.value };
+    setForm(f); CACHE.form[toolKey] = f;
+  };
 
   const run = async (e) => {
     e.preventDefault();
-    setError(""); setBusy(true); setResult(null); setCopied(false);
+    setError(""); setCopied(false); setResult(null);
     try {
       for (const f of tool.fields) if (f[2] && !(form[f[0]] || "").trim()) throw new Error(`${f[1]} is required.`);
       const params = {};
@@ -131,11 +157,21 @@ export default function Studio() {
         if (raw === undefined || String(raw).trim() === "") continue;
         params[f[0]] = f[3] === "n" ? Number(raw) : raw;
       }
-      const res = await studioRun(toolKey, params);
-      setResult(res.data);
-    } catch (e2) { setError(e2.message); }
-    finally { setBusy(false); }
+      const key = toolKey;
+      setBusy(true);
+      // Cache the promise so the result survives tab/tool switches.
+      const p = studioRun(key, params).then((res) => {
+        CACHE.result[key] = res.data; delete CACHE.inflight[key]; return res.data;
+      }).catch((err) => { delete CACHE.inflight[key]; throw err; });
+      CACHE.inflight[key] = p;
+      const data = await p;
+      if (CACHE.tool === key) { setResult(data); setBusy(false); }
+    } catch (e2) {
+      setError(e2.message); setBusy(false);
+    }
   };
+
+  const imageUrl = result?.image_url;
 
   return (
     <>
@@ -143,18 +179,25 @@ export default function Studio() {
 
       <div className="card">
         <h2>Marketing Studio</h2>
-        <p className="muted" style={{ marginTop: -6 }}>Reports, email, SEO, LinkedIn formats and graphics — each run uses 1 credit.</p>
+        <p className="muted" style={{ marginTop: -6 }}>Reports, email, SEO, LinkedIn formats and graphics. Each run uses 1 credit — and stays here while you explore.</p>
         <div className="seg" style={{ marginTop: 4 }}>
           {CATEGORIES.map((c, i) => (
             <button key={c.name} className={cat === i ? "btn-primary" : "btn-secondary"} onClick={() => pickCat(i)}>{c.name}</button>
           ))}
         </div>
-        <div className="row" style={{ flexWrap: "wrap", marginTop: 12 }}>
+        <div className="tool-tiles">
           {Object.entries(tools).map(([k, t]) => (
-            <button key={k} className={toolKey === k ? "btn-primary" : "btn-secondary"} onClick={() => pickTool(k)}>{t.label}</button>
+            <div key={k} className={`tool-tile${toolKey === k ? " active" : ""}`} onClick={() => selectTool(k)}>
+              <div className="tt-name">{t.label}</div>
+              <div className="tt-blurb">{t.blurb}</div>
+            </div>
           ))}
         </div>
-        <p className="muted" style={{ marginTop: 10 }}>{tool.blurb}</p>
+      </div>
+
+      <div className="card">
+        <h2>{tool.label}</h2>
+        <p className="muted" style={{ marginTop: -6 }}>{tool.blurb}</p>
         <form onSubmit={run}>
           <div className="grid-2">
             {tool.fields.map((f) => (
@@ -172,25 +215,31 @@ export default function Studio() {
         </form>
       </div>
 
-      {result && (
+      {(busy || result) && (
         <div className="card">
-          <h2>{tool.label}</h2>
-          {imageUrl && (
-            <div style={{ marginBottom: 14 }}>
-              <img src={imageUrl} alt={tool.label} style={{ maxWidth: "100%", borderRadius: 12, border: "1px solid var(--line)" }} />
-              <div className="row" style={{ marginTop: 10 }}>
-                <input readOnly value={imageUrl} style={{ flex: 1 }} onFocus={(e) => e.target.select()} />
-                <button className="btn-secondary" type="button"
-                  onClick={() => { navigator.clipboard?.writeText(imageUrl); setCopied(true); }}>
-                  {copied ? "Copied!" : "Copy image URL"}
-                </button>
-              </div>
-              <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                To publish this image: open <strong>Posts</strong>, edit a draft, and paste this URL as its media.
-              </p>
-            </div>
+          <h2>{tool.label} — result</h2>
+          {busy ? (
+            <div className="studio-loading"><span className="spinner" />Generating {tool.label}… you can switch tabs; it'll be here when you're back.</div>
+          ) : (
+            <>
+              {imageUrl && (
+                <div style={{ marginBottom: 14 }}>
+                  <img src={imageUrl} alt={tool.label} style={{ maxWidth: "100%", borderRadius: 12, border: "1px solid var(--line)" }} />
+                  <div className="row" style={{ marginTop: 10 }}>
+                    <input readOnly value={imageUrl} style={{ flex: 1 }} onFocus={(e) => e.target.select()} />
+                    <button className="btn-secondary" type="button"
+                      onClick={() => { navigator.clipboard?.writeText(imageUrl); setCopied(true); }}>
+                      {copied ? "Copied!" : "Copy image URL"}
+                    </button>
+                  </div>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    To publish this image: open <strong>Posts</strong>, edit a draft, and paste this URL as its media.
+                  </p>
+                </div>
+              )}
+              <Blocks data={result} top />
+            </>
           )}
-          <Blocks data={result} />
         </div>
       )}
     </>
