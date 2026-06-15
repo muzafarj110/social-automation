@@ -34,4 +34,11 @@ def hub_http(e: HubError) -> HTTPException:
         return HTTPException(403, "This AI capability isn't available on your current plan.")
     if isinstance(e, HubValidationError):
         return HTTPException(400, "We couldn't process that request — please adjust your input and try again.")
-    return HTTPException(502, "The AI service is temporarily unavailable. Please try again shortly.")
+    code = getattr(e, "status_code", None)
+    if code == 404:
+        return HTTPException(
+            502, "This AI tool isn't available on the connected AI service yet. "
+                 "Try another tool, or enable this model on the Hub.")
+    suffix = f" (code {code})" if code else ""
+    return HTTPException(
+        502, f"The AI service is temporarily unavailable{suffix}. Please try again shortly.")
