@@ -99,11 +99,11 @@ export default function App() {
   const ent = user.entitlements || {};
   const nav = user.is_admin ? [...NAV, ADMIN_NAV] : NAV;
   const go = (t) => { setTab(t); setMenuOpen(false); };  // navigate + close mobile drawer
-  // Dashboard-style tabs (independent cards) flow into a responsive grid; form/
-  // list-heavy tabs (brand voice, quick post, posts, calendar, autopilot) stay
-  // full-width so inputs and long lists aren't cramped into narrow columns.
-  const GRID_TABS = new Set(["home", "accounts", "billing", "analytics", "leads"]);
-  const bodyClass = GRID_TABS.has(tab) ? "page-body card-grid" : "page-body";
+  // Simple multi-card pages flow into a tight masonry. Home/Analytics/Posts/
+  // Calendar build their own internal layouts (KPI strips, grids), and form/
+  // list-heavy pages stay full-width so inputs aren't cramped.
+  const MASONRY_TABS = new Set(["accounts", "leads"]);
+  const bodyClass = MASONRY_TABS.has(tab) ? "page-body masonry" : "page-body";
 
   return (
     <div className={`app ${menuOpen ? "drawer" : ""}`}>

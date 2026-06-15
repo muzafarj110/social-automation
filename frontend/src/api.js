@@ -159,6 +159,7 @@ export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POS
 // --- Billing (usage-based credits) ---
 export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });
+export const openBillingPortal = () => apiSend("/billing/portal", "POST", {});
 
 // --- Admin (operator dashboard) ---
 export const adminListUsers = () => apiGet("/admin/users");

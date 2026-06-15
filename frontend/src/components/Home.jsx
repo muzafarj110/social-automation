@@ -63,6 +63,15 @@ export default function Home({ goTab, user }) {
 
   return (
     <>
+      <div className="kpi-strip">
+        <div className="kpi-tile"><div className="v">{publishedThisWeek}</div><div className="l">Published (7d)</div></div>
+        <div className="kpi-tile"><div className="v">{scheduled.length}</div><div className="l">Scheduled</div></div>
+        <div className="kpi-tile"><div className="v">{drafts}</div><div className="l">Drafts</div></div>
+        <div className="kpi-tile"><div className="v">{data.inbox.length}</div><div className="l">Awaiting approval</div></div>
+        <div className="kpi-tile"><div className="v">{activeCampaigns.length}</div><div className="l">Active campaigns</div></div>
+      </div>
+
+      <div className="masonry">
       {!setupDone && (
         <div className="card">
           <h2>Get set up</h2>
@@ -88,17 +97,6 @@ export default function Home({ goTab, user }) {
           </div>
         </div>
       )}
-
-      <div className="card">
-        <h2>This week at a glance</h2>
-        <div className="row" style={{ gap: 10 }}>
-          <Tile label="Published (7d)" value={publishedThisWeek} />
-          <Tile label="Scheduled" value={scheduled.length} />
-          <Tile label="Drafts" value={drafts} />
-          <Tile label="Awaiting approval" value={data.inbox.length} />
-          <Tile label="Active campaigns" value={activeCampaigns.length} />
-        </div>
-      </div>
 
       {data.metrics && (
         <div className="card">
@@ -150,6 +148,7 @@ export default function Home({ goTab, user }) {
             <button className="btn-secondary" onClick={() => goTab("posts")}>Open Posts</button>
           </div>
         </div>
+      </div>
       </div>
     </>
   );

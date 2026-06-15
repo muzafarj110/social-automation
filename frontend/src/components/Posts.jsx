@@ -10,6 +10,10 @@ const PLATFORM_LABEL = {
   bluesky: "Bluesky", threads: "Threads", googlebusiness: "Google Business",
   telegram: "Telegram", snapchat: "Snapchat", whatsapp: "WhatsApp", discord: "Discord",
 };
+const FILTERS = [
+  ["all", "All"], ["draft", "Drafts"], ["scheduled", "Scheduled"],
+  ["published", "Published"], ["failed", "Failed"],
+];
 
 function PostCard({ post, onChange }) {
   const [when, setWhen] = useState("");
@@ -149,6 +153,7 @@ export default function Posts({ refreshKey }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [filter, setFilter] = useState("all");
 
   const load = async () => {
     setError("");
@@ -181,6 +186,8 @@ export default function Posts({ refreshKey }) {
 
   if (loading) return <div className="empty">Loading…</div>;
 
+  const shown = filter === "all" ? posts : posts.filter((p) => p.status === filter);
+
   return (
     <>
       {error && <div className="error">{error}</div>}
@@ -194,7 +201,26 @@ export default function Posts({ refreshKey }) {
       {posts.length === 0 ? (
         <div className="empty">No posts yet. Generate one to get started.</div>
       ) : (
-        posts.map((p) => <PostCard key={p.id} post={p} onChange={load} />)
+        <>
+          <div className="filter-row">
+            {FILTERS.map(([key, label]) => {
+              const n = key === "all" ? posts.length : posts.filter((p) => p.status === key).length;
+              return (
+                <button key={key} className={`filter-chip ${filter === key ? "active" : ""}`}
+                  onClick={() => setFilter(key)}>
+                  {label}{n > 0 ? <span style={{ opacity: 0.7 }}> · {n}</span> : null}
+                </button>
+              );
+            })}
+          </div>
+          {shown.length === 0 ? (
+            <div className="empty">No {filter} posts.</div>
+          ) : (
+            <div className="masonry">
+              {shown.map((p) => <PostCard key={p.id} post={p} onChange={load} />)}
+            </div>
+          )}
+        </>
       )}
     </>
   );

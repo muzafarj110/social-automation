@@ -33,6 +33,15 @@ class User(Base):
     # connected channels under the app-level key). None until first connect.
     zernio_profile_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
+    # Subscription (Stripe). A monthly plan grants a credit allowance that resets
+    # each billing cycle. All null until the user subscribes.
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    subscription_tier: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    subscription_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    subscription_renews_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # Per-user Zernio key, encrypted at rest. Scopes which LinkedIn accounts the

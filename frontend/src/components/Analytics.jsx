@@ -69,13 +69,6 @@ function Summary({ s }) {
   const fmt = (n) => (n ?? 0).toLocaleString();
   return (
     <div style={{ marginTop: 10 }}>
-      <div className="row" style={{ gap: 10 }}>
-        <Stat label="Published posts" value={fmt(s.post_count)} />
-        <Stat label="Total impressions" value={fmt(s.impressions)} />
-        <Stat label="Total likes" value={fmt(s.total_likes)} />
-        <Stat label="Total comments" value={fmt(s.total_comments)} />
-        <Stat label="Avg likes/post" value={fmt(s.avg_likes)} />
-      </div>
       {s.recent?.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 8 }}>Recent posts</div>
@@ -161,6 +154,17 @@ export default function Analytics() {
     <>
       {error && <div className="error">{error}</div>}
 
+      {summary && (
+        <div className="kpi-strip">
+          <div className="kpi-tile"><div className="v">{(summary.post_count ?? 0).toLocaleString()}</div><div className="l">Published posts</div></div>
+          <div className="kpi-tile"><div className="v">{(summary.impressions ?? 0).toLocaleString()}</div><div className="l">Impressions</div></div>
+          <div className="kpi-tile"><div className="v">{(summary.total_likes ?? 0).toLocaleString()}</div><div className="l">Total likes</div></div>
+          <div className="kpi-tile"><div className="v">{(summary.total_comments ?? 0).toLocaleString()}</div><div className="l">Comments</div></div>
+          <div className="kpi-tile"><div className="v">{(summary.avg_likes ?? 0).toLocaleString()}</div><div className="l">Avg likes/post</div></div>
+        </div>
+      )}
+
+      <div className="masonry">
       <div className="card">
         <h2>Strategy &amp; suggestions</h2>
         <p className="muted">
@@ -238,6 +242,7 @@ export default function Analytics() {
             your reach and engagement will show up here automatically.
           </div>
         )}
+      </div>
       </div>
     </>
   );

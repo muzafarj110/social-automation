@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     billing_cancel_url: str = Field("", alias="BILLING_CANCEL_URL")
     # Credits granted to every new account so they can try the product.
     free_credits: int = Field(50, alias="FREE_CREDITS")
+    # Subscription plans as "price_id:tier:credits" (RECURRING Stripe Prices).
+    # e.g. "price_a:starter:100,price_b:growth:400,price_c:pro:1200".
+    # Each cycle the user's credits reset to their tier's monthly allowance.
+    stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
     # Email (Resend) — for password-reset links. Inert until RESEND_API_KEY is set.
     resend_api_key: str = Field("", alias="RESEND_API_KEY")
@@ -71,6 +75,23 @@ class Settings(BaseSettings):
     @property
     def billing_enabled(self) -> bool:
         return bool(self.stripe_secret_key)
+
+    @property
+    def subscriptions_enabled(self) -> bool:
+        return bool(self.stripe_secret_key and self.stripe_plans.strip())
+
+    def plans(self) -> dict[str, dict]:
+        """Parse STRIPE_PLANS into {price_id: {"tier": str, "credits": int}}."""
+        out: dict[str, dict] = {}
+        for part in self.stripe_plans.split(","):
+            part = part.strip()
+            bits = [b.strip() for b in part.split(":")]
+            if len(bits) == 3 and bits[0]:
+                try:
+                    out[bits[0]] = {"tier": bits[1], "credits": int(bits[2])}
+                except ValueError:
+                    pass
+        return out
 
     def credit_packs(self) -> dict[str, int]:
         """Parse STRIPE_CREDIT_PACKS into {price_id: credits}."""
