@@ -43,6 +43,11 @@ from app.schemas.auth import (
 from app.services.email import reset_email_html, send_email, verification_email_html
 
 
+import logging
+
+log = logging.getLogger("uvicorn.error")
+
+
 def _hash_token(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -73,10 +78,12 @@ async def _send_verification(user: User, db: AsyncSession) -> None:
     await db.commit()
     base = (settings.app_base_url or "").rstrip("/")
     verify_url = f"{base}/#verify?token={raw}"
-    await send_email(
+    sent = await send_email(
         to=user.email, subject="Verify your email",
         html=verification_email_html(verify_url),
     )
+    # Logged so the link is retrievable if email delivery is misconfigured.
+    log.info("Email verification for %s (sent=%s): %s", user.email, sent, verify_url)
 
 
 @router.post("/register", status_code=201)
@@ -85,30 +92,32 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     if existing:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
-    # The admin account is trusted and auto-verified; everyone else must confirm.
+    # The admin is auto-verified. So is everyone if email isn't configured — otherwise
+    # no one could ever verify and the app would be unusable (a hard lockout).
     is_admin_email = body.email.strip().lower() == settings.admin_email.strip().lower()
+    auto_verified = is_admin_email or not settings.email_enabled
     user = User(
         email=body.email,
         password_hash=hash_password(body.password),
         full_name=body.full_name,
-        email_verified=is_admin_email,
+        email_verified=auto_verified,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    if not is_admin_email:
-        await _send_verification(user, db)
+    if auto_verified:
         return {
             "ok": True,
-            "verification_required": True,
-            "message": "Account created. Check your email for a verification link, then sign in.",
+            "verification_required": False,
+            "access_token": create_access_token(user.id),
+            "token_type": "bearer",
         }
+    await _send_verification(user, db)
     return {
         "ok": True,
-        "verification_required": False,
-        "access_token": create_access_token(user.id),
-        "token_type": "bearer",
+        "verification_required": True,
+        "message": "Account created. Check your email for a verification link, then sign in.",
     }
 
 
@@ -236,10 +245,11 @@ async def forgot_password(
         await db.commit()
         base = (settings.app_base_url or "").rstrip("/")
         reset_url = f"{base}/#reset?token={raw}"
-        await send_email(
+        sent = await send_email(
             to=user.email, subject="Reset your password",
             html=reset_email_html(reset_url),
         )
+        log.info("Password reset for %s (sent=%s): %s", user.email, sent, reset_url)
     return generic
 
 
