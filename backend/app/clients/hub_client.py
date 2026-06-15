@@ -142,7 +142,9 @@ class HubClient:
         base_url: str,
         api_key: str,
         *,
-        timeout: float = 30.0,
+        # AI generations (articles, email sequences, reports, images) routinely
+        # run 30–90s; a tight timeout surfaces as a generic "AI service is down".
+        timeout: float = 120.0,
         max_retries: int = 3,
         backoff_base: float = 0.5,
         client: httpx.AsyncClient | None = None,
