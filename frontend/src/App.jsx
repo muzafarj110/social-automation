@@ -16,12 +16,13 @@ import Admin from "./components/Admin.jsx";
 import Billing from "./components/Billing.jsx";
 import Calendar from "./components/Calendar.jsx";
 import Leads from "./components/Leads.jsx";
+import Opportunities from "./components/Opportunities.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
   { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["strategy", "Brand voice", "strategy"]] },
   { group: "Manage", items: [["calendar", "Calendar", null], ["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
-  { group: "Grow", items: [["leads", "Leads", null], ["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
+  { group: "Grow", items: [["opportunities", "Opportunities", null], ["leads", "Leads", null], ["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
   { group: "Settings", items: [["accounts", "Accounts", null], ["billing", "Billing", null]] },
 ];
 // Admin-only nav group, appended when the user is an operator.
@@ -36,6 +37,7 @@ const TITLES = {
   profile: ["Profile Studio", "Optimize your LinkedIn profile"],
   analytics: ["Analytics", "Performance and AI strategy"],
   calendar: ["Calendar", "Everything going out, across every platform"],
+  opportunities: ["Opportunities", "What to act on next"],
   leads: ["Leads", "Capture leads and let AI draft outreach"],
   accounts: ["Accounts", "Keys, connected accounts and usage"],
   billing: ["Billing", "Your credits and top-ups"],
@@ -173,6 +175,7 @@ export default function App() {
             <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} />
           )}
           {tab === "calendar" && <Calendar />}
+          {tab === "opportunities" && <Opportunities goTab={setTab} />}
           {tab === "leads" && <Leads refreshUser={refreshUser} />}
           {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}

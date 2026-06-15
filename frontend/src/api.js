@@ -156,6 +156,9 @@ export const updateLead = (id, data) => apiSend(`/leads/${id}`, "PATCH", data);
 export const deleteLead = (id) => apiSend(`/leads/${id}`, "DELETE");
 export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POST", {});
 
+// --- Opportunities (AI "what to act on next") ---
+export const listOpportunities = () => apiGet("/opportunities");
+
 // --- Billing (usage-based credits) ---
 export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });
