@@ -47,5 +47,7 @@ class PostOut(BaseModel):
     error: str | None
     source: str
     has_infographic: bool = False
+    team_run_id: int | None = None
+    qa_score: int | None = None
     created_at: datetime
     updated_at: datetime

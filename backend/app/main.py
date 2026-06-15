@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import (
     accounts, admin, analytics, auth, billing, brand, campaigns, content, inbox,
-    leads, opportunities, posts, profile, routes,
+    leads, opportunities, posts, profile, routes, team,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -94,6 +94,8 @@ app.include_router(billing.router, prefix="/api")
 app.include_router(leads.router, prefix="/api")
 # Opportunities — AI "what to act on next"
 app.include_router(opportunities.router, prefix="/api")
+# Content Team — agentic weekly content cycle
+app.include_router(team.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------

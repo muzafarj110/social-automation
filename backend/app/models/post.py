@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -57,6 +57,13 @@ class Post(Base):
     )
     # optional infographic (self-contained HTML) generated alongside the post
     infographic_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Content-team run this post belongs to (nullable; SET NULL if the run is removed),
+    # plus the QA score the Producer agent gave it (0–100).
+    team_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("team_runs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    qa_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     @property
     def has_infographic(self) -> bool:

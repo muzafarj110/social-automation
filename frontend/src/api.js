@@ -167,6 +167,12 @@ export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POS
 // --- Opportunities (AI "what to act on next") ---
 export const listOpportunities = () => apiGet("/opportunities");
 
+// --- Content Team (agentic weekly cycle) ---
+export const teamRun = (count = 3) => apiSend("/team/run", "POST", { count });
+export const listTeamRuns = () => apiGet("/team/runs");
+export const getTeamRun = (id) => apiGet(`/team/runs/${id}`);
+export const approveTeamRun = (id) => apiSend(`/team/runs/${id}/approve`, "POST", {});
+
 // --- Billing (usage-based credits) ---
 export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });

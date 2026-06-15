@@ -18,10 +18,11 @@ import Calendar from "./components/Calendar.jsx";
 import Leads from "./components/Leads.jsx";
 import Opportunities from "./components/Opportunities.jsx";
 import Studio from "./components/Studio.jsx";
+import ContentTeam from "./components/ContentTeam.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
-  { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["studio", "Studio", null], ["strategy", "Brand voice", "strategy"]] },
+  { group: "Create", items: [["team", "Content Team", null], ["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["studio", "Studio", null], ["strategy", "Brand voice", "strategy"]] },
   { group: "Manage", items: [["calendar", "Calendar", null], ["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
   { group: "Grow", items: [["opportunities", "Opportunities", null], ["leads", "Leads", null], ["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
   { group: "Settings", items: [["accounts", "Accounts", null], ["billing", "Billing", null]] },
@@ -30,6 +31,7 @@ const NAV = [
 const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
 const TITLES = {
   home: ["Home", "Your week at a glance"],
+  team: ["Content Team", "Your AI team drafts a week of content — you approve once"],
   strategy: ["Brand voice", "Your voice, persona and positioning — used by every post"],
   generate: ["Quick post", "Write one post right now, by hand with AI"],
   studio: ["Marketing Studio", "Reports, email, SEO, LinkedIn formats & graphics — powered by AI"],
@@ -165,6 +167,7 @@ export default function App() {
           {tab === "home" && <Home goTab={setTab} user={user} />}
           {tab === "strategy" && <Strategy />}
           {tab === "studio" && <Studio />}
+          {tab === "team" && <ContentTeam goTab={setTab} />}
           {tab === "generate" && (
             <Generate
               accounts={accounts}
