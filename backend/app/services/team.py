@@ -70,7 +70,85 @@ def _topics_from_strategy(data, count: int) -> list[str]:
     return out
 
 
-async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
+async def _recent_topics(db, user: User, limit: int = 8) -> list[str]:
+    rows = await db.scalars(
+        select(Post).where(Post.user_id == user.id).order_by(Post.created_at.desc()).limit(limit)
+    )
+    return [(p.body or "")[:60].strip() for p in rows if p.body]
+
+
+async def _performance_insight(db, user: User) -> str | None:
+    """Best-effort: surface last cycle's top performer to bias this week's plan.
+
+    Analytics live on Zernio and can be empty/flaky, so this never raises — it
+    returns None and the plan falls back to brand-only.
+    """
+    zkey = resolve_zernio_key(user)
+    if not zkey:
+        return None
+    try:
+        from app.api.analytics import _aggregate, connected_platforms, fetch_all_metrics
+        from app.clients.zernio_client import ZernioClient
+        from app.core.user_keys import is_white_label
+        from app.services.channels import ensure_profile
+        profile_id = await ensure_profile(user, db)
+        if is_white_label() and not profile_id:
+            return None
+        platforms = await connected_platforms(user, db)
+        async with ZernioClient(settings.zernio_base_url, zkey) as z:
+            raw = await fetch_all_metrics(z, platforms, profile_id)
+        recent = (_aggregate(raw) or {}).get("recent") or []
+        scored = [r for r in recent if (r.get("likes") or 0) or (r.get("impressions") or 0)]
+        if not scored:
+            return None
+        top = max(scored, key=lambda r: ((r.get("likes") or 0), (r.get("impressions") or 0)))
+        snippet = (top.get("content") or "").strip()[:90]
+        return (f"Last cycle's best post drew {top.get('likes', 0)} likes / "
+                f"{top.get('impressions', 0)} impressions: \"{snippet}…\" — lean into what's resonating.")
+    except Exception as e:  # analytics is best-effort; never break planning
+        log.warning("Team performance insight skipped: %s", e)
+        return None
+
+
+async def build_plan(db, user: User, count: int = 3, *, key: str | None = None):
+    """Strategist: this cycle's brief + topics, from brand + recent performance."""
+    key = key or resolve_hub_key(user)
+    if not key:
+        raise TeamError("AI is temporarily unavailable. Please try again.")
+    brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
+    audience = (brand.audience if brand else None) or "your audience"
+    seed = (brand and (brand.industry or brand.brand_name)) or "your industry"
+
+    perf = await _performance_insight(db, user)
+    recent = await _recent_topics(db, user)
+
+    brief, topics = None, []
+    async with HubClient(settings.hub_base_url, key) as hub:
+        try:
+            strat = await hub.call("content_strategy", {
+                "topic": seed, "audience": audience, "timeframe": "this week",
+            })
+            if isinstance(strat, dict):
+                brief = strat.get("summary") or strat.get("overview")
+            topics = _topics_from_strategy(strat, count)
+        except HubError as e:
+            log.warning("Team strategist failed: %s", getattr(e, "message", e))
+
+    # Prefer fresh angles: drop topics that echo something posted recently.
+    low_recent = " ".join(recent).lower()
+    fresh = [t for t in topics if t[:24].lower() not in low_recent] or topics
+    if not fresh:
+        fresh = [f"{seed}: angle #{i + 1}" for i in range(count)]
+    topics = fresh[:count]
+
+    if not brief:
+        brief = f"This week's focus: consistent, on-brand content for {audience}."
+    if perf:
+        brief = f"{perf}\n\n{brief}"
+    return brief, topics
+
+
+async def run_cycle(db, user: User, *, count: int = 3, brief=None, topics=None) -> TeamRun:
     key = resolve_hub_key(user)
     if not key:
         raise TeamError("AI is temporarily unavailable. Please try again.")
@@ -86,22 +164,14 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
     brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
     audience = (brand.audience if brand else None) or "your audience"
     voice = (brand.voice if brand else None) or "professional but human"
-    seed = (brand and (brand.industry or brand.brand_name)) or "your industry"
 
-    # --- Strategist: a content strategy → topics + brief ---
-    brief, topics = None, []
-    async with HubClient(settings.hub_base_url, key) as hub:
-        try:
-            strat = await hub.call("content_strategy", {
-                "topic": seed, "audience": audience, "timeframe": "this week",
-            })
-            if isinstance(strat, dict):
-                brief = strat.get("summary") or strat.get("overview")
-            topics = _topics_from_strategy(strat, count)
-        except HubError as e:
-            log.warning("Team strategist failed: %s", getattr(e, "message", e))
-    if not topics:
-        topics = [f"{seed}: angle #{i + 1}" for i in range(count)]
+    # Use the (possibly user-edited) plan, or build one if none was supplied.
+    if topics:
+        targets = [str(t).strip() for t in topics if str(t).strip()][:10]
+    else:
+        brief, targets = await build_plan(db, user, count, key=key)
+    if not targets:
+        raise TeamError("No topics to write — plan your week first.", 400)
     if not brief:
         brief = f"This week's focus: consistent, on-brand content for {audience}."
 
@@ -123,10 +193,9 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
                 return None
             return None
 
-        for i in range(count):
+        for topic in targets:
             if not credits.has_credits(user, 1):
                 break
-            topic = topics[i % len(topics)]
             try:
                 data = await hub.generate_text_post(
                     topic=topic, post_type="Personal Story + Lesson",

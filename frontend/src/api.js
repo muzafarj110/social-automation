@@ -168,7 +168,8 @@ export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POS
 export const listOpportunities = () => apiGet("/opportunities");
 
 // --- Content Team (agentic weekly cycle) ---
-export const teamRun = (count = 3) => apiSend("/team/run", "POST", { count });
+export const teamPlan = (count = 3) => apiSend("/team/plan", "POST", { count });
+export const teamRun = (data) => apiSend("/team/run", "POST", data); // { count?, brief?, topics? }
 export const listTeamRuns = () => apiGet("/team/runs");
 export const getTeamRun = (id) => apiGet(`/team/runs/${id}`);
 export const approveTeamRun = (id) => apiSend(`/team/runs/${id}/approve`, "POST", {});

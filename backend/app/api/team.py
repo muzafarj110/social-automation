@@ -18,8 +18,14 @@ from app.services import team
 router = APIRouter(prefix="/team", tags=["team"])
 
 
+class PlanRequest(BaseModel):
+    count: int = Field(3, ge=1, le=7)
+
+
 class RunRequest(BaseModel):
     count: int = Field(3, ge=1, le=7)
+    brief: str | None = None
+    topics: list[str] | None = None
 
 
 async def _payload(db: AsyncSession, run: TeamRun) -> dict:
@@ -42,6 +48,20 @@ async def _owned_run(run_id: int, user: User, db: AsyncSession) -> TeamRun:
     return run
 
 
+@router.post("/plan")
+async def plan(
+    body: PlanRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Strategist only: return an editable brief + topics (no posts, no credit)."""
+    try:
+        brief, topics = await team.build_plan(db, current, body.count)
+    except team.TeamError as e:
+        raise HTTPException(e.status_code, e.message) from e
+    return {"brief": brief, "topics": topics}
+
+
 @router.post("/run")
 async def run(
     body: RunRequest,
@@ -49,7 +69,7 @@ async def run(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     try:
-        r = await team.run_cycle(db, current, count=body.count)
+        r = await team.run_cycle(db, current, count=body.count, brief=body.brief, topics=body.topics)
     except team.TeamError as e:
         raise HTTPException(e.status_code, e.message) from e
     return await _payload(db, r)
