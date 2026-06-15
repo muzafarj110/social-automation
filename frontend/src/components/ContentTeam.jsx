@@ -26,6 +26,7 @@ export default function ContentTeam({ goTab }) {
   const [count, setCount] = useState(3);
   const [brief, setBrief] = useState("");
   const [topics, setTopics] = useState(null); // null = no plan yet; array = plan editor
+  const [learning, setLearning] = useState(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
@@ -49,6 +50,7 @@ export default function ContentTeam({ goTab }) {
       const p = await teamPlan(count);
       setBrief(p.brief || "");
       setTopics(p.topics || []);
+      setLearning(p.learning || null);
     } catch (e) { setError(e.message); }
     finally { setPlanning(false); }
   };
@@ -81,7 +83,7 @@ export default function ContentTeam({ goTab }) {
     catch (e) { setError(e.message); }
   };
 
-  const startOver = () => { setRun(null); setTopics(null); setBrief(""); setInfo(""); setError(""); };
+  const startOver = () => { setRun(null); setTopics(null); setBrief(""); setLearning(null); setInfo(""); setError(""); };
   const setTopicAt = (i, v) => setTopics(topics.map((t, j) => (j === i ? v : t)));
   const removeTopic = (i) => setTopics(topics.filter((_, j) => j !== i));
 
@@ -129,6 +131,14 @@ export default function ContentTeam({ goTab }) {
         <div className="card">
           <h2>Review the plan</h2>
           <p className="muted" style={{ marginTop: -6 }}>Edit the brief and topics — the team writes one post per topic.</p>
+          <div className="res-callout" style={{ marginBottom: 14 }}>
+            <strong>📈 Learning source:</strong>{" "}
+            {learning?.performance
+              ? learning.performance
+              : learning?.recent_count > 0
+                ? `Adapting from your last ${learning.recent_count} post${learning.recent_count === 1 ? "" : "s"} — fresh angles, avoiding repeats. Engagement data will sharpen this once your posts gather results.`
+                : "First run — planning from your brand profile. Future runs will learn from how these posts perform."}
+          </div>
           <label>This week's brief</label>
           <textarea value={brief} onChange={(e) => setBrief(e.target.value)} style={{ minHeight: 90 }} />
           <label style={{ marginTop: 12 }}>Topics ({topics.length})</label>

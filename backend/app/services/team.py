@@ -143,9 +143,8 @@ async def build_plan(db, user: User, count: int = 3, *, key: str | None = None):
 
     if not brief:
         brief = f"This week's focus: consistent, on-brand content for {audience}."
-    if perf:
-        brief = f"{perf}\n\n{brief}"
-    return brief, topics
+    learning = {"performance": perf, "recent_count": len(recent)}
+    return brief, topics, learning
 
 
 async def run_cycle(db, user: User, *, count: int = 3, brief=None, topics=None) -> TeamRun:
@@ -169,7 +168,7 @@ async def run_cycle(db, user: User, *, count: int = 3, brief=None, topics=None) 
     if topics:
         targets = [str(t).strip() for t in topics if str(t).strip()][:10]
     else:
-        brief, targets = await build_plan(db, user, count, key=key)
+        brief, targets, _learning = await build_plan(db, user, count, key=key)
     if not targets:
         raise TeamError("No topics to write — plan your week first.", 400)
     if not brief:

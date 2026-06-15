@@ -56,10 +56,10 @@ async def plan(
 ) -> dict:
     """Strategist only: return an editable brief + topics (no posts, no credit)."""
     try:
-        brief, topics = await team.build_plan(db, current, body.count)
+        brief, topics, learning = await team.build_plan(db, current, body.count)
     except team.TeamError as e:
         raise HTTPException(e.status_code, e.message) from e
-    return {"brief": brief, "topics": topics}
+    return {"brief": brief, "topics": topics, "learning": learning}
 
 
 @router.post("/run")
