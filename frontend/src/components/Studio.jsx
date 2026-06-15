@@ -87,27 +87,80 @@ function findCat(toolKey) {
   return Math.max(0, CATEGORIES.findIndex((c) => toolKey in c.tools));
 }
 
-function val(v) {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") return <p style={{ margin: "2px 0", lineHeight: 1.55, fontSize: 13, whiteSpace: "pre-wrap" }}>{v}</p>;
-  if (typeof v === "number" || typeof v === "boolean") return <span style={{ fontSize: 13 }}>{String(v)}</span>;
-  if (Array.isArray(v))
-    return <ul style={{ margin: "2px 0", paddingLeft: 18, fontSize: 13 }}>
-      {v.map((x, i) => <li key={i} style={{ marginBottom: 4 }}>{x && typeof x === "object" ? <Blocks data={x} /> : String(x)}</li>)}
-    </ul>;
-  if (typeof v === "object") return <Blocks data={v} />;
-  return <span>{String(v)}</span>;
+// Heuristic renderer: turns arbitrary Hub model JSON into polished cards —
+// titles, colored pills (intent/competition/ROI…), summaries, and lists.
+const BADGE_KEYS = ["intent", "competition", "difficulty", "priority", "impact", "grade", "sentiment", "status", "roi_score", "roi", "score", "viral_score", "viral_grade", "funnel_stage"];
+const TITLE_KEYS = ["keyword", "title", "headline", "name", "hook", "subject_line", "subject", "episode", "touchpoint", "day", "question", "slide_type", "step", "phase", "variant", "recommended_variant", "label"];
+const BODY_KEYS = ["why", "description", "reason", "rationale", "text", "body", "full_post", "message", "content", "subtext", "tip", "explanation", "caption", "analysis", "recommendation", "insight", "strategy", "note", "details"];
+
+const pretty = (k) => k.replace(/_/g, " ");
+const isScalar = (v) => v === null || ["string", "number", "boolean"].includes(typeof v);
+
+function pillClass(k, v) {
+  const s = String(v).toLowerCase();
+  if (k === "competition" || k === "difficulty") return s.includes("high") ? "failed" : s.includes("med") ? "pending" : "published";
+  if (k === "priority" || k === "impact") return s.includes("high") ? "published" : s.includes("low") ? "draft" : "pending";
+  if (k === "intent") return "scheduled";
+  return "kind";
 }
-function Blocks({ data, top }) {
+function pillText(k, v) {
+  if (k === "roi_score" || k === "roi") return `ROI ${v}/10`;
+  if (k === "score") return `Score ${v}`;
+  if (k === "viral_score") return `${v}/100`;
+  return String(v);
+}
+
+function Item({ obj }) {
+  const entries = Object.entries(obj).filter(([k, v]) => !k.startsWith("_") && v !== null && v !== "");
+  const titleEntry = TITLE_KEYS.map((k) => entries.find(([ek]) => ek === k)).find(Boolean);
+  const pills = entries.filter(([k, v]) => BADGE_KEYS.includes(k) && isScalar(v));
+  const bodies = entries.filter(([k, v]) => BODY_KEYS.includes(k) && typeof v === "string");
+  const used = new Set([titleEntry && titleEntry[0], ...pills.map((p) => p[0]), ...bodies.map((b) => b[0])]);
+  const rest = entries.filter(([k]) => !used.has(k));
+  return (
+    <div className="res-item">
+      {(titleEntry || pills.length > 0) && (
+        <div className="res-item-head">
+          {titleEntry && <div className="res-item-title">{String(titleEntry[1])}</div>}
+          {pills.length > 0 && (
+            <div className="res-pills">
+              {pills.map(([k, v]) => <span key={k} className={`badge ${pillClass(k, v)}`} title={pretty(k)}>{pillText(k, v)}</span>)}
+            </div>
+          )}
+        </div>
+      )}
+      {bodies.map(([k, v]) => <div key={k} className="res-body">{v}</div>)}
+      {rest.map(([k, v]) => (
+        isScalar(v)
+          ? <div key={k} className="res-kv"><b>{pretty(k)}:</b> {String(v)}</div>
+          : <div key={k} style={{ marginTop: 6 }}><div className="res-kv"><b>{pretty(k)}</b></div><Value v={v} /></div>
+      ))}
+    </div>
+  );
+}
+
+function Value({ v }) {
+  if (isScalar(v)) return <p className="res-body">{String(v)}</p>;
+  if (Array.isArray(v)) {
+    if (v.every(isScalar)) return <ul className="res-list">{v.map((x, i) => <li key={i}>{String(x)}</li>)}</ul>;
+    return <div>{v.map((x, i) => <Item key={i} obj={x} />)}</div>;
+  }
+  return <Item obj={v} />;
+}
+
+function Result({ data }) {
   const entries = Object.entries(data).filter(([k, v]) => !k.startsWith("_") && k !== "image_url" && k !== "html" && v !== null && v !== "");
   return (
     <div>
-      {entries.map(([k, v]) => (
-        <div key={k} className={top ? "res-section" : undefined} style={top ? undefined : { marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, color: "var(--mid)", textTransform: "capitalize", fontSize: 13 }}>{k.replace(/_/g, " ")}</div>
-          {val(v)}
-        </div>
-      ))}
+      {entries.map(([k, v]) => {
+        const summaryish = /summary|overview/i.test(k) && typeof v === "string";
+        return (
+          <div key={k} className="res-section">
+            <div className="res-h">{pretty(k)}</div>
+            {summaryish ? <div className="res-callout">{v}</div> : <Value v={v} />}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -237,7 +290,7 @@ export default function Studio() {
                   </p>
                 </div>
               )}
-              <Blocks data={result} top />
+              <Result data={result} />
             </>
           )}
         </div>

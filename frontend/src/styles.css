@@ -182,8 +182,19 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
 .spinner { width: 18px; height: 18px; border: 2px solid var(--light); border-top-color: var(--teal); border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite; vertical-align: -4px; margin-right: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .studio-loading { display: flex; align-items: center; gap: 4px; padding: 30px; color: var(--mid); font-size: 14px; justify-content: center; }
-.res-section { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.res-section { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
 .res-section:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.res-h { font-size: 13px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--mid); margin-bottom: 8px; }
+.res-callout { background: var(--grad-soft); border: 1px solid #e8e2ff; border-radius: 12px; padding: 12px 15px; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.res-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 10px; background: #fff; }
+.res-item-head { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.res-item-title { font-weight: 700; font-size: 14px; color: var(--ink); flex: 1; min-width: 120px; }
+.res-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.res-body { font-size: 13px; line-height: 1.6; color: var(--ink); margin-top: 6px; white-space: pre-wrap; }
+.res-kv { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+.res-kv b { color: var(--mid); font-weight: 600; text-transform: capitalize; }
+.res-list { margin: 4px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.res-list li { margin-bottom: 4px; }
 
 /* mini horizontal bar chart (no chart lib) */
 .bars { display: flex; flex-direction: column; gap: 9px; margin-top: 10px; }
