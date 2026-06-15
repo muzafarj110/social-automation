@@ -17,10 +17,11 @@ import Billing from "./components/Billing.jsx";
 import Calendar from "./components/Calendar.jsx";
 import Leads from "./components/Leads.jsx";
 import Opportunities from "./components/Opportunities.jsx";
+import Studio from "./components/Studio.jsx";
 
 const NAV = [
   { group: "Overview", items: [["home", "Home", null]] },
-  { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["strategy", "Brand voice", "strategy"]] },
+  { group: "Create", items: [["campaigns", "Autopilot", "autopilot"], ["generate", "Quick post", "generate"], ["studio", "Studio", null], ["strategy", "Brand voice", "strategy"]] },
   { group: "Manage", items: [["calendar", "Calendar", null], ["posts", "Posts", null], ["inbox", "Inbox", "inbox"]] },
   { group: "Grow", items: [["opportunities", "Opportunities", null], ["leads", "Leads", null], ["profile", "Profile", "profile_studio"], ["analytics", "Analytics", "analytics"]] },
   { group: "Settings", items: [["accounts", "Accounts", null], ["billing", "Billing", null]] },
@@ -31,6 +32,7 @@ const TITLES = {
   home: ["Home", "Your week at a glance"],
   strategy: ["Brand voice", "Your voice, persona and positioning — used by every post"],
   generate: ["Quick post", "Write one post right now, by hand with AI"],
+  studio: ["Marketing Studio", "Reports, email, SEO, LinkedIn formats & graphics — powered by AI"],
   campaigns: ["Autopilot", "Set it once — AI writes, tailors and posts on a schedule"],
   posts: ["Posts", "Drafts, scheduled and published"],
   inbox: ["Inbox", "AI-drafted replies, DMs and outreach to approve"],
@@ -159,6 +161,7 @@ export default function App() {
         <div className={bodyClass}>
           {tab === "home" && <Home goTab={setTab} user={user} />}
           {tab === "strategy" && <Strategy />}
+          {tab === "studio" && <Studio />}
           {tab === "generate" && (
             <Generate
               accounts={accounts}

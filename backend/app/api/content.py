@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
-from app.clients.hub_client import HubClient, HubError
+from app.clients.hub_client import ENDPOINTS, HubClient, HubError
 from app.core import credits, ttl_cache
 from app.core.config import settings
 from app.core.hub_errors import hub_http
@@ -150,6 +150,37 @@ async def infographic(
         except HubError as e:
             raise _map_hub_error(e) from e
     return {"ok": True, "data": data}
+
+
+class StudioRequest(BaseModel):
+    tool: str = Field(..., min_length=1)
+    params: dict = Field(default_factory=dict)
+
+
+@router.post("/studio")
+async def studio(
+    req: StudioRequest,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, object]:
+    """Generic metered runner for any Hub marketing model (Studio page).
+
+    One credit per successful generation. Passes the tool's documented params
+    straight through and returns the Hub's data (which may include image_url /
+    video_url for media models).
+    """
+    if req.tool not in ENDPOINTS:
+        raise HTTPException(400, "Unknown tool.")
+    if not credits.has_credits(current, credits.COST_GENERATE):
+        raise HTTPException(402, "You're out of credits. Top up under Billing to keep creating.")
+    key = _resolve_hub_key(current)
+    async with HubClient(settings.hub_base_url, key) as hub:
+        try:
+            data = await hub.call(req.tool, req.params)
+        except HubError as e:
+            raise _map_hub_error(e) from e
+    await credits.charge(db, current, credits.COST_GENERATE)
+    return {"ok": True, "data": data, "credits": current.credits}
 
 
 @router.get("/usage")

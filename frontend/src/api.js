@@ -111,6 +111,7 @@ export const qaCheck = (data) => apiSend("/content/qa", "POST", data);
 export const optimizeContent = (data) => apiSend("/content/optimize", "POST", data);
 export const generateInfographic = (data) => apiSend("/content/infographic", "POST", data);
 export const getUsage = () => apiGet("/content/usage");
+export const studioRun = (tool, params) => apiSend("/content/studio", "POST", { tool, params });
 export const createPost = (data) => apiSend("/posts", "POST", data);
 export const listPosts = () => apiGet("/posts");
 export const listCampaignPosts = (campaignId) => apiGet(`/posts?campaign_id=${campaignId}`);

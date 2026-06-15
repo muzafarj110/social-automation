@@ -67,6 +67,32 @@ ENDPOINTS: dict[str, str] = {
     "competitor_analysis": "/api/competitor-analysis",
     "content_strategy": "/api/content-strategy",
     "marketing_report": "/api/marketing-report",
+    # --- v2.0 additions: reports, email, SEO, ads, graphics, more LinkedIn formats ---
+    "ab_test": "/api/ab-test",
+    "funnel_gap": "/api/funnel-gap",
+    "email_sequence": "/api/email-sequence",
+    "subject_line": "/api/subject-line",
+    "cold_outreach": "/api/cold-outreach",
+    "keyword_research": "/api/keyword-research",
+    "technical_seo": "/api/technical-seo",
+    "content_writing": "/api/content-writing",
+    "social_post": "/api/social-post",
+    "hashtag_research": "/api/hashtag-research",
+    "viral_hook": "/api/viral-hook",
+    "ad_copy": "/api/ad-copy",
+    "ad_creative": "/api/ad-creative",          # returns image_url
+    "social_card": "/api/social-card",          # returns image_url
+    "linkedin_article": "/api/linkedin-article",
+    "linkedin_carousel": "/api/linkedin-carousel",
+    "linkedin_newsletter": "/api/linkedin-newsletter",
+    "linkedin_poll": "/api/linkedin-poll",
+    "linkedin_video": "/api/linkedin-video",
+    "linkedin_repurpose": "/api/linkedin-repurpose",
+    "linkedin_url_post": "/api/linkedin-url-post",
+    "linkedin_story_arc": "/api/linkedin-story-arc",
+    "linkedin_brand_audit": "/api/linkedin-brand-audit",
+    "linkedin_hooks": "/api/linkedin-hooks",
+    "linkedin_thought_leadership": "/api/linkedin-thought-leadership",
 }
 
 
