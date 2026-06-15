@@ -70,6 +70,26 @@ verified sending domain.
 - Cross-channel calendar (all platforms, by day).
 - Lead-gen / CRM-lite (capture + AI-drafted outreach).
 
+## Becoming a full marketing department — service build sequence
+Order by revenue impact; each row notes the Hub (AI model) vs app (orchestration) split.
+
+1. **Infographic → image in posts** (in progress). Hub: render infographic to a hosted
+   PNG + return `image_url`. App: attach as post media → publishes inline. Also unblocks
+   image-first platforms.
+2. **Email & lifecycle.** Hub: email-copy model (subject + body from a brief). App: contacts
+   (reuse leads), email campaigns, Resend sender (already wired), nurture sequences,
+   unsubscribe/suppression. _Highest near-term revenue lever._
+3. **SEO content (blog/long-form).** Hub: SEO/keyword agent + long-form writer. App: article
+   editor, keyword targets, export/publish to site/CMS.
+4. **AI Opportunities feed (competitive & market intelligence).** Hub: trend/competitor-watch
+   agent. App: a data source to monitor + a feed that turns signals into one-click drafts.
+   _Biggest differentiator (proactive/agentic) — mocked for review._
+5. **Paid ads.** Needs Meta/Google/LinkedIn Ads API access. App: campaign setup + budget
+   pacing; Hub: ad-copy + audience suggestions. Heaviest + most platform-risk; do last.
+
+Cross-cutting moat work (do alongside): make the **learning loop visible** ("posts +32% since
+month 1"), and add **outcome reporting** (content → leads → pipeline) so value is provable.
+
 ## Known risks (from audits)
 - Dependency on Zernio for publishing (mitigated by provider seam; read their ToS).
 - Commodity/moat — differentiate via niche + the per-customer learning loop.

@@ -136,6 +136,23 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
 .spacer { flex: 1; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0 18px; }
 
+/* responsive card grid — turns stacked cards into columns on wider screens */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.card-grid > .card { margin-bottom: 0; }
+@media (max-width: 760px) { .card-grid { grid-template-columns: 1fr; } }
+
+/* credit / pricing packs */
+.pack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-top: 12px; }
+.pack-card {
+  border: 1px solid var(--line); border-radius: 16px; padding: 20px 18px; text-align: center;
+  background: #fff; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.pack-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); border-color: #d9cffb; }
+.pack-card .credits { font-size: 30px; font-weight: 800; color: #7c5cfc; line-height: 1.1; }
+.pack-card .unit { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.pack-card button { width: 100%; margin-top: 10px; }
+
 /* segmented control */
 .seg { display: inline-flex; background: #f1eefb; border-radius: var(--radius); padding: 4px; gap: 4px; flex-wrap: wrap; }
 .seg > button { border-radius: 8px !important; border: none; box-shadow: none !important; padding: 8px 15px; background: transparent; color: #6a5af0; }

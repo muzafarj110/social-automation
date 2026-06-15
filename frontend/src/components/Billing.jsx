@@ -48,11 +48,11 @@ export default function Billing({ user }) {
         ) : data.packs.length === 0 ? (
           <div className="empty">No credit packs are set up yet.</div>
         ) : (
-          <div className="pill-list" style={{ marginTop: 8 }}>
+          <div className="pack-grid">
             {data.packs.map((p) => (
-              <div className="pill" key={p.price_id} style={{ alignItems: "center" }}>
-                <strong>{p.credits.toLocaleString()} credits</strong>
-                <div className="spacer" />
+              <div className="pack-card" key={p.price_id}>
+                <div className="credits">{p.credits.toLocaleString()}</div>
+                <div className="unit">credits</div>
                 <button className="btn-primary" disabled={busy} onClick={() => buy(p.price_id)}>
                   Buy
                 </button>

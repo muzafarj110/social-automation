@@ -23,6 +23,14 @@ async function handle(res) {
     /* no body */
   }
   if (!res.ok) {
+    // Session expired / invalid token: clear it and signal the app to show login,
+    // instead of letting pages silently render empty (no accounts, no posts, etc.).
+    if (res.status === 401 && getToken()) {
+      setToken(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth:expired"));
+      }
+    }
     const msg = body?.detail || body?.error || res.statusText || "Request failed";
     const err = new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
     err.status = res.status;

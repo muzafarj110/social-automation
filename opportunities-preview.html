@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AI Opportunities — preview</title>
+<style>
+  :root{--violet:#7c5cfc;--ink:#14152a;--mut:#6b6f86;--bg:#f4f4fb;--line:#ececf3;--grad:linear-gradient(135deg,#7c5cfc,#9d7bff 55%,#6ad0ff)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:26px 22px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto}
+  .h{font-size:23px;font-weight:800}.sub{color:var(--mut);font-size:13px;margin:3px 0 18px}
+  .scan{display:flex;align-items:center;gap:9px;background:linear-gradient(135deg,#faf8ff,#f2f7ff);border:1px solid #e8e2ff;border-radius:14px;padding:12px 16px;font-size:13px;color:#5b46c9;font-weight:600;margin-bottom:18px;position:relative;overflow:hidden}
+  .scan::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(157,123,255,.12) 50%,transparent 70%);transform:translateX(-100%);animation:sh 3s infinite}
+  @keyframes sh{to{transform:translateX(100%)}}
+  .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:p 1.8s infinite}@keyframes p{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  .op{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:13px;box-shadow:0 1px 2px rgba(16,24,64,.05);transition:transform .2s,box-shadow .2s;animation:rise .5s both}
+  .op:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(20,20,50,.1)}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .top{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+  .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:17px;flex-shrink:0;color:#fff}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:7px}
+  .t{font-size:15px;font-weight:700}.d{font-size:13px;color:var(--mut);line-height:1.55;margin-top:2px}
+  .why{font-size:12px;color:#5b46c9;background:#f3f0ff;border-radius:9px;padding:8px 11px;margin:10px 0;display:flex;gap:7px}
+  .acts{display:flex;gap:9px;flex-wrap:wrap}
+  .btn{border:none;border-radius:10px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .bp{background:var(--grad);color:#fff;box-shadow:0 5px 14px rgba(124,92,252,.35)}.bp:hover{transform:translateY(-2px)}
+  .bs{background:#f3f1fb;color:#5b46c9}
+  .imp{margin-left:auto;font-size:12px;font-weight:700;color:#16a34a;background:#eafced;padding:3px 10px;border-radius:7px}
+</style></head>
+<body><div class="wrap">
+  <div class="h">Opportunities</div>
+  <div class="sub">Your AI marketing team watches the market and tells you what to act on</div>
+  <div class="scan"><span class="dot"></span> Scanned your niche, competitors and analytics 6 minutes ago — found 4 opportunities</div>
+
+  <div class="op">
+    <div class="top"><div class="ic" style="background:linear-gradient(135deg,#f0973a,#e2632f)">⚡</div>
+      <div><span class="tag" style="background:#fdeee0;color:#a85416">Competitor move</span><div class="t" style="margin-top:4px">A competitor just launched an AI feature</div></div>
+      <span class="imp">High impact</span></div>
+    <div class="d">Rival "Postwise" announced AI scheduling today and it's getting traction on LinkedIn.</div>
+    <div class="why">✦ Why now: react within 24h while the topic is hot — contrarian takes on competitor launches get 2× engagement for your audience.</div>
+    <div class="acts"><button class="btn bp">Draft a response post →</button><button class="btn bs">Dismiss</button></div>
+  </div>
+
+  <div class="op" style="animation-delay:.06s">
+    <div class="top"><div class="ic" style="background:linear-gradient(135deg,#7c5cfc,#9d7bff)">↻</div>
+      <div><span class="tag" style="background:#efeaff;color:#5b46c9">Repurpose winner</span><div class="t" style="margin-top:4px">Turn your top post into a carousel</div></div>
+      <span class="imp">High impact</span></div>
+    <div class="d">"Scaling lessons" drove 320 likes — 3× your average. It's ripe to repurpose into an Instagram carousel and an X thread.</div>
+    <div class="why">✦ Why now: your best content is under-distributed; one idea → 3 more posts.</div>
+    <div class="acts"><button class="btn bp">Generate the carousel + thread →</button><button class="btn bs">Dismiss</button></div>
+  </div>
+
+  <div class="op" style="animation-delay:.12s">
+    <div class="top"><div class="ic" style="background:linear-gradient(135deg,#2bb3ff,#1f8fd0)">◷</div>
+      <div><span class="tag" style="background:#e7f6ff;color:#1f6fa5">Timing gap</span><div class="t" style="margin-top:4px">You haven't posted in 4 days</div></div>
+      <span class="imp" style="color:#a85416;background:#fdeee0">Medium</span></div>
+    <div class="d">Consistency drives reach. Thursday 8am is your best-performing slot and it's open.</div>
+    <div class="acts"><button class="btn bp">Fill the gap with a draft →</button><button class="btn bs">Dismiss</button></div>
+  </div>
+
+  <div class="op" style="animation-delay:.18s">
+    <div class="top"><div class="ic" style="background:linear-gradient(135deg,#22c55e,#16a34a)">◆</div>
+      <div><span class="tag" style="background:#eafced;color:#15803d">Lead signal</span><div class="t" style="margin-top:4px">3 leads engaged but never got outreach</div></div>
+      <span class="imp">High impact</span></div>
+    <div class="d">Jane, Marcus and Priya liked your last 2 posts but aren't in a sequence. AI has drafts ready.</div>
+    <div class="acts"><button class="btn bp">Review &amp; send outreach →</button><button class="btn bs">Dismiss</button></div>
+  </div>
+</div></body></html>

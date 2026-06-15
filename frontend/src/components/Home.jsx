@@ -100,6 +100,22 @@ export default function Home({ goTab, user }) {
         </div>
       </div>
 
+      {data.metrics && (
+        <div className="card">
+          <div className="row">
+            <h2 style={{ margin: 0 }}>Performance</h2>
+            <div className="spacer" />
+            <button className="btn-secondary" onClick={() => goTab("analytics")}>Analytics</button>
+          </div>
+          <div className="row" style={{ gap: 10, marginTop: 8 }}>
+            <Tile label="Posts" value={(data.metrics.post_count || 0).toLocaleString()} />
+            <Tile label="Impressions" value={(data.metrics.impressions || 0).toLocaleString()} />
+            <Tile label="Total likes" value={(data.metrics.total_likes || 0).toLocaleString()} />
+            <Tile label="Avg likes/post" value={(data.metrics.avg_likes || 0).toLocaleString()} />
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="row">
           <h2 style={{ margin: 0 }}>Coming up</h2>
@@ -135,22 +151,6 @@ export default function Home({ goTab, user }) {
           </div>
         </div>
       </div>
-
-      {data.metrics && (
-        <div className="card">
-          <div className="row">
-            <h2 style={{ margin: 0 }}>Performance</h2>
-            <div className="spacer" />
-            <button className="btn-secondary" onClick={() => goTab("analytics")}>Analytics</button>
-          </div>
-          <div className="row" style={{ gap: 10, marginTop: 8 }}>
-            <Tile label="Posts" value={(data.metrics.post_count || 0).toLocaleString()} />
-            <Tile label="Impressions" value={(data.metrics.impressions || 0).toLocaleString()} />
-            <Tile label="Total likes" value={(data.metrics.total_likes || 0).toLocaleString()} />
-            <Tile label="Avg likes/post" value={(data.metrics.avg_likes || 0).toLocaleString()} />
-          </div>
-        </div>
-      )}
     </>
   );
 }

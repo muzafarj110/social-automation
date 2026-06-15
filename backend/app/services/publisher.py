@@ -47,6 +47,8 @@ class SocialProvider(Protocol):
 
     async def get_post(self, post_id: str) -> dict[str, Any]: ...
 
+    async def cancel_post(self, post_id: str) -> dict[str, Any]: ...
+
 
 class PublishError(Exception):
     """Raised when publishing/scheduling cannot proceed (config or upstream)."""
@@ -197,6 +199,28 @@ async def schedule(post: Post, zernio_account_id: str,
     post.timezone = timezone
     post.error = None
     return post
+
+
+async def cancel(post: Post, zernio_key: str) -> None:
+    """Cancel a still-scheduled post on Zernio so it doesn't publish anyway.
+
+    Only meaningful for SCHEDULED posts that have a Zernio id. Raises
+    PublishError if Zernio refuses, so the caller can keep the local row rather
+    than silently deleting it and leaving an orphaned scheduled post on Zernio.
+    A 404 from Zernio means it's already gone there — treat as success.
+    """
+    if not post.zernio_post_id or not zernio_key:
+        return
+    async with make_provider(zernio_key) as z:
+        try:
+            await z.cancel_post(post.zernio_post_id)
+        except ZernioError as e:
+            if e.status_code == 404:
+                return  # already cancelled/removed on Zernio
+            raise PublishError(
+                f"Couldn't cancel this post on the publishing service: {e.message}",
+                status_code=e.status_code or 502,
+            ) from e
 
 
 # Zernio status strings mapped to ours (Zernio owns the publish clock).

@@ -423,6 +423,15 @@ class ZernioClient:
         body = await self._request("GET", f"/posts/{post_id}")
         return body.get("post", body)
 
+    async def cancel_post(self, post_id: str) -> dict[str, Any]:
+        """DELETE /posts/{id} — cancel a scheduled post on Zernio.
+
+        Used when a user cancels/deletes a still-scheduled post in the app: we
+        must also tell Zernio to drop it, otherwise Zernio still owns the clock
+        and would publish it anyway. Returns {} on 204/empty.
+        """
+        return await self._request("DELETE", f"/posts/{post_id}")
+
     async def list_comments(self, **params: Any) -> dict[str, Any]:
         """GET /comments — inbox comments (LinkedIn: org pages only)."""
         return await self._request("GET", "/comments", params=params)

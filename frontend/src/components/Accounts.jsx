@@ -55,6 +55,21 @@ function UsageCard({ data }) {
   const refCount = g("referralcount");
   const fmt = (v) => (typeof v === "number" ? v.toLocaleString() : String(v));
 
+  // Fallback: if the Hub's response doesn't match any known field, don't render
+  // a blank card — show the raw scalar fields so usage is never "nothing".
+  const known = [plan, name, email, today, total, limit, bonus].some((x) => x !== undefined);
+  if (!known) {
+    const rows = Object.entries(d).filter(([, v]) => v !== null && typeof v !== "object");
+    if (!rows.length) return <p className="muted">No usage details available yet.</p>;
+    return (
+      <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+        {rows.map(([k, v]) => (
+          <UsageTile key={k} label={k.replace(/_/g, " ")} value={fmt(v)} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="row" style={{ alignItems: "center", marginBottom: 12 }}>
@@ -229,14 +244,21 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         </div>
       </div>
 
-      {usage && usage.ok && (
-        <div className="card">
-          <h2>AI usage</h2>
-          {usage.managed
-            ? <p className="muted">Your AI runs on Autopilot's managed capacity — no setup needed.</p>
-            : <UsageCard data={usage.data} />}
-        </div>
-      )}
+      <div className="card">
+        <h2>AI usage</h2>
+        {!usage
+          ? <p className="muted">Loading usage…</p>
+          : usage.error
+            ? <p className="muted">Couldn't load AI usage right now. Your credits still show in the sidebar.</p>
+            : usage.managed
+              ? (
+                <p className="muted">
+                  Your AI runs on Autopilot's managed capacity — no setup needed.
+                  {" "}You have <strong>{user?.credits ?? 0}</strong> credits remaining.
+                </p>
+              )
+              : <UsageCard data={usage.data} />}
+      </div>
 
       <div className="card">
         <h2>Linked social accounts</h2>

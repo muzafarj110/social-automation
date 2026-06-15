@@ -153,37 +153,6 @@ export default function Strategy() {
       {savedMsg && <div className="success">{savedMsg}</div>}
 
       <div className="card">
-        <h2>Your brand</h2>
-        <p className="muted">This is your marketing brain — every campaign and post uses your voice and audience.</p>
-        <div className="grid-2">
-          {PROFILE_FIELDS.map(([k, label, area]) => (
-            <div key={k} style={area ? { gridColumn: "1 / -1" } : undefined}>
-              <label>{label}</label>
-              {area
-                ? <textarea value={profile[k] || ""} onChange={setP(k)} style={{ minHeight: 70 }} />
-                : <input value={profile[k] || ""} onChange={setP(k)} />}
-            </div>
-          ))}
-        </div>
-        <div className="row" style={{ marginTop: 12 }}>
-          <button className="btn-primary" disabled={busy} onClick={save}>Save brand profile</button>
-        </div>
-      </div>
-
-      {profile.docs && Object.keys(profile.docs).length > 0 && (
-        <div className="card">
-          <h2>Saved strategy</h2>
-          <p className="muted" style={{ marginTop: -6 }}>What the AI has built for your brand so far.</p>
-          {Object.entries(profile.docs).map(([k, v]) => (
-            <div key={k} style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
-              <h3>{TOOLS[k]?.label || k.replace(/_/g, " ")}</h3>
-              <HubBlocks data={v} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="card">
         <h2>Build it with AI</h2>
         <div className="row" style={{ flexWrap: "wrap" }}>
           {Object.entries(TOOLS).map(([id, t]) => (
@@ -217,6 +186,37 @@ export default function Strategy() {
           </div>
         )}
       </div>
+
+      <div className="card">
+        <h2>Your brand</h2>
+        <p className="muted">This is your marketing brain — every campaign and post uses your voice and audience.</p>
+        <div className="grid-2">
+          {PROFILE_FIELDS.map(([k, label, area]) => (
+            <div key={k} style={area ? { gridColumn: "1 / -1" } : undefined}>
+              <label>{label}</label>
+              {area
+                ? <textarea value={profile[k] || ""} onChange={setP(k)} style={{ minHeight: 70 }} />
+                : <input value={profile[k] || ""} onChange={setP(k)} />}
+            </div>
+          ))}
+        </div>
+        <div className="row" style={{ marginTop: 12 }}>
+          <button className="btn-primary" disabled={busy} onClick={save}>Save brand profile</button>
+        </div>
+      </div>
+
+      {profile.docs && Object.keys(profile.docs).length > 0 && (
+        <div className="card">
+          <h2>Saved strategy</h2>
+          <p className="muted" style={{ marginTop: -6 }}>What the AI has built for your brand so far.</p>
+          {Object.entries(profile.docs).map(([k, v]) => (
+            <div key={k} style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+              <h3>{TOOLS[k]?.label || k.replace(/_/g, " ")}</h3>
+              <HubBlocks data={v} />
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

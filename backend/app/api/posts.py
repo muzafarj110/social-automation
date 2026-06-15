@@ -120,6 +120,14 @@ async def delete_post(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     post = await _get_owned_post(post_id, current, db)
+    # If it's still scheduled on Zernio, cancel it there FIRST — otherwise Zernio
+    # owns the clock and would publish it even though we removed our copy.
+    if post.status == post_status.SCHEDULED and post.zernio_post_id:
+        zkey = resolve_zernio_key(current)
+        try:
+            await publisher.cancel(post, zkey)
+        except publisher.PublishError as e:
+            raise HTTPException(e.status_code, e.message) from e
     await db.delete(post)
     await db.commit()
 
