@@ -31,6 +31,9 @@ from app.services import publisher
 
 log = logging.getLogger("uvicorn.error")
 
+# Quality bar: the Producer tries to lift any draft below this before keeping it.
+QA_MIN = 85
+
 
 class TeamError(Exception):
     def __init__(self, message: str, status_code: int = 400) -> None:
@@ -110,6 +113,16 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
     made = 0
     last_err: HubError | None = None
     async with HubClient(settings.hub_base_url, key) as hub:
+        async def _score(text: str):
+            try:
+                qa = await hub.call("score_checker", {"content": text, "platform": platform})
+                if isinstance(qa, dict):
+                    raw = qa.get("score") or qa.get("overall_score") or qa.get("quality_score")
+                    return int(raw) if raw is not None else None
+            except (HubError, ValueError, TypeError):
+                return None
+            return None
+
         for i in range(count):
             if not credits.has_credits(user, 1):
                 break
@@ -127,20 +140,31 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
             if not body:
                 continue
             hashtags = data.get("hashtags") if isinstance(data.get("hashtags"), list) else None
-            score = None
-            try:
-                qa = await hub.call("score_checker", {"content": body, "platform": platform})
-                if isinstance(qa, dict):
-                    raw = qa.get("score") or qa.get("overall_score") or qa.get("quality_score")
-                    score = int(raw) if raw is not None else None
-            except (HubError, ValueError, TypeError):
-                score = None
+
+            # Producer: score, and lift below-bar drafts once via the optimizer.
+            score = await _score(body)
+            if score is not None and score < QA_MIN:
+                try:
+                    opt = await hub.call("content_optimizer", {"content": body, "goal": "engagement"})
+                    improved = ""
+                    if isinstance(opt, dict):
+                        improved = (opt.get("optimized_content") or opt.get("optimized")
+                                    or opt.get("content") or opt.get("rewrite")
+                                    or opt.get("improved") or "").strip()
+                    if improved:
+                        ns = await _score(improved)
+                        if ns is None or ns >= score:
+                            body, score = improved, (ns if ns is not None else score)
+                except HubError:
+                    pass
+
             db.add(Post(
                 user_id=user.id, account_id=acct.id, platform=platform, body=body,
                 hashtags=hashtags, status=post_status.DRAFT, source="generated",
                 team_run_id=run.id, qa_score=score,
             ))
-            await credits.charge(db, user, 1)  # commits the pending post too
+            await credits.charge(db, user, 1)
+            await db.commit()  # persist the post regardless of user type (admin charge is a no-op)
             made += 1
 
     if made == 0:
