@@ -63,6 +63,27 @@ export default function Home({ goTab, user }) {
 
   return (
     <>
+      {data.metrics && (
+        <div className="hero" style={{ marginBottom: 18 }}>
+          <div className="orb" />
+          <div className="row" style={{ position: "relative", alignItems: "center" }}>
+            <div>
+              <h2 style={{ color: "#fff", margin: 0 }}>Your performance</h2>
+              <p style={{ margin: "4px 0 0", opacity: 0.9, fontSize: 13 }}>What your AI marketing has driven so far</p>
+            </div>
+            <div className="spacer" />
+            <button className="btn-secondary" style={{ background: "#fff", color: "var(--teal-dark)" }}
+              onClick={() => goTab("analytics")}>View analytics</button>
+          </div>
+          <div className="hero-metrics">
+            <div><div className="hm-v">{(data.metrics.impressions || 0).toLocaleString()}</div><div className="hm-l">Impressions</div></div>
+            <div><div className="hm-v">{(data.metrics.total_likes || 0).toLocaleString()}</div><div className="hm-l">Total likes</div></div>
+            <div><div className="hm-v">{(data.metrics.post_count || 0).toLocaleString()}</div><div className="hm-l">Posts published</div></div>
+            <div><div className="hm-v">{(data.metrics.avg_likes || 0).toLocaleString()}</div><div className="hm-l">Avg likes / post</div></div>
+          </div>
+        </div>
+      )}
+
       <div className="kpi-strip">
         <div className="kpi-tile"><div className="v">{publishedThisWeek}</div><div className="l">Published (7d)</div></div>
         <div className="kpi-tile"><div className="v">{scheduled.length}</div><div className="l">Scheduled</div></div>
@@ -94,22 +115,6 @@ export default function Home({ goTab, user }) {
                   : <button className="btn-primary" onClick={() => goTab(s.tab)}>{s.cta}</button>}
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {data.metrics && (
-        <div className="card">
-          <div className="row">
-            <h2 style={{ margin: 0 }}>Performance</h2>
-            <div className="spacer" />
-            <button className="btn-secondary" onClick={() => goTab("analytics")}>Analytics</button>
-          </div>
-          <div className="row" style={{ gap: 10, marginTop: 8 }}>
-            <Tile label="Posts" value={(data.metrics.post_count || 0).toLocaleString()} />
-            <Tile label="Impressions" value={(data.metrics.impressions || 0).toLocaleString()} />
-            <Tile label="Total likes" value={(data.metrics.total_likes || 0).toLocaleString()} />
-            <Tile label="Avg likes/post" value={(data.metrics.avg_likes || 0).toLocaleString()} />
           </div>
         </div>
       )}

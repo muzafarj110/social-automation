@@ -67,12 +67,12 @@ export default function Admin() {
     <div>
       {err && <div className="error" style={{ marginBottom: 12 }}>{err}</div>}
 
-      <div className="grid-2" style={{ marginBottom: 16 }}>
-        <Stat label="Total users" value={users.length} />
-        <Stat label="Free" value={counts.free} />
-        <Stat label="Pro" value={counts.pro} />
-        <Stat label="Business" value={counts.business} />
-        <Stat label="Suspended" value={suspended} />
+      <div className="kpi-strip">
+        <div className="kpi-tile"><div className="v">{users.length}</div><div className="l">Total users</div></div>
+        <div className="kpi-tile"><div className="v">{counts.free}</div><div className="l">Free</div></div>
+        <div className="kpi-tile"><div className="v">{counts.pro}</div><div className="l">Pro</div></div>
+        <div className="kpi-tile"><div className="v">{counts.business}</div><div className="l">Business</div></div>
+        <div className="kpi-tile"><div className="v">{suspended}</div><div className="l">Suspended</div></div>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -161,18 +161,16 @@ function UserRow({ u, features, planFeatures, saving, expanded, onExpand, onPlan
                 </button>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8 }}>
+            <div className="feat-grid">
               {features.map((f) => {
                 const on = u.entitlements?.[f] === true;
-                const planDefault = planFeatures[u.plan]?.[f] === true;
-                const overridden = u.entitlements_override && f in u.entitlements_override;
+                const disabled = u.is_admin || saving;
                 return (
-                  <label key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: u.is_admin ? "default" : "pointer" }}>
-                    <input type="checkbox" checked={on} disabled={u.is_admin || saving}
-                      onChange={() => onFeature(u, f)} />
-                    <span>{f.replace(/_/g, " ")}</span>
-                    {overridden && <span className="badge" style={{ fontSize: 9 }}>{on === planDefault ? "" : "OVR"}</span>}
-                  </label>
+                  <div key={f} className={`feat-chip${on ? " on" : ""}${disabled ? " disabled" : ""}`}
+                    onClick={() => { if (!disabled) onFeature(u, f); }}>
+                    <span style={{ textTransform: "capitalize" }}>{f.replace(/_/g, " ")}</span>
+                    <span className="sw" aria-hidden="true" />
+                  </div>
                 );
               })}
             </div>

@@ -67,8 +67,30 @@ function Stat({ label, value }) {
 
 function Summary({ s }) {
   const fmt = (n) => (n ?? 0).toLocaleString();
+  const top = (s.recent || [])
+    .slice()
+    .sort((a, b) => (b.impressions || 0) - (a.impressions || 0))
+    .slice(0, 6);
+  const maxImp = Math.max(1, ...top.map((p) => p.impressions || 0));
+
   return (
     <div style={{ marginTop: 10 }}>
+      {top.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 4 }}>Top posts by impressions</div>
+          <div className="bars">
+            {top.map((p, i) => (
+              <div className="bar-row" key={i}>
+                <span className="bar-label">{(p.content || "(no text)").slice(0, 44)}</span>
+                <span className="bar-track">
+                  <span className="bar-fill" style={{ width: `${Math.round(((p.impressions || 0) / maxImp) * 100)}%` }} />
+                </span>
+                <span className="bar-val">{(p.impressions || 0).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {s.recent?.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 8 }}>Recent posts</div>
