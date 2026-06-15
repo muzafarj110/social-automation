@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 
-from app.clients.hub_client import HubClient, HubError
+from app.clients.hub_client import HubClient, HubError, HubRateLimitError
 from app.core import credits
 from app.core.config import settings
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
@@ -108,6 +108,7 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
     await db.refresh(run)
 
     made = 0
+    last_err: HubError | None = None
     async with HubClient(settings.hub_base_url, key) as hub:
         for i in range(count):
             if not credits.has_credits(user, 1):
@@ -119,6 +120,7 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
                     audience=audience, tone=voice, include_cta="question to comments",
                 )
             except HubError as e:
+                last_err = e
                 log.warning("Team writer skipped a post: %s", getattr(e, "message", e))
                 continue
             body = (data.get("full_post") or data.get("post") or data.get("content") or "").strip()
@@ -142,7 +144,17 @@ async def run_cycle(db, user: User, *, count: int = 3) -> TeamRun:
             made += 1
 
     if made == 0:
-        raise TeamError("The team couldn't draft content right now. Please try again shortly.", 502)
+        # Don't leave an empty run lingering on the page.
+        await db.delete(run)
+        await db.commit()
+        if isinstance(last_err, HubRateLimitError):
+            raise TeamError(
+                "The AI service has hit its usage limit for now. Please try again later "
+                "(or connect your own Hub key under Accounts for a higher limit).", 429)
+        code = getattr(last_err, "status_code", None)
+        raise TeamError(
+            f"The team couldn't draft content right now{f' (code {code})' if code else ''}. "
+            "Please try again shortly.", 502)
     await db.refresh(run)
     return run
 

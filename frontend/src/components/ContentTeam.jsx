@@ -36,7 +36,10 @@ export default function ContentTeam({ goTab }) {
     try {
       const runs = await listTeamRuns();
       const draft = (runs || []).find((r) => r.status === "draft");
-      if (draft) setRun(await getTeamRun(draft.id));
+      if (draft) {
+        const full = await getTeamRun(draft.id);
+        if ((full.posts || []).length > 0) setRun(full);   // ignore empty/orphan runs
+      }
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
