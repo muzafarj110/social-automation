@@ -26,6 +26,10 @@ RUN pip install -r requirements.txt
 COPY backend/ ./
 # Built frontend served by FastAPI (see app/main.py FRONTEND_DIST).
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
+# Startup script: auto-detects legacy databases (created by init_db before
+# Alembic was introduced) and stamps them before running upgrade head.
+COPY scripts/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
-# Railway injects $PORT. Run migrations, then start the server.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Railway injects $PORT. The startup script handles migration + server launch.
+CMD ["/app/start.sh"]
