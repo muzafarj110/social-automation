@@ -59,7 +59,7 @@ async def run_proactive_generation() -> int:
     generated = 0
     async with SessionLocal() as db:
         rows = await db.scalars(
-            select(User).where(User.is_active.is_(True)).limit(100)
+            select(User).where(User.status == "active").limit(100)
         )
         for user in list(rows):
             try:
