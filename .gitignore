@@ -15,6 +15,12 @@ venv/
 *.db
 *.sqlite
 *.sqlite3
+*.db.stale
+*.db.bak*
+
+# --- Local Claude / editor config ---
+.claude/
+**/.claude/
 
 # --- Node / frontend ---
 node_modules/

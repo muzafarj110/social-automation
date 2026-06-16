@@ -49,6 +49,11 @@ class User(Base):
     free_used_today: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     free_quota_date: Mapped[str | None] = mapped_column(String(10), nullable=True)  # YYYY-MM-DD
 
+    # Agency multi-client: the client workspace the agency is currently working in.
+    # Null = the agency's own/default workspace (single-tenant behavior). Plain
+    # column (not a FK) to avoid a circular users<->clients dependency; app-enforced.
+    active_client_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     # Per-user AI Models Hub key, encrypted at rest (Fernet). May be null until set.
     hub_api_key_enc: Mapped[str | None] = mapped_column(String(512), nullable=True)
     # Per-user Zernio key, encrypted at rest. Scopes which LinkedIn accounts the

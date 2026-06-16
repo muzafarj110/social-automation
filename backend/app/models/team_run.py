@@ -19,6 +19,10 @@ class TeamRun(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # Agency multi-client: which client workspace this run belongs to (null = default).
+    client_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clients.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(String(20), default=DRAFT, index=True)
     # The Strategist agent's brief for this cycle (what angle, why).
     brief: Mapped[str | None] = mapped_column(Text, nullable=True)

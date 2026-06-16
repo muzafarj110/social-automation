@@ -16,8 +16,8 @@ function readToken(kind) {
   return m && new RegExp(kind, "i").test(h + s) ? decodeURIComponent(m[1]) : "";
 }
 
-export default function Auth({ onAuthed }) {
-  const [mode, setMode] = useState("login"); // login | register | forgot | reset | verify
+export default function Auth({ onAuthed, initialMode = "login", onBack }) {
+  const [mode, setMode] = useState(initialMode); // login | register | forgot | reset | verify
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -93,7 +93,7 @@ export default function Auth({ onAuthed }) {
   return (
     <div className="auth">
       <div className="auth-brand">
-        <div className="logo">A</div>
+        <div className="logo" onClick={onBack} style={onBack ? { cursor: "pointer" } : undefined} title={onBack ? "Back to home" : undefined}>A</div>
         <h1>Your AI marketing department, on autopilot.</h1>
         <p>
           Autopilot builds your brand, writes and schedules your content, handles
@@ -109,6 +109,7 @@ export default function Auth({ onAuthed }) {
 
       <div className="auth-form-wrap">
         <form className="auth-card" onSubmit={submit}>
+          {onBack && <a onClick={onBack} style={{ display: "inline-block", marginBottom: 14, fontSize: 13, cursor: "pointer" }}>← Back to home</a>}
           <h2>{titles[mode]}</h2>
           <div className="lead">{leads[mode]}</div>
 

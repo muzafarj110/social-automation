@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.clients import client_scope
 from app.db.session import get_db
 from app.models.post import Post
 from app.models.team_run import TeamRun
@@ -81,7 +82,9 @@ async def list_runs(
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     runs = list(await db.scalars(
-        select(TeamRun).where(TeamRun.user_id == current.id).order_by(TeamRun.created_at.desc())
+        select(TeamRun)
+        .where(TeamRun.user_id == current.id, client_scope(TeamRun.client_id, current.active_client_id))
+        .order_by(TeamRun.created_at.desc())
     ))
     return [{
         "id": r.id, "status": r.status, "brief": r.brief,

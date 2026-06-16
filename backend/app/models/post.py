@@ -64,6 +64,10 @@ class Post(Base):
         ForeignKey("team_runs.id", ondelete="SET NULL"), nullable=True, index=True
     )
     qa_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Agency multi-client: which client workspace this post belongs to (null = default).
+    client_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clients.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
     @property
     def has_infographic(self) -> bool:

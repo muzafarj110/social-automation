@@ -45,7 +45,7 @@ export default function Wizard({ user, accounts = [], goTab, onSkip }) {
     <div style={{ minHeight: "100vh", background: "var(--bg, #f7f7fb)", display: "grid", placeItems: "center", padding: "40px 16px" }}>
       <div style={{ width: "100%", maxWidth: 620 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-          <div className="logo" style={{ width: 40, height: 40, borderRadius: 10, background: "#7c5cfc", color: "#fff", display: "grid", placeItems: "center", fontWeight: 800 }}>A</div>
+          <div className="logo" style={{ width: 40, height: 40, borderRadius: 10, background: "var(--teal)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 800 }}>A</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 20, color: "#1f2333" }}>Welcome to Autopilot</div>
             <div className="muted" style={{ fontSize: 13 }}>{lead}</div>
@@ -64,7 +64,7 @@ export default function Wizard({ user, accounts = [], goTab, onSkip }) {
                 <span style={{
                   width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center",
                   fontSize: 14, fontWeight: 700, flexShrink: 0,
-                  background: s.done ? "#dcfce7" : isActive ? "#7c5cfc" : "#eceaf6",
+                  background: s.done ? "#dcfce7" : isActive ? "var(--teal)" : "#eceaf6",
                   color: s.done ? "#166534" : isActive ? "#fff" : "#8b8fa3",
                 }}>{s.done ? "✓" : i + 1}</span>
                 <div style={{ flex: 1 }}>

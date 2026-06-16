@@ -21,8 +21,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import (
-    accounts, admin, analytics, auth, billing, brand, campaigns, content, inbox,
-    leads, opportunities, posts, profile, routes, team,
+    accounts, admin, analytics, auth, billing, brand, campaigns, clients, competitor, content,
+    inbox, leads, opportunities, posts, proactive, profile, routes, seo_geo, social_listening, team,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -94,8 +94,18 @@ app.include_router(billing.router, prefix="/api")
 app.include_router(leads.router, prefix="/api")
 # Opportunities — AI "what to act on next"
 app.include_router(opportunities.router, prefix="/api")
+
+app.include_router(competitor.router, prefix="/api")
+# Proactive feed (auto-generated agent work)
+app.include_router(proactive.router, prefix="/api")
+# Social Listening agent
+app.include_router(social_listening.router, prefix="/api")
+# SEO + GEO agent
+app.include_router(seo_geo.router, prefix="/api")
 # Content Team — agentic weekly content cycle
 app.include_router(team.router, prefix="/api")
+# Clients — agency multi-client workspaces
+app.include_router(clients.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------

@@ -43,6 +43,7 @@ class UserOut(BaseModel):
     subscribed: bool = False
     free_today_remaining: int = 0
     trial_ends_at: datetime | None = None
+    active_client_id: int | None = None
 
 
 class SetProfileRequest(BaseModel):

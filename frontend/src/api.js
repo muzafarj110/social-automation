@@ -167,6 +167,38 @@ export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POS
 // --- Opportunities (AI "what to act on next") ---
 export const listOpportunities = () => apiGet("/opportunities");
 
+// --- Proactive feed ---
+export const listProactiveItems = () => apiGet("/proactive");
+export const generateProactiveItem = () => apiSend("/proactive/generate", "POST", {});
+export const dismissProactiveItem = (id) => apiSend(`/proactive/${id}/dismiss`, "POST", {});
+
+// --- Social Listening agent ---
+export const listTopics = () => apiGet("/listening");
+export const createTopic = (data) => apiSend("/listening", "POST", data);
+export const updateTopic = (id, data) => apiSend(`/listening/${id}`, "PATCH", data);
+export const deleteTopic = (id) => apiSend(`/listening/${id}`, "DELETE");
+export const scanTopic = (id) => apiSend(`/listening/${id}/scan`, "POST", {});
+
+// --- SEO + GEO agent ---
+export const listSeoProjects = () => apiGet("/seo");
+export const createSeoProject = (data) => apiSend("/seo", "POST", data);
+export const updateSeoProject = (id, data) => apiSend(`/seo/${id}`, "PATCH", data);
+export const deleteSeoProject = (id) => apiSend(`/seo/${id}`, "DELETE");
+export const analyzeSeoProject = (id) => apiSend(`/seo/${id}/analyze`, "POST", {});
+
+// --- Competitor Strategy agent ---
+export const listCompetitors = () => apiGet("/competitors");
+export const createCompetitor = (data) => apiSend("/competitors", "POST", data);
+export const updateCompetitor = (id, data) => apiSend(`/competitors/${id}`, "PATCH", data);
+export const deleteCompetitor = (id) => apiSend(`/competitors/${id}`, "DELETE");
+export const analyzeCompetitor = (id) => apiSend(`/competitors/${id}/analyze`, "POST", {});
+
+// --- Clients (agency multi-client workspaces) ---
+export const listClients = () => apiGet("/clients");
+export const createClient = (name) => apiSend("/clients", "POST", { name });
+export const activateClient = (id) => apiSend(`/clients/${id}/activate`, "POST", {});
+export const deactivateClient = () => apiSend("/clients/deactivate", "POST", {});
+
 // --- Content Team (agentic weekly cycle) ---
 export const teamPlan = (count = 3) => apiSend("/team/plan", "POST", { count });
 export const teamRun = (data) => apiSend("/team/run", "POST", data); // { count?, brief?, topics? }

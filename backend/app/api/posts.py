@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.clients import client_scope
 from app.core.user_keys import resolve_zernio_key
 from app.db.session import get_db
 from app.models import post as post_status
@@ -50,6 +51,7 @@ async def create_post(
         first_comment=body.first_comment,
         infographic_html=body.infographic_html,
         status=post_status.DRAFT,
+        client_id=current.active_client_id,
     )
     db.add(post)
     await db.commit()
@@ -64,7 +66,11 @@ async def list_posts(
     status_filter: str | None = Query(None, alias="status"),
     campaign_id: int | None = Query(None),
 ) -> list[Post]:
-    stmt = select(Post).where(Post.user_id == current.id).order_by(Post.created_at.desc())
+    stmt = (
+        select(Post)
+        .where(Post.user_id == current.id, client_scope(Post.client_id, current.active_client_id))
+        .order_by(Post.created_at.desc())
+    )
     if status_filter:
         stmt = stmt.where(Post.status == status_filter)
     if campaign_id is not None:

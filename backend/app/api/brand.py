@@ -16,13 +16,22 @@ from app.core.hub_errors import hub_http
 from app.core.user_keys import resolve_hub_key
 from app.db.session import get_db
 from app.models.brand import BrandProfile
+from app.models.client import Client
 from app.models.user import User
 from app.schemas.brand import BrandGenerateRequest, BrandProfileOut, BrandProfileUpdate
 
 router = APIRouter(prefix="/brand", tags=["brand"])
 
 
-async def _get_or_create(user: User, db: AsyncSession) -> BrandProfile:
+async def _brand_target(user: User, db: AsyncSession):
+    """The brand to read/write: the active client's brand, or the agency's own.
+
+    Both Client and BrandProfile expose the same brand fields, so callers and the
+    BrandProfileOut schema treat them interchangeably."""
+    if user.active_client_id:
+        c = await db.get(Client, user.active_client_id)
+        if c and c.agency_user_id == user.id:
+            return c
     bp = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
     if bp is None:
         bp = BrandProfile(user_id=user.id)
@@ -36,8 +45,8 @@ async def _get_or_create(user: User, db: AsyncSession) -> BrandProfile:
 async def get_brand(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> BrandProfile:
-    return await _get_or_create(current, db)
+):
+    return await _brand_target(current, db)
 
 
 @router.put("", response_model=BrandProfileOut)
@@ -45,8 +54,8 @@ async def update_brand(
     body: BrandProfileUpdate,
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> BrandProfile:
-    bp = await _get_or_create(current, db)
+):
+    bp = await _brand_target(current, db)
     data = body.model_dump(exclude_unset=True)
     # merge docs rather than replace, so saving one artifact keeps the others
     if "docs" in data and data["docs"] is not None:

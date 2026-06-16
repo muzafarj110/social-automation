@@ -24,6 +24,7 @@ from app.models import post as post_status
 from app.models import team_run as team_status
 from app.models.account import LinkedInAccount
 from app.models.brand import BrandProfile
+from app.models.client import Client
 from app.models.post import Post
 from app.models.team_run import TeamRun
 from app.models.user import User
@@ -68,6 +69,15 @@ def _topics_from_strategy(data, count: int) -> list[str]:
             seen.add(t.lower())
             out.append(t)
     return out
+
+
+async def _brand_for(db, user: User):
+    """The active client's brand if a client is selected, else the agency's own."""
+    if user.active_client_id:
+        c = await db.get(Client, user.active_client_id)
+        if c and c.agency_user_id == user.id:
+            return c
+    return await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
 
 
 async def _recent_topics(db, user: User, limit: int = 8) -> list[str]:
@@ -115,7 +125,7 @@ async def build_plan(db, user: User, count: int = 3, *, key: str | None = None):
     key = key or resolve_hub_key(user)
     if not key:
         raise TeamError("AI is temporarily unavailable. Please try again.")
-    brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
+    brand = await _brand_for(db, user)
     audience = (brand.audience if brand else None) or "your audience"
     seed = (brand and (brand.industry or brand.brand_name)) or "your industry"
 
@@ -160,7 +170,7 @@ async def run_cycle(db, user: User, *, count: int = 3, brief=None, topics=None) 
         raise TeamError("You're out of credits for now. Subscribe for more, or come back tomorrow.", 402)
 
     platform = acct.platform or "linkedin"
-    brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == user.id))
+    brand = await _brand_for(db, user)
     audience = (brand.audience if brand else None) or "your audience"
     voice = (brand.voice if brand else None) or "professional but human"
 
@@ -174,7 +184,8 @@ async def run_cycle(db, user: User, *, count: int = 3, brief=None, topics=None) 
     if not brief:
         brief = f"This week's focus: consistent, on-brand content for {audience}."
 
-    run = TeamRun(user_id=user.id, status=team_status.DRAFT, brief=str(brief))
+    run = TeamRun(user_id=user.id, client_id=user.active_client_id,
+                  status=team_status.DRAFT, brief=str(brief))
     db.add(run)
     await db.commit()
     await db.refresh(run)
@@ -229,7 +240,7 @@ async def run_cycle(db, user: User, *, count: int = 3, brief=None, topics=None) 
             db.add(Post(
                 user_id=user.id, account_id=acct.id, platform=platform, body=body,
                 hashtags=hashtags, status=post_status.DRAFT, source="generated",
-                team_run_id=run.id, qa_score=score,
+                team_run_id=run.id, qa_score=score, client_id=user.active_client_id,
             ))
             await credits.charge(db, user, 1)
             await db.commit()  # persist the post regardless of user type (admin charge is a no-op)

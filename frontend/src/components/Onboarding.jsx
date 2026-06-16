@@ -24,7 +24,7 @@ export default function Onboarding({ onDone }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div className="logo" style={{
             width: 46, height: 46, borderRadius: 13, margin: "0 auto 14px",
-            background: "linear-gradient(135deg, var(--teal), #a98bff)",
+            background: "linear-gradient(135deg, var(--teal), #3fc1b4)",
             display: "grid", placeItems: "center", fontWeight: 800, fontSize: 24, color: "#1a0f3a",
           }}>A</div>
           <h1 style={{ fontSize: 26 }}>Welcome — who are we building for?</h1>
