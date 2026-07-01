@@ -472,7 +472,7 @@ export default function Connections() {
   const wa = status?.whatsapp || {};
   const tg = status?.telegram || {};
 
-  const channelCard = (id, emoji, name, desc, freeLine, officialLine, isConnected) => (
+  const channelCard = (id, emoji, name, desc, isConnected) => (
     <div
       key={id}
       onClick={() => setTab(id)}
@@ -498,12 +498,6 @@ export default function Connections() {
           }} />
         )}
       </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 6,
-          background: "var(--teal-light)", color: "var(--teal-dark)" }}>{freeLine}</span>
-        <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6,
-          background: "var(--light)", color: "var(--muted)", border: "1px solid var(--line)" }}>{officialLine}</span>
-      </div>
     </div>
   );
 
@@ -514,10 +508,8 @@ export default function Connections() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-        {channelCard("wa", "💬", "WhatsApp Business", "Broadcasts, outreach, sequences",
-          "Free · 1,000 msgs/mo", "Official Meta API", wa.connected)}
-        {channelCard("tg", "✈️", "Telegram", "Channel posts, community, newsletters",
-          "Free · Unlimited", "Official Bot API", tg.connected)}
+        {channelCard("wa", "💬", "WhatsApp Business", "Broadcasts, outreach, sequences", wa.connected)}
+        {channelCard("tg", "✈️", "Telegram", "Channel posts, community, newsletters", tg.connected)}
       </div>
 
       <div style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 12, padding: "1.5rem" }}>
