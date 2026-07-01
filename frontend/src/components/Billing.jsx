@@ -156,13 +156,9 @@ export default function Billing({ user }) {
         <h2>{active ? "Change your plan" : "Choose your plan"}</h2>
         {!data ? (
           <div className="empty">Loading…</div>
-        ) : !data.subscriptions_enabled ? (
-          <div className="empty">Plans aren't switched on yet. Once Stripe is configured, they appear here.</div>
-        ) : data.plans.length === 0 ? (
-          <div className="empty">No plans are set up yet.</div>
         ) : (
           <div className="pricing-grid">
-            {/* Free tier — always shown first */}
+            {/* Free tier — always shown regardless of Stripe config */}
             {(() => {
               const meta = TIER_DATA.free;
               const current = !active;
@@ -195,7 +191,7 @@ export default function Billing({ user }) {
                 </div>
               );
             })()}
-            {data.plans.map((p) => {
+            {data.subscriptions_enabled && data.plans.map((p) => {
               const meta = TIER_DATA[p.tier] || {};
               const current = active && sub.tier === p.tier;
               const featured = meta.popular;
