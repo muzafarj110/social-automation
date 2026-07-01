@@ -1,7 +1,78 @@
 import { useEffect, useState } from "react";
-import { adminListUsers, adminFeatures, adminUpdateUser } from "../api.js";
+import { adminListUsers, adminFeatures, adminUpdateUser, adminEmailConfig, adminTestEmail } from "../api.js";
 
 const PLANS = ["free", "pro", "business"];
+
+function EmailDiagPanel() {
+  const [cfg, setCfg] = useState(null);
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => { adminEmailConfig().then(setCfg).catch(() => {}); }, []);
+
+  const runTest = async () => {
+    setTesting(true);
+    setResult(null);
+    try {
+      const r = await adminTestEmail();
+      setResult(r);
+    } catch (e) {
+      setResult({ ok: false, error: e.message });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (!cfg) return null;
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 15 }}>Email delivery</h3>
+          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+            Status:&nbsp;
+            <b style={{ color: cfg.email_enabled ? "#0d9488" : "#ef4444" }}>
+              {cfg.email_enabled ? "Enabled" : "Disabled — SMTP_USER / SMTP_PASS not set"}
+            </b>
+          </div>
+        </div>
+        <button className="btn-secondary" onClick={runTest} disabled={testing || !cfg.email_enabled}>
+          {testing ? "Sending…" : "Send test email →"}
+        </button>
+      </div>
+
+      {cfg.email_enabled && (
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13 }}>
+          <KV k="SMTP host" v={`${cfg.smtp_host}:${cfg.smtp_port}`} />
+          <KV k="SMTP user" v={cfg.smtp_user} />
+          <KV k="From address" v={cfg.smtp_from} />
+          <KV k="App base URL" v={cfg.app_base_url} warn={cfg.app_base_url.includes("(not set)")} />
+        </div>
+      )}
+
+      {result && (
+        <div style={{
+          marginTop: 12, padding: "10px 14px", borderRadius: 8, fontSize: 13,
+          background: result.ok ? "#f0fdf4" : "#fef2f2",
+          color: result.ok ? "#166534" : "#991b1b",
+          border: `1px solid ${result.ok ? "#bbf7d0" : "#fecaca"}`,
+        }}>
+          {result.ok
+            ? `✓ Sent to ${result.sent_to} — check your inbox.`
+            : `✗ ${result.error}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const KV = ({ k, v, warn }) => (
+  <div style={{ padding: "6px 10px", background: "#f8f8fc", borderRadius: 6 }}>
+    <div className="muted" style={{ fontSize: 11 }}>{k}</div>
+    <div style={{ fontWeight: 500, color: warn ? "#ef4444" : "inherit" }}>{v}</div>
+  </div>
+);
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -9,7 +80,7 @@ export default function Admin() {
   const [planFeatures, setPlanFeatures] = useState({});
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [expanded, setExpanded] = useState(null); // user id whose features are open
+  const [expanded, setExpanded] = useState(null);
   const [savingId, setSavingId] = useState(null);
 
   const load = async () => {
@@ -66,6 +137,8 @@ export default function Admin() {
   return (
     <div>
       {err && <div className="error" style={{ marginBottom: 12 }}>{err}</div>}
+
+      <EmailDiagPanel />
 
       <div className="kpi-strip">
         <div className="kpi-tile"><div className="v">{users.length}</div><div className="l">Total users</div></div>

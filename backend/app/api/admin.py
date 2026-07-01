@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
+from app.core.config import settings
 from app.core.entitlements import (
     FEATURES,
     PLAN_FEATURES,
@@ -23,8 +24,65 @@ from app.db.session import get_db
 from app.models.account import LinkedInAccount
 from app.models.user import User
 from app.schemas.admin import AdminFeaturesOut, AdminUserOut, AdminUserUpdate
+from app.services import email as email_svc
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/email-config")
+async def email_config(_: User = Depends(require_admin)) -> dict:
+    """Return current email config status so admin can debug delivery issues."""
+    return {
+        "email_enabled": settings.email_enabled,
+        "smtp_host": settings.smtp_host,
+        "smtp_port": settings.smtp_port,
+        "smtp_user": settings.smtp_user or "(not set)",
+        "smtp_pass_set": bool(settings.smtp_pass),
+        "smtp_from": settings.smtp_from or f"Autopilot <{settings.smtp_user}>",
+        "app_base_url": settings.app_base_url or "(not set — links will be broken)",
+    }
+
+
+@router.post("/test-email")
+async def test_email(current: User = Depends(require_admin)) -> dict:
+    """Send a test email to the admin address. Returns ok + any error detail."""
+    if not settings.email_enabled:
+        return {
+            "ok": False,
+            "error": "Email is disabled — SMTP_USER and/or SMTP_PASS are not set in Railway.",
+        }
+    import asyncio, smtplib, ssl
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    error: str | None = None
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Autopilot — test email"
+        msg["From"] = settings.smtp_from or f"Autopilot <{settings.smtp_user}>"
+        msg["To"] = current.email
+        msg.attach(MIMEText(
+            "<p>This is a test email from Autopilot. If you see this, email delivery is working!</p>",
+            "html",
+        ))
+        ctx = ssl.create_default_context()
+        def _send():
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.login(settings.smtp_user, settings.smtp_pass)
+                s.sendmail(msg["From"], [current.email], msg.as_string())
+        await asyncio.to_thread(_send)
+    except smtplib.SMTPAuthenticationError as e:
+        error = f"Authentication failed: {e.smtp_error.decode() if isinstance(e.smtp_error, bytes) else e}"
+    except smtplib.SMTPException as e:
+        error = f"SMTP error: {e}"
+    except Exception as e:
+        error = f"Connection error: {e}"
+
+    if error:
+        return {"ok": False, "error": error, "sent_to": current.email}
+    return {"ok": True, "sent_to": current.email, "message": "Test email sent — check your inbox."}
 
 
 def _to_out(user: User, account_count: int) -> AdminUserOut:

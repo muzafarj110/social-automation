@@ -220,6 +220,8 @@ export const openBillingPortal = () => apiSend("/billing/portal", "POST", {});
 export const adminListUsers = () => apiGet("/admin/users");
 export const adminFeatures = () => apiGet("/admin/features");
 export const adminUpdateUser = (id, data) => apiSend(`/admin/users/${id}`, "PATCH", data);
+export const adminEmailConfig = () => apiGet("/admin/email-config");
+export const adminTestEmail = () => apiSend("/admin/test-email", "POST", {});
 
 // --- Analytics ---
 export const zernioMetrics = () => apiGet("/analytics/zernio");
