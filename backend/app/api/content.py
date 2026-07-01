@@ -152,6 +152,27 @@ async def infographic(
     return {"ok": True, "data": data}
 
 
+# Studio tool → credit tier mapping.
+# Image tools cost 5 credits, long-form tools cost 2, everything else is 1.
+_IMAGE_TOOLS = {"social_card", "ad_creative", "infographic"}
+_VIDEO_TOOLS = {"video_clip", "reel", "talking_head"}  # future video tools
+_LONG_FORM_TOOLS = {
+    "linkedin_article", "linkedin_carousel", "linkedin_newsletter",
+    "post_series", "outreach_campaign", "linkedin_brand_audit",
+    "linkedin_repurpose",
+}
+
+
+def _studio_cost(tool: str) -> int:
+    if tool in _IMAGE_TOOLS:
+        return credits.COST_IMAGE
+    if tool in _VIDEO_TOOLS:
+        return credits.COST_VIDEO
+    if tool in _LONG_FORM_TOOLS:
+        return credits.COST_LONG_FORM
+    return credits.COST_GENERATE
+
+
 class StudioRequest(BaseModel):
     tool: str = Field(..., min_length=1)
     params: dict = Field(default_factory=dict)
@@ -165,13 +186,12 @@ async def studio(
 ) -> dict[str, object]:
     """Generic metered runner for any Hub marketing model (Studio page).
 
-    One credit per successful generation. Passes the tool's documented params
-    straight through and returns the Hub's data (which may include image_url /
-    video_url for media models).
+    Credit cost varies by tool type: images = 5, long-form = 2, text = 1.
     """
     if req.tool not in ENDPOINTS:
         raise HTTPException(400, "Unknown tool.")
-    if not credits.has_credits(current, credits.COST_GENERATE):
+    cost = _studio_cost(req.tool)
+    if not credits.has_credits(current, cost):
         raise HTTPException(402, "You're out of credits. Top up under Billing to keep creating.")
     key = _resolve_hub_key(current)
     async with HubClient(settings.hub_base_url, key) as hub:
@@ -179,8 +199,8 @@ async def studio(
             data = await hub.call(req.tool, req.params)
         except HubError as e:
             raise _map_hub_error(e) from e
-    await credits.charge(db, current, credits.COST_GENERATE)
-    return {"ok": True, "data": data, "credits": current.credits}
+    await credits.charge(db, current, cost)
+    return {"ok": True, "data": data, "credits": current.credits, "cost": cost}
 
 
 @router.get("/usage")

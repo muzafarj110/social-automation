@@ -20,9 +20,20 @@ from app.core.config import settings
 from app.core.entitlements import is_admin
 from app.models.user import User
 
-# Cost table (credits). One credit per produced post / generation.
-COST_GENERATE = 1
+# ── Credit cost table ─────────────────────────────────────────────────────────
+# Tier 1 — text generation (one Hub call, fast, cheap)
+COST_GENERATE = 1        # drafts, analysis, outreach, listening scan, autopilot
 COST_CAMPAIGN_POST = 1
+
+# Tier 2 — long-form / multi-call (2+ Hub calls or large outputs)
+COST_LONG_FORM = 2       # SEO+GEO, articles, carousels, newsletters, sequences
+
+# Tier 3 — image generation (image AI model, slow, ~$0.04-0.08/image)
+COST_IMAGE = 5           # social graphics, infographics, ad creatives
+
+# Tier 4 — video generation (video AI, very slow, ~$0.50-5.00/clip)
+COST_VIDEO = 15          # short clips, reels, talking-head videos
+# ──────────────────────────────────────────────────────────────────────────────
 
 _OUT_OF_CREDITS = "You're out of credits. Top up under Billing to keep creating."
 _DAILY_LIMIT = "You've used your free credits for today. Come back tomorrow, or subscribe for more."

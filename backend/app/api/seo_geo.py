@@ -191,7 +191,7 @@ async def analyze_project(
 ) -> dict:
     """Run keyword research + technical SEO + GEO analysis (2 credits)."""
     p = await _owned(pid, current, db)
-    cost = credits.COST_GENERATE * 2
+    cost = credits.COST_LONG_FORM
     if not credits.has_credits(current, cost):
         raise HTTPException(402, "You need at least 2 credits for a full SEO + GEO analysis. Top up under Billing.")
     key = resolve_hub_key(current)

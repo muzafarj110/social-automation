@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { studioRun } from "../api.js";
 
+const IMAGE_TOOLS = new Set(["social_card", "ad_creative", "infographic"]);
+const LONG_FORM_TOOLS = new Set([
+  "linkedin_article", "linkedin_carousel", "linkedin_newsletter",
+  "post_series", "outreach_campaign", "linkedin_brand_audit", "linkedin_repurpose",
+]);
+function toolCost(key) {
+  if (IMAGE_TOOLS.has(key)) return 5;
+  if (LONG_FORM_TOOLS.has(key)) return 2;
+  return 1;
+}
+
 // Tool catalog — grouped by category. `a` = textarea, `n` = number, else text.
 const CATEGORIES = [
   {
@@ -232,19 +243,30 @@ export default function Studio() {
 
       <div className="card">
         <h2>Marketing Studio</h2>
-        <p className="muted" style={{ marginTop: -6 }}>Reports, email, SEO, LinkedIn formats and graphics. Each run uses 1 credit — and stays here while you explore.</p>
+        <p className="muted" style={{ marginTop: -6 }}>LinkedIn formats, graphics and long-form content. Text = 1 credit · Long-form = 2 credits · Images = 5 credits.</p>
         <div className="seg" style={{ marginTop: 4 }}>
           {CATEGORIES.map((c, i) => (
             <button key={c.name} className={cat === i ? "btn-primary" : "btn-secondary"} onClick={() => pickCat(i)}>{c.name}</button>
           ))}
         </div>
         <div className="tool-tiles">
-          {Object.entries(tools).map(([k, t]) => (
-            <div key={k} className={`tool-tile${toolKey === k ? " active" : ""}`} onClick={() => selectTool(k)}>
-              <div className="tt-name">{t.label}</div>
-              <div className="tt-blurb">{t.blurb}</div>
-            </div>
-          ))}
+          {Object.entries(tools).map(([k, t]) => {
+            const cost = toolCost(k);
+            return (
+              <div key={k} className={`tool-tile${toolKey === k ? " active" : ""}`} onClick={() => selectTool(k)}>
+                <div className="row" style={{ alignItems: "center", marginBottom: 2 }}>
+                  <div className="tt-name" style={{ flex: 1 }}>{t.label}</div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999,
+                    background: cost >= 5 ? "#fce0f7" : cost >= 2 ? "#dbe8ff" : "#d1faf4",
+                    color: cost >= 5 ? "#901d86" : cost >= 2 ? "#2352b8" : "#1f7a72",
+                    flexShrink: 0,
+                  }}>{cost}cr</span>
+                </div>
+                <div className="tt-blurb">{t.blurb}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -262,8 +284,16 @@ export default function Studio() {
               </div>
             ))}
           </div>
-          <div className="row" style={{ marginTop: 12 }}>
-            <button className="btn-primary" type="submit" disabled={busy}>{busy ? "Generating…" : "Generate"}</button>
+          <div className="row" style={{ marginTop: 12, alignItems: "center" }}>
+            <button className="btn-primary" type="submit" disabled={busy}>
+              {busy ? "Generating…" : `Generate (${toolCost(toolKey)} credit${toolCost(toolKey) > 1 ? "s" : ""})`}
+            </button>
+            {IMAGE_TOOLS.has(toolKey) && (
+              <span className="muted" style={{ fontSize: 12.5 }}>🎨 Image generation — higher cost</span>
+            )}
+            {LONG_FORM_TOOLS.has(toolKey) && (
+              <span className="muted" style={{ fontSize: 12.5 }}>📄 Long-form content — 2 credits</span>
+            )}
           </div>
         </form>
       </div>
