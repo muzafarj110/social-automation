@@ -140,3 +140,19 @@ async def update_user(
         select(func.count(LinkedInAccount.id)).where(LinkedInAccount.user_id == user.id)
     )
     return _to_out(user, int(count or 0))
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: int,
+    current: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Permanently delete a user and all their data. Cannot delete your own admin account."""
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    if is_admin(user):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot delete the admin account")
+    await db.delete(user)
+    await db.commit()

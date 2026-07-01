@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { adminListUsers, adminFeatures, adminUpdateUser, adminEmailConfig, adminTestEmail } from "../api.js";
+import { adminListUsers, adminFeatures, adminUpdateUser, adminDeleteUser, adminEmailConfig, adminTestEmail } from "../api.js";
 
 const PLANS = ["free", "pro", "business"];
 
@@ -42,11 +42,15 @@ function EmailDiagPanel() {
         </button>
       </div>
 
-      {cfg.email_enabled && (
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13 }}>
-          <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "(not set)"} warn={!cfg.resend_api_key_set} />
-          <KV k="From address" v={cfg.resend_from} />
-          <KV k="App base URL" v={cfg.app_base_url} warn={cfg.app_base_url.includes("(not set)")} />
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13 }}>
+        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "(not set)"} warn={!cfg.resend_api_key_set} />
+        <KV k="From address" v={cfg.resend_from} />
+        <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={cfg.app_base_url.includes("(not set)")} />
+      </div>
+      {cfg.app_base_url.includes("(not set)") && (
+        <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#fef9c3", border: "1px solid #fde047", fontSize: 13, color: "#854d0e" }}>
+          ⚠ <b>APP_BASE_URL is missing in Railway.</b> Verification and reset links in emails will be broken.
+          Set it to <code>https://autopilot-io.up.railway.app</code>
         </div>
       )}
 
@@ -81,6 +85,7 @@ export default function Admin() {
   const [err, setErr] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [savingId, setSavingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -114,6 +119,19 @@ export default function Admin() {
   const setPlan = (u, plan) => patch(u.id, { plan });
   const toggleStatus = (u) =>
     patch(u.id, { status: u.status === "active" ? "suspended" : "active" });
+
+  const deleteUser = async (u) => {
+    if (!window.confirm(`Delete ${u.email}? This cannot be undone.`)) return;
+    setDeletingId(u.id);
+    try {
+      await adminDeleteUser(u.id);
+      setUsers((list) => list.filter((x) => x.id !== u.id));
+    } catch (e) {
+      setErr(e.message || "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Toggle a single feature override for a user. We start from their current
   // effective entitlements so flipping one feature doesn't drop the others.
@@ -158,6 +176,7 @@ export default function Admin() {
               <Th>Accounts</Th>
               <Th>Joined</Th>
               <Th>Features</Th>
+              <Th></Th>
             </tr>
           </thead>
           <tbody>
@@ -168,12 +187,14 @@ export default function Admin() {
                 features={features}
                 planFeatures={planFeatures}
                 saving={savingId === u.id}
+                deleting={deletingId === u.id}
                 expanded={expanded === u.id}
                 onExpand={() => setExpanded(expanded === u.id ? null : u.id)}
                 onPlan={setPlan}
                 onStatus={toggleStatus}
                 onFeature={toggleFeature}
                 onClear={clearOverrides}
+                onDelete={deleteUser}
               />
             ))}
           </tbody>
@@ -183,11 +204,11 @@ export default function Admin() {
   );
 }
 
-function UserRow({ u, features, planFeatures, saving, expanded, onExpand, onPlan, onStatus, onFeature, onClear }) {
+function UserRow({ u, features, planFeatures, saving, deleting, expanded, onExpand, onPlan, onStatus, onFeature, onClear, onDelete }) {
   const hasOverride = u.entitlements_override && Object.keys(u.entitlements_override).length > 0;
   return (
     <>
-      <tr style={{ borderTop: "1px solid #ececf3", opacity: saving ? 0.5 : 1 }}>
+      <tr style={{ borderTop: "1px solid #ececf3", opacity: (saving || deleting) ? 0.5 : 1 }}>
         <td style={td}>
           <div style={{ fontWeight: 600 }}>
             {u.full_name || u.email}
@@ -218,6 +239,17 @@ function UserRow({ u, features, planFeatures, saving, expanded, onExpand, onPlan
           <button className="btn-ghost" onClick={onExpand} style={{ fontSize: 12, padding: "4px 10px" }}>
             {expanded ? "Hide" : "Edit"}{hasOverride && !expanded ? " *" : ""}
           </button>
+        </td>
+        <td style={td}>
+          {!u.is_admin && (
+            <button
+              onClick={() => onDelete(u)}
+              disabled={saving || deleting}
+              style={{ fontSize: 12, padding: "4px 10px", background: "none", border: "1px solid #fca5a5", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}
+            >
+              {deleting ? "…" : "Delete"}
+            </button>
+          )}
         </td>
       </tr>
       {expanded && (
