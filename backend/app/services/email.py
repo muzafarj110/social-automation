@@ -1,50 +1,45 @@
 """
-Email sending via SMTP (works with Gmail, Outlook, or any SMTP provider).
+Email sending via Resend (https://resend.com).
 
-Inert until SMTP_USER + SMTP_PASS are both set — send_email() returns False
-instead of raising, so the app runs fine without email configured.
+Inert until RESEND_API_KEY is set — send_email() returns False instead of raising,
+so the app runs fine without email configured.
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
-import smtplib
-import ssl
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
+import httpx
 
 from app.core.config import settings
 
 log = logging.getLogger("uvicorn.error")
-
-
-def _smtp_send(*, to: str, subject: str, html: str) -> None:
-    """Blocking SMTP send — run via asyncio.to_thread."""
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.smtp_from or f"Autopilot <{settings.smtp_user}>"
-    msg["To"] = to
-    msg.attach(MIMEText(html, "html"))
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-        server.ehlo()
-        server.starttls(context=context)
-        server.login(settings.smtp_user, settings.smtp_pass)
-        server.sendmail(settings.smtp_from, [to], msg.as_string())
+_RESEND_URL = "https://api.resend.com/emails"
 
 
 async def send_email(*, to: str, subject: str, html: str) -> bool:
     """Send one email. Returns True on success, False if disabled or it failed."""
     if not settings.email_enabled:
-        log.warning("Email disabled — set SMTP_USER and SMTP_PASS to enable")
+        log.warning("Email disabled — set RESEND_API_KEY in Railway to enable")
         return False
     try:
-        await asyncio.to_thread(_smtp_send, to=to, subject=subject, html=html)
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            r = await c.post(
+                _RESEND_URL,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={
+                    "from": settings.resend_from,
+                    "to": [to],
+                    "subject": subject,
+                    "html": html,
+                },
+            )
+        if r.status_code >= 400:
+            log.warning("Resend send failed (%s): %s", r.status_code, r.text[:500])
+            return False
         return True
     except Exception as e:
-        log.warning("SMTP send error: %s", e)
+        log.warning("Resend send error: %s", e)
         return False
 
 

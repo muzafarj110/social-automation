@@ -34,49 +34,36 @@ async def email_config(_: User = Depends(require_admin)) -> dict:
     """Return current email config status so admin can debug delivery issues."""
     return {
         "email_enabled": settings.email_enabled,
-        "smtp_host": settings.smtp_host,
-        "smtp_port": settings.smtp_port,
-        "smtp_user": settings.smtp_user or "(not set)",
-        "smtp_pass_set": bool(settings.smtp_pass),
-        "smtp_from": settings.smtp_from or f"Autopilot <{settings.smtp_user}>",
+        "resend_api_key_set": bool(settings.resend_api_key),
+        "resend_from": settings.resend_from,
         "app_base_url": settings.app_base_url or "(not set — links will be broken)",
     }
 
 
 @router.post("/test-email")
 async def test_email(current: User = Depends(require_admin)) -> dict:
-    """Send a test email to the admin address. Returns ok + any error detail."""
+    """Send a test email to the admin via Resend. Returns ok + any error detail."""
     if not settings.email_enabled:
         return {
             "ok": False,
-            "error": "Email is disabled — SMTP_USER and/or SMTP_PASS are not set in Railway.",
+            "error": "Email is disabled — set RESEND_API_KEY in Railway.",
         }
-    import asyncio, smtplib, ssl
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-
+    import httpx
     error: str | None = None
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Autopilot — test email"
-        msg["From"] = settings.smtp_from or f"Autopilot <{settings.smtp_user}>"
-        msg["To"] = current.email
-        msg.attach(MIMEText(
-            "<p>This is a test email from Autopilot. If you see this, email delivery is working!</p>",
-            "html",
-        ))
-        ctx = ssl.create_default_context()
-        def _send():
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as s:
-                s.ehlo()
-                s.starttls(context=ctx)
-                s.login(settings.smtp_user, settings.smtp_pass)
-                s.sendmail(msg["From"], [current.email], msg.as_string())
-        await asyncio.to_thread(_send)
-    except smtplib.SMTPAuthenticationError as e:
-        error = f"Authentication failed: {e.smtp_error.decode() if isinstance(e.smtp_error, bytes) else e}"
-    except smtplib.SMTPException as e:
-        error = f"SMTP error: {e}"
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            r = await c.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={
+                    "from": settings.resend_from,
+                    "to": [current.email],
+                    "subject": "Autopilot — test email",
+                    "html": "<p>This is a test email from Autopilot. Email delivery is working!</p>",
+                },
+            )
+        if r.status_code >= 400:
+            error = f"Resend API error {r.status_code}: {r.text[:300]}"
     except Exception as e:
         error = f"Connection error: {e}"
 

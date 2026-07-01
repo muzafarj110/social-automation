@@ -66,18 +66,15 @@ class Settings(BaseSettings):
     # Each cycle the user's credits reset to their tier's monthly allowance.
     stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
-    # Email (SMTP) — works with Gmail, Outlook, or any SMTP provider.
-    # Inert until SMTP_USER + SMTP_PASS are set.
-    smtp_host: str = Field("smtp.gmail.com", alias="SMTP_HOST")
-    smtp_port: int = Field(587, alias="SMTP_PORT")
-    smtp_user: str = Field("", alias="SMTP_USER")
-    smtp_pass: str = Field("", alias="SMTP_PASS")
-    smtp_from: str = Field("", alias="SMTP_FROM")
+    # Email (Resend) — for verification + password-reset links.
+    # Inert until RESEND_API_KEY is set.
+    resend_api_key: str = Field("", alias="RESEND_API_KEY")
+    resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.smtp_user and self.smtp_pass)
+        return bool(self.resend_api_key)
 
     @property
     def billing_enabled(self) -> bool:

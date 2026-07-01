@@ -44,9 +44,8 @@ function EmailDiagPanel() {
 
       {cfg.email_enabled && (
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13 }}>
-          <KV k="SMTP host" v={`${cfg.smtp_host}:${cfg.smtp_port}`} />
-          <KV k="SMTP user" v={cfg.smtp_user} />
-          <KV k="From address" v={cfg.smtp_from} />
+          <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "(not set)"} warn={!cfg.resend_api_key_set} />
+          <KV k="From address" v={cfg.resend_from} />
           <KV k="App base URL" v={cfg.app_base_url} warn={cfg.app_base_url.includes("(not set)")} />
         </div>
       )}
