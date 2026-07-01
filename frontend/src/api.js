@@ -206,6 +206,17 @@ export const listTeamRuns = () => apiGet("/team/runs");
 export const getTeamRun = (id) => apiGet(`/team/runs/${id}`);
 export const approveTeamRun = (id) => apiSend(`/team/runs/${id}/approve`, "POST", {});
 
+// --- Channel connections (WhatsApp + Telegram) ---
+export const getConnections = () => apiGet("/connections");
+export const connectWhatsApp = (data) => apiSend("/connections/whatsapp", "POST", data);
+export const disconnectWhatsApp = () => apiSend("/connections/whatsapp", "DELETE");
+export const toggleWhatsAppAutoPost = () => apiSend("/connections/whatsapp/toggle", "PATCH", {});
+export const sendWhatsApp = (data) => apiSend("/connections/whatsapp/send", "POST", data);
+export const connectTelegram = (data) => apiSend("/connections/telegram", "POST", data);
+export const disconnectTelegram = () => apiSend("/connections/telegram", "DELETE");
+export const toggleTelegramAutoPost = () => apiSend("/connections/telegram/toggle", "PATCH", {});
+export const sendTelegram = (data) => apiSend("/connections/telegram/send", "POST", data);
+
 // --- Billing (usage-based credits) ---
 export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });

@@ -23,6 +23,7 @@ import ContentTeam from "./components/ContentTeam.jsx";
 import Competitor from "./components/Competitor.jsx";
 import SocialListening from "./components/SocialListening.jsx";
 import SeoGeo from "./components/SeoGeo.jsx";
+import Connections from "./components/Connections.jsx";
 
 // Each item: [tabId, label, featureFlag, working?]. `working` shows a live
 // pulsing status dot — the "this agent is on the job 24/7" cue (NoimosAI model).
@@ -45,7 +46,7 @@ const NAV = [
     ["analytics", "Growth analytics", "analytics", false],
   ] },
   { group: "Workspace", items: [["calendar", "Calendar", null], ["posts", "Posts", null], ["inbox", "Approvals", "inbox"]] },
-  { group: "Settings", items: [["accounts", "Accounts", null], ["billing", "Billing", null]] },
+  { group: "Settings", items: [["accounts", "Accounts", null], ["connections", "Channels", null], ["billing", "Billing", null]] },
 ];
 // Admin-only nav group, appended when the user is an operator.
 const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
@@ -67,6 +68,7 @@ const TITLES = {
   opportunities: ["Opportunities", "What to act on next, from your own data"],
   leads: ["Lead-gen agent", "Capture leads and let AI draft outreach"],
   accounts: ["Accounts", "Keys, connected accounts and usage"],
+  connections: ["Channels", "Connect WhatsApp Business and Telegram for cross-channel posting"],
   billing: ["Billing", "Your credits and top-ups"],
   admin: ["Users", "Manage plans, access and account status"],
 };
@@ -248,6 +250,7 @@ export default function App() {
           {tab === "seo" && <SeoGeo />}
           {tab === "opportunities" && <Opportunities goTab={setTab} />}
           {tab === "leads" && <Leads refreshUser={refreshUser} />}
+          {tab === "connections" && <Connections />}
           {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}
         </div>

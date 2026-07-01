@@ -21,8 +21,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import (
-    accounts, admin, analytics, auth, billing, brand, campaigns, clients, competitor, content,
-    inbox, leads, opportunities, posts, proactive, profile, routes, seo_geo, social_listening, team,
+    accounts, admin, analytics, auth, billing, brand, campaigns, clients, competitor, connections,
+    content, inbox, leads, opportunities, posts, proactive, profile, routes, seo_geo,
+    social_listening, team,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -106,6 +107,8 @@ app.include_router(seo_geo.router, prefix="/api")
 app.include_router(team.router, prefix="/api")
 # Clients — agency multi-client workspaces
 app.include_router(clients.router, prefix="/api")
+# Channel connections — WhatsApp Business + Telegram
+app.include_router(connections.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------
