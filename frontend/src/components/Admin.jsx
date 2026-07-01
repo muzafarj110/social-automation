@@ -7,63 +7,78 @@ function EmailDiagPanel() {
   const [cfg, setCfg] = useState(null);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState(null);
+  const [testTo, setTestTo] = useState("");
 
   useEffect(() => { adminEmailConfig().then(setCfg).catch(() => {}); }, []);
 
   const runTest = async () => {
-    setTesting(true);
-    setResult(null);
+    setTesting(true); setResult(null);
     try {
-      const r = await adminTestEmail();
+      const r = await adminTestEmail(testTo.trim() || undefined);
       setResult(r);
     } catch (e) {
       setResult({ ok: false, error: e.message });
-    } finally {
-      setTesting(false);
-    }
+    } finally { setTesting(false); }
   };
 
   if (!cfg) return null;
 
+  const baseUrlMissing = cfg.app_base_url.includes("(not set)");
+
   return (
     <div className="card" style={{ marginBottom: 20 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: 15 }}>Email delivery</h3>
-          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-            Status:&nbsp;
-            <b style={{ color: cfg.email_enabled ? "#0d9488" : "#ef4444" }}>
-              {cfg.email_enabled ? "Enabled" : "Disabled — SMTP_USER / SMTP_PASS not set"}
-            </b>
-          </div>
+      <h3 style={{ margin: "0 0 12px" }}>Email delivery diagnostics</h3>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13, marginBottom: 12 }}>
+        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.resend_api_key_set} />
+        <KV k="From address" v={cfg.resend_from} />
+        <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={baseUrlMissing} />
+      </div>
+
+      {baseUrlMissing && (
+        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "#fef9c3", border: "1px solid #fde047", fontSize: 13, color: "#854d0e" }}>
+          <b>⚠ APP_BASE_URL is missing in Railway.</b><br />
+          Verify and reset links in emails will be broken — the link just says <code>/#verify?token=...</code> with no domain, so it goes nowhere when clicked.<br />
+          <b>Fix:</b> Add <code>APP_BASE_URL = https://autopilot-io.up.railway.app</code> in Railway Variables.
         </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          type="email"
+          placeholder="Send test to (leave blank for admin email)"
+          value={testTo}
+          onChange={(e) => setTestTo(e.target.value)}
+          style={{ flex: 1, minWidth: 220, padding: "8px 12px", borderRadius: 8, border: "1px solid #d9d9e3", fontSize: 13 }}
+        />
         <button className="btn-secondary" onClick={runTest} disabled={testing || !cfg.email_enabled}>
           {testing ? "Sending…" : "Send test email →"}
         </button>
       </div>
-
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13 }}>
-        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "(not set)"} warn={!cfg.resend_api_key_set} />
-        <KV k="From address" v={cfg.resend_from} />
-        <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={cfg.app_base_url.includes("(not set)")} />
-      </div>
-      {cfg.app_base_url.includes("(not set)") && (
-        <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#fef9c3", border: "1px solid #fde047", fontSize: 13, color: "#854d0e" }}>
-          ⚠ <b>APP_BASE_URL is missing in Railway.</b> Verification and reset links in emails will be broken.
-          Set it to <code>https://autopilot-io.up.railway.app</code>
-        </div>
+      {!cfg.email_enabled && (
+        <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Set RESEND_API_KEY in Railway to enable.</p>
       )}
 
       {result && (
         <div style={{
-          marginTop: 12, padding: "10px 14px", borderRadius: 8, fontSize: 13,
+          marginTop: 12, padding: "12px 14px", borderRadius: 8, fontSize: 13,
           background: result.ok ? "#f0fdf4" : "#fef2f2",
           color: result.ok ? "#166534" : "#991b1b",
           border: `1px solid ${result.ok ? "#bbf7d0" : "#fecaca"}`,
         }}>
-          {result.ok
-            ? `✓ Sent to ${result.sent_to} — check your inbox.`
-            : `✗ ${result.error}`}
+          {result.ok ? (
+            <>
+              <b>✓ Email sent to {result.sent_to}</b><br />
+              <span style={{ fontSize: 12 }}>APP_BASE_URL: {result.app_base_url}</span><br />
+              <span style={{ fontSize: 12 }}>Check inbox + spam. If it arrived, Resend is working. If the link inside doesn't work → APP_BASE_URL is wrong.</span>
+            </>
+          ) : (
+            <>
+              <b>✗ Failed</b><br />
+              <span style={{ fontSize: 12 }}>{result.error}</span>
+              {result.resend_response && <><br /><span style={{ fontSize: 11, opacity: 0.7 }}>Resend response: {result.resend_response}</span></>}
+            </>
+          )}
         </div>
       )}
     </div>

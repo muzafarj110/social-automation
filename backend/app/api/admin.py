@@ -9,6 +9,7 @@ routes are gated by `require_admin`. No secrets are ever returned.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,36 +41,59 @@ async def email_config(_: User = Depends(require_admin)) -> dict:
     }
 
 
+class TestEmailBody(BaseModel):
+    to: str = ""
+    include_verify_link: bool = False
+
+
 @router.post("/test-email")
-async def test_email(current: User = Depends(require_admin)) -> dict:
-    """Send a test email to the admin via Resend. Returns ok + any error detail."""
+async def test_email(
+    body: TestEmailBody = TestEmailBody(),
+    current: User = Depends(require_admin),
+) -> dict:
+    """Send a diagnostic test email via Resend. Accepts optional target address."""
     if not settings.email_enabled:
-        return {
-            "ok": False,
-            "error": "Email is disabled — set RESEND_API_KEY in Railway.",
-        }
+        return {"ok": False, "error": "Email disabled — RESEND_API_KEY not set in Railway."}
+
+    target = body.to.strip() or current.email
+    base = (settings.app_base_url or "").rstrip("/")
+    app_base_warn = "(not set — links will be broken!)" if not base else base
+
+    html = f"""
+    <div style='font-family:system-ui,sans-serif;max-width:480px'>
+      <h2>Autopilot — email delivery test</h2>
+      <p>If you received this, Resend can deliver to <b>{target}</b>.</p>
+      <hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0'>
+      <p style='font-size:13px;color:#666'><b>APP_BASE_URL:</b> {app_base_warn}</p>
+      <p style='font-size:13px;color:#666'>{'<b style="color:red">⚠ APP_BASE_URL is missing — verify/reset links in real emails will be broken.</b>' if not base else '✓ APP_BASE_URL is set correctly.'}</p>
+      {'<p><a href="' + base + '/#verify?token=SAMPLE_TOKEN" style="display:inline-block;background:#0d9488;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Sample verify link (click to test)</a></p>' if body.include_verify_link and base else ''}
+    </div>
+    """
+
     import httpx
     error: str | None = None
+    resend_response: str = ""
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={
-                    "from": settings.resend_from,
-                    "to": [current.email],
-                    "subject": "Autopilot — test email",
-                    "html": "<p>This is a test email from Autopilot. Email delivery is working!</p>",
-                },
+                json={"from": settings.resend_from, "to": [target], "subject": "Autopilot — email test", "html": html},
             )
+        resend_response = r.text[:400]
         if r.status_code >= 400:
-            error = f"Resend API error {r.status_code}: {r.text[:300]}"
+            error = f"Resend rejected ({r.status_code}): {resend_response}"
     except Exception as e:
         error = f"Connection error: {e}"
 
     if error:
-        return {"ok": False, "error": error, "sent_to": current.email}
-    return {"ok": True, "sent_to": current.email, "message": "Test email sent — check your inbox."}
+        return {"ok": False, "error": error, "sent_to": target, "resend_response": resend_response}
+    return {
+        "ok": True,
+        "sent_to": target,
+        "app_base_url": base or "(not set)",
+        "message": f"Delivered to {target}. Check inbox + spam. Also verify APP_BASE_URL above.",
+    }
 
 
 def _to_out(user: User, account_count: int) -> AdminUserOut:
