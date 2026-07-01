@@ -1,12 +1,56 @@
 import { useEffect, useState } from "react";
 import { getBilling, startCheckout, openBillingPortal } from "../api.js";
 
-const TIER_FEATURES = [
-  "Posts across all 15 platforms",
-  "AI brand voice & autopilot",
-  "Approve-first publishing",
-  "Analytics & learning loop",
-];
+const TIER_DATA = {
+  starter: {
+    price: "$29",
+    label: "Starter",
+    included: [
+      "Content agent — drafts and posts",
+      "Quick post generator",
+      "Competitor agent (1 rival)",
+      "Post calendar",
+      "WhatsApp + Telegram cross-posting",
+    ],
+    excluded: [
+      "Autopilot agent",
+      "SEO + GEO agent",
+      "Studio images and carousels",
+    ],
+  },
+  growth: {
+    price: "$79",
+    label: "Growth",
+    popular: true,
+    included: [
+      "Everything in Starter",
+      "Autopilot agent — set and forget posting",
+      "SEO + GEO agent",
+      "Social listening agent",
+      "Lead-gen agent",
+      "Opportunities agent",
+    ],
+    excluded: [
+      "Studio agent (images, carousels)",
+      "Multi-client workspaces",
+    ],
+  },
+  pro: {
+    price: "$149",
+    label: "Pro",
+    included: [
+      "Everything in Growth",
+      "Studio agent — images, carousels, newsletters",
+      "Brand strategist agent",
+      "Multi-client workspaces",
+      "Unlimited competitor tracking",
+      "Priority support",
+      "Credit top-ups available",
+    ],
+    excluded: [],
+  },
+};
+
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export default function Billing({ user }) {
@@ -98,21 +142,36 @@ export default function Billing({ user }) {
           <div className="empty">No plans are set up yet.</div>
         ) : (
           <div className="pricing-grid">
-            {data.plans.map((p, i) => {
-              const featured = data.plans.length > 1 && i === Math.floor(data.plans.length / 2);
+            {data.plans.map((p) => {
+              const meta = TIER_DATA[p.tier] || {};
               const current = active && sub.tier === p.tier;
+              const featured = meta.popular;
               return (
                 <div className={`tier${featured ? " featured" : ""}`} key={p.price_id}>
                   {featured && <span className="badge-pop">Most popular</span>}
                   <div className="accent" />
-                  <div className="name">{cap(p.tier)}</div>
-                  <div className="amt">{p.credits.toLocaleString()}</div>
-                  <div className="unit">credits / month</div>
-                  <ul>{TIER_FEATURES.map((f) => <li key={f}>{f}</li>)}</ul>
+                  <div className="name">{meta.label || cap(p.tier)}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "6px 0 2px" }}>
+                    <span className="amt">{meta.price || ""}</span>
+                    <span className="unit" style={{ fontSize: 13 }}>/mo</span>
+                  </div>
+                  <div className="unit">{p.credits.toLocaleString()} credits / month</div>
+                  <ul style={{ marginTop: 12 }}>
+                    {(meta.included || []).map((f) => (
+                      <li key={f} style={{ color: "var(--ink)" }}>
+                        <span style={{ color: "var(--teal)", marginRight: 6 }}>✓</span>{f}
+                      </li>
+                    ))}
+                    {(meta.excluded || []).map((f) => (
+                      <li key={f} style={{ color: "var(--muted)", listStyle: "none" }}>
+                        <span style={{ marginRight: 6 }}>–</span>{f}
+                      </li>
+                    ))}
+                  </ul>
                   <div className="pick">
                     <button className="btn-primary" style={{ width: "100%" }}
                       disabled={busy || current} onClick={() => buy(p.price_id)}>
-                      {current ? "Current plan" : "Get this plan"}
+                      {current ? "Current plan" : "Get started"}
                     </button>
                   </div>
                 </div>
