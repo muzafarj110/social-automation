@@ -1,5 +1,4 @@
-// Tiny API client for the LinkedIn Autopilot backend.
-// Token is kept in localStorage; all requests go through the Vite /api proxy.
+import axios from "axios";
 
 const TOKEN_KEY = "autopilot_token";
 
@@ -14,54 +13,53 @@ export function logout() {
   setToken(null);
 }
 
-async function handle(res) {
-  if (res.status === 204) return null;
-  let body = null;
-  try {
-    body = await res.json();
-  } catch {
-    /* no body */
-  }
-  if (!res.ok) {
-    // Session expired / invalid token: clear it and signal the app to show login,
-    // instead of letting pages silently render empty (no accounts, no posts, etc.).
-    if (res.status === 401 && getToken()) {
-      setToken(null);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("auth:expired"));
-      }
-    }
-    const msg = body?.detail || body?.error || res.statusText || "Request failed";
-    const err = new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
-    err.status = res.status;
-    throw err;
-  }
-  return body;
-}
+// Axios instance — all requests go through the Vite /api proxy
+const http = axios.create({ baseURL: "/api" });
 
-function authHeaders() {
+// Attach Bearer token on every request
+http.interceptors.request.use((config) => {
   const t = getToken();
-  return t ? { Authorization: `Bearer ${t}` } : {};
-}
+  if (t) config.headers.Authorization = `Bearer ${t}`;
+  return config;
+});
+
+// On 401: clear token and signal the app to show login
+http.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (err.response?.status === 401 && getToken()) {
+      setToken(null);
+      window.dispatchEvent(new Event("auth:expired"));
+    }
+    // Normalise error message so callers can do e.message
+    const detail = err.response?.data?.detail || err.response?.data?.error;
+    if (detail) err.message = typeof detail === "string" ? detail : JSON.stringify(detail);
+    return Promise.reject(err);
+  }
+);
 
 export async function apiGet(path) {
-  return handle(await fetch(`/api${path}`, { headers: { ...authHeaders() } }));
+  const r = await http.get(path);
+  return r.data ?? null;
 }
 
 export async function apiSend(path, method, data) {
-  return handle(
-    await fetch(`/api${path}`, {
-      method,
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: data === undefined ? undefined : JSON.stringify(data),
-    })
-  );
+  const lower = method.toLowerCase();
+  let r;
+  if (lower === "delete") {
+    r = await http.delete(path);
+  } else if (data !== undefined) {
+    r = await http[lower](path, data);
+  } else {
+    r = await http[lower](path);
+  }
+  return r.data ?? null;
 }
 
 // --- Auth ---
 export async function register(email, password, full_name) {
   const body = await apiSend("/auth/register", "POST", { email, password, full_name });
-  if (body.access_token) setToken(body.access_token);   // admin auto-verifies; others must confirm
+  if (body?.access_token) setToken(body.access_token);
   return body;
 }
 
@@ -73,19 +71,15 @@ export async function verifyEmail(token) {
 export const resendVerification = (email) => apiSend("/auth/resend-verification", "POST", { email });
 
 export async function login(email, password) {
-  // OAuth2 password flow expects form-encoded `username`/`password`.
+  // OAuth2 password flow expects form-encoded username/password
   const form = new URLSearchParams();
   form.set("username", email);
   form.set("password", password);
-  const body = await handle(
-    await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: form.toString(),
-    })
-  );
-  setToken(body.access_token);
-  return body;
+  const r = await http.post("/auth/login", form.toString(), {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  });
+  setToken(r.data.access_token);
+  return r.data;
 }
 
 export const forgotPassword = (email) => apiSend("/auth/forgot-password", "POST", { email });
@@ -164,7 +158,7 @@ export const updateLead = (id, data) => apiSend(`/leads/${id}`, "PATCH", data);
 export const deleteLead = (id) => apiSend(`/leads/${id}`, "DELETE");
 export const draftOutreach = (id) => apiSend(`/leads/${id}/draft-outreach`, "POST", {});
 
-// --- Opportunities (AI "what to act on next") ---
+// --- Opportunities ---
 export const listOpportunities = () => apiGet("/opportunities");
 
 // --- Proactive feed ---
@@ -201,7 +195,7 @@ export const deactivateClient = () => apiSend("/clients/deactivate", "POST", {})
 
 // --- Content Team (agentic weekly cycle) ---
 export const teamPlan = (count = 3) => apiSend("/team/plan", "POST", { count });
-export const teamRun = (data) => apiSend("/team/run", "POST", data); // { count?, brief?, topics? }
+export const teamRun = (data) => apiSend("/team/run", "POST", data);
 export const listTeamRuns = () => apiGet("/team/runs");
 export const getTeamRun = (id) => apiGet(`/team/runs/${id}`);
 export const approveTeamRun = (id) => apiSend(`/team/runs/${id}/approve`, "POST", {});
@@ -217,17 +211,17 @@ export const disconnectTelegram = () => apiSend("/connections/telegram", "DELETE
 export const toggleTelegramAutoPost = () => apiSend("/connections/telegram/toggle", "PATCH", {});
 export const sendTelegram = (data) => apiSend("/connections/telegram/send", "POST", data);
 
-// --- Billing (usage-based credits) ---
+// --- Billing ---
 export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });
 export const openBillingPortal = () => apiSend("/billing/portal", "POST", {});
 
-// --- Admin (operator dashboard) ---
+// --- Admin ---
 export const adminListUsers = () => apiGet("/admin/users");
 export const adminFeatures = () => apiGet("/admin/features");
 export const adminUpdateUser = (id, data) => apiSend(`/admin/users/${id}`, "PATCH", data);
 
-// --- Analytics (feedback loop) ---
+// --- Analytics ---
 export const zernioMetrics = () => apiGet("/analytics/zernio");
 export const getInsights = (data) => apiSend("/analytics/insights", "POST", data);
 export const analyzeViral = (data) => apiSend("/analytics/viral", "POST", data);
