@@ -2,6 +2,26 @@ import { useEffect, useState } from "react";
 import { getBilling, startCheckout, openBillingPortal } from "../api.js";
 
 const TIER_DATA = {
+  free: {
+    price: "$0",
+    label: "Free",
+    included: [
+      "30 credits / day — no card needed",
+      "Quick post generator (1 cr)",
+      "Content agent drafts (1 cr)",
+      "Competitor analysis (1 cr)",
+      "Social listening scans (1 cr)",
+      "Lead-gen outreach drafts (1 cr)",
+      "Opportunities refresh (1 cr)",
+      "WhatsApp + Telegram cross-posting",
+      "Post calendar and scheduling",
+    ],
+    excluded: [
+      "Autopilot agent",
+      "Studio images (5 cr each)",
+      "SEO + GEO deep analysis (2 cr)",
+    ],
+  },
   starter: {
     price: "$29",
     label: "Starter",
@@ -142,6 +162,39 @@ export default function Billing({ user }) {
           <div className="empty">No plans are set up yet.</div>
         ) : (
           <div className="pricing-grid">
+            {/* Free tier — always shown first */}
+            {(() => {
+              const meta = TIER_DATA.free;
+              const current = !active;
+              return (
+                <div className="tier" key="free">
+                  <div className="accent" />
+                  <div className="name">{meta.label}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "6px 0 2px" }}>
+                    <span className="amt">{meta.price}</span>
+                    <span className="unit" style={{ fontSize: 13 }}>/mo</span>
+                  </div>
+                  <div className="unit">30 credits / day · 180 day trial</div>
+                  <ul style={{ marginTop: 12 }}>
+                    {meta.included.map((f) => (
+                      <li key={f} style={{ color: "var(--ink)" }}>
+                        <span style={{ color: "var(--teal)", marginRight: 6 }}>✓</span>{f}
+                      </li>
+                    ))}
+                    {meta.excluded.map((f) => (
+                      <li key={f} style={{ color: "var(--muted)", listStyle: "none" }}>
+                        <span style={{ marginRight: 6 }}>–</span>{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pick">
+                    <button className="btn-primary" style={{ width: "100%", opacity: current ? 0.6 : 1 }} disabled={current}>
+                      {current ? "Current plan" : "Downgrade"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
             {data.plans.map((p) => {
               const meta = TIER_DATA[p.tier] || {};
               const current = active && sub.tier === p.tier;
