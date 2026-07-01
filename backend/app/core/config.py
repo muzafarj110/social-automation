@@ -66,31 +66,14 @@ class Settings(BaseSettings):
     # Each cycle the user's credits reset to their tier's monthly allowance.
     stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
-    # Email — SMTP is preferred (Gmail works for all recipients, no domain needed).
-    # Set SMTP_USER + SMTP_PASS to enable. Falls back to Resend if only that is set.
-    smtp_host: str = Field("smtp.gmail.com", alias="SMTP_HOST")
-    smtp_port: int = Field(587, alias="SMTP_PORT")
-    smtp_user: str = Field("", alias="SMTP_USER")
-    smtp_pass: str = Field("", alias="SMTP_PASS")
-    smtp_from: str = Field("", alias="SMTP_FROM")   # defaults to "Autopilot <smtp_user>"
-
-    # Resend fallback (only used if SMTP is not configured)
+    # Email via Resend HTTP API — Railway blocks outbound SMTP so HTTP API is required.
     resend_api_key: str = Field("", alias="RESEND_API_KEY")
     resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
-
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
     @property
-    def smtp_enabled(self) -> bool:
-        return bool(self.smtp_user and self.smtp_pass)
-
-    @property
-    def resend_enabled(self) -> bool:
-        return bool(self.resend_api_key)
-
-    @property
     def email_enabled(self) -> bool:
-        return self.smtp_enabled or self.resend_enabled
+        return bool(self.resend_api_key)
 
     @property
     def billing_enabled(self) -> bool:

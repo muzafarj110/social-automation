@@ -1,79 +1,40 @@
 """
-Email via Gmail SMTP (or any SMTP provider).
-Set SMTP_USER + SMTP_PASS in Railway to enable.
-Falls back to Resend if SMTP is not configured and RESEND_API_KEY is set.
+Email via Resend HTTP API (https://resend.com).
+Railway blocks outbound SMTP so HTTP API is the only reliable option.
+Set RESEND_API_KEY in Railway to enable.
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
-import smtplib
-import ssl
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import httpx
 
 from app.core.config import settings
 
 log = logging.getLogger("uvicorn.error")
+_RESEND_URL = "https://api.resend.com/emails"
 
 
-def _smtp_send_sync(*, to: str, subject: str, html: str) -> None:
-    """Blocking SMTP send — called via asyncio.to_thread."""
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.smtp_from or f"Autopilot <{settings.smtp_user}>"
-    msg["To"] = to
-    msg.attach(MIMEText(html, "html"))
-    ctx = ssl.create_default_context()
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as s:
-        s.ehlo()
-        s.starttls(context=ctx)
-        s.login(settings.smtp_user, settings.smtp_pass)
-        s.sendmail(msg["From"], [to], msg.as_string())
-
-
-async def _smtp_send(*, to: str, subject: str, html: str) -> bool:
-    try:
-        await asyncio.to_thread(_smtp_send_sync, to=to, subject=subject, html=html)
-        log.info("SMTP sent to %s", to)
-        return True
-    except smtplib.SMTPAuthenticationError as e:
-        log.error("SMTP auth failed (check SMTP_PASS): %s", e)
+async def send_email(*, to: str, subject: str, html: str) -> bool:
+    if not settings.email_enabled:
+        log.warning("Email disabled — set RESEND_API_KEY in Railway")
         return False
-    except Exception as e:
-        log.error("SMTP send error to %s: %s", to, e)
-        return False
-
-
-async def _resend_send(*, to: str, subject: str, html: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                "https://api.resend.com/emails",
+                _RESEND_URL,
                 headers={"Authorization": f"Bearer {settings.resend_api_key}"},
                 json={"from": settings.resend_from, "to": [to], "subject": subject, "html": html},
             )
         if r.status_code >= 400:
-            log.error("Resend error (%s): %s", r.status_code, r.text[:300])
+            log.error("Resend error (%s) sending to %s: %s", r.status_code, to, r.text[:400])
             return False
-        log.info("Resend sent to %s", to)
+        log.info("Email sent to %s via Resend", to)
         return True
     except Exception as e:
-        log.error("Resend connection error: %s", e)
+        log.error("Resend send error to %s: %s", to, e)
         return False
-
-
-async def send_email(*, to: str, subject: str, html: str) -> bool:
-    """Send via SMTP first (more reliable). Falls back to Resend if SMTP not configured."""
-    if settings.smtp_enabled:
-        return await _smtp_send(to=to, subject=subject, html=html)
-    if settings.resend_enabled:
-        return await _resend_send(to=to, subject=subject, html=html)
-    log.warning("Email disabled — set SMTP_USER+SMTP_PASS or RESEND_API_KEY in Railway")
-    return False
 
 
 def verification_email_html(verify_url: str) -> str:

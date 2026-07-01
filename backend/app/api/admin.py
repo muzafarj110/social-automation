@@ -32,23 +32,10 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/email-config")
 async def email_config(_: User = Depends(require_admin)) -> dict:
-    """Return current email config status so admin can debug delivery issues."""
-    active = "smtp" if settings.smtp_enabled else ("resend" if settings.resend_enabled else "none")
     return {
         "email_enabled": settings.email_enabled,
-        "active_provider": active,
-        # SMTP
-        "smtp_enabled": settings.smtp_enabled,
-        "smtp_host": settings.smtp_host,
-        "smtp_port": settings.smtp_port,
-        "smtp_user": settings.smtp_user or "(not set)",
-        "smtp_pass_set": bool(settings.smtp_pass),
-        "smtp_from": settings.smtp_from or (f"Autopilot <{settings.smtp_user}>" if settings.smtp_user else "(not set)"),
-        # Resend fallback
-        "resend_enabled": settings.resend_enabled,
         "resend_api_key_set": bool(settings.resend_api_key),
         "resend_from": settings.resend_from,
-        # Links
         "app_base_url": settings.app_base_url or "(not set — links will be broken)",
     }
 
@@ -82,55 +69,26 @@ async def test_email(
     </div>
     """
 
-    import smtplib, ssl, asyncio
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-
-    provider = "SMTP" if settings.smtp_enabled else "Resend"
+    import httpx
     error: str | None = None
-
-    if settings.smtp_enabled:
-        def _try_smtp():
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = "Autopilot — email test"
-            msg["From"] = settings.smtp_from or f"Autopilot <{settings.smtp_user}>"
-            msg["To"] = target
-            msg.attach(MIMEText(html, "html"))
-            ctx = ssl.create_default_context()
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as s:
-                s.ehlo()
-                s.starttls(context=ctx)
-                s.login(settings.smtp_user, settings.smtp_pass)
-                s.sendmail(msg["From"], [target], msg.as_string())
-        try:
-            await asyncio.to_thread(_try_smtp)
-        except smtplib.SMTPAuthenticationError as e:
-            raw = e.smtp_error.decode() if isinstance(e.smtp_error, bytes) else str(e)
-            error = f"Gmail auth failed: {raw} — SMTP_PASS must be a 16-char App Password, not your Gmail login password."
-        except smtplib.SMTPException as e:
-            error = f"SMTP error: {e}"
-        except Exception as e:
-            error = f"Connection error: {e}"
-    else:
-        import httpx
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as c:
-                r = await c.post(
-                    "https://api.resend.com/emails",
-                    headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                    json={"from": settings.resend_from, "to": [target], "subject": "Autopilot — email test", "html": html},
-                )
-            if r.status_code >= 400:
-                error = f"Resend error {r.status_code}: {r.text[:300]}"
-        except Exception as e:
-            error = f"Resend connection error: {e}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            r = await c.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={"from": settings.resend_from, "to": [target], "subject": "Autopilot — email test", "html": html},
+            )
+        if r.status_code >= 400:
+            error = f"Resend error {r.status_code}: {r.text[:400]}"
+    except Exception as e:
+        error = f"Resend connection error: {e}"
 
     if error:
-        return {"ok": False, "error": error, "sent_to": target, "provider": provider}
+        return {"ok": False, "error": error, "sent_to": target}
     return {
-        "ok": True, "sent_to": target, "provider": provider,
+        "ok": True, "sent_to": target,
         "app_base_url": base or "(not set)",
-        "message": f"Sent via {provider} to {target}. Check inbox + spam.",
+        "message": f"Sent to {target} via Resend. Check inbox + spam.",
     }
 
 
