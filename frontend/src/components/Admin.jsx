@@ -29,9 +29,17 @@ function EmailDiagPanel() {
     <div className="card" style={{ marginBottom: 20 }}>
       <h3 style={{ margin: "0 0 12px" }}>Email delivery diagnostics</h3>
 
+      <div style={{ marginBottom: 10, fontSize: 13 }}>
+        Active provider:&nbsp;
+        <b style={{ color: cfg.active_provider === "none" ? "#ef4444" : "#0d9488" }}>
+          {cfg.active_provider === "smtp" ? "Gmail SMTP ✓" : cfg.active_provider === "resend" ? "Resend (fallback)" : "None — email disabled"}
+        </b>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13, marginBottom: 12 }}>
-        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.resend_api_key_set} />
-        <KV k="From address" v={cfg.resend_from} />
+        <KV k="SMTP user (Gmail)" v={cfg.smtp_user} warn={cfg.smtp_user === "(not set)"} />
+        <KV k="SMTP password" v={cfg.smtp_pass_set ? "●●●●●●●● (set)" : "NOT SET — add to Railway"} warn={!cfg.smtp_pass_set} />
+        <KV k="From address" v={cfg.smtp_from} />
         <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={baseUrlMissing} />
       </div>
 
