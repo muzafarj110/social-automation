@@ -66,14 +66,15 @@ class Settings(BaseSettings):
     # Each cycle the user's credits reset to their tier's monthly allowance.
     stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
-    # Email via Resend HTTP API — Railway blocks outbound SMTP so HTTP API is required.
-    resend_api_key: str = Field("", alias="RESEND_API_KEY")
-    resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
+    # Email via Brevo HTTP API (free 300/day, no custom domain needed).
+    # Sign up at brevo.com, verify sender email, get API key.
+    brevo_api_key: str = Field("", alias="BREVO_API_KEY")
+    brevo_from: str = Field("", alias="BREVO_FROM")
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.resend_api_key)
+        return bool(self.brevo_api_key and self.brevo_from)
 
     @property
     def billing_enabled(self) -> bool:

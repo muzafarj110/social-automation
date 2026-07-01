@@ -30,8 +30,8 @@ function EmailDiagPanel() {
       <h3 style={{ margin: "0 0 12px" }}>Email delivery diagnostics</h3>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13, marginBottom: 12 }}>
-        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.resend_api_key_set} />
-        <KV k="From address" v={cfg.resend_from} />
+        <KV k="Brevo API key" v={cfg.brevo_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.brevo_api_key_set} />
+        <KV k="From address (BREVO_FROM)" v={cfg.brevo_from} warn={cfg.brevo_from === "(not set)"} />
         <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={baseUrlMissing} />
       </div>
 

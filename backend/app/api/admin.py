@@ -34,8 +34,8 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def email_config(_: User = Depends(require_admin)) -> dict:
     return {
         "email_enabled": settings.email_enabled,
-        "resend_api_key_set": bool(settings.resend_api_key),
-        "resend_from": settings.resend_from,
+        "brevo_api_key_set": bool(settings.brevo_api_key),
+        "brevo_from": settings.brevo_from or "(not set)",
         "app_base_url": settings.app_base_url or "(not set — links will be broken)",
     }
 
@@ -74,21 +74,26 @@ async def test_email(
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={"from": settings.resend_from, "to": [target], "subject": "Autopilot — email test", "html": html},
+                "https://api.brevo.com/v3/smtp/email",
+                headers={"api-key": settings.brevo_api_key, "Content-Type": "application/json"},
+                json={
+                    "sender": {"name": "Autopilot", "email": settings.brevo_from},
+                    "to": [{"email": target}],
+                    "subject": "Autopilot — email test",
+                    "htmlContent": html,
+                },
             )
         if r.status_code >= 400:
-            error = f"Resend error {r.status_code}: {r.text[:400]}"
+            error = f"Brevo error {r.status_code}: {r.text[:400]}"
     except Exception as e:
-        error = f"Resend connection error: {e}"
+        error = f"Brevo connection error: {e}"
 
     if error:
         return {"ok": False, "error": error, "sent_to": target}
     return {
         "ok": True, "sent_to": target,
         "app_base_url": base or "(not set)",
-        "message": f"Sent to {target} via Resend. Check inbox + spam.",
+        "message": f"Sent to {target} via Brevo. Check inbox + spam.",
     }
 
 

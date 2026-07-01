@@ -1,7 +1,8 @@
 """
-Email via Resend HTTP API (https://resend.com).
-Railway blocks outbound SMTP so HTTP API is the only reliable option.
-Set RESEND_API_KEY in Railway to enable.
+Email via Brevo (formerly Sendinblue) HTTP API — https://brevo.com
+Free plan: 300 emails/day, no custom domain needed (just verify sender email).
+Railway blocks SMTP so we use their HTTP API.
+Set BREVO_API_KEY + BREVO_FROM in Railway to enable.
 """
 
 from __future__ import annotations
@@ -13,27 +14,32 @@ import httpx
 from app.core.config import settings
 
 log = logging.getLogger("uvicorn.error")
-_RESEND_URL = "https://api.resend.com/emails"
+_BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 async def send_email(*, to: str, subject: str, html: str) -> bool:
     if not settings.email_enabled:
-        log.warning("Email disabled — set RESEND_API_KEY in Railway")
+        log.warning("Email disabled — set BREVO_API_KEY + BREVO_FROM in Railway")
         return False
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                _RESEND_URL,
-                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={"from": settings.resend_from, "to": [to], "subject": subject, "html": html},
+                _BREVO_URL,
+                headers={"api-key": settings.brevo_api_key, "Content-Type": "application/json"},
+                json={
+                    "sender": {"name": "Autopilot", "email": settings.brevo_from},
+                    "to": [{"email": to}],
+                    "subject": subject,
+                    "htmlContent": html,
+                },
             )
         if r.status_code >= 400:
-            log.error("Resend error (%s) sending to %s: %s", r.status_code, to, r.text[:400])
+            log.error("Brevo error (%s) to %s: %s", r.status_code, to, r.text[:400])
             return False
-        log.info("Email sent to %s via Resend", to)
+        log.info("Email sent to %s via Brevo", to)
         return True
     except Exception as e:
-        log.error("Resend send error to %s: %s", to, e)
+        log.error("Brevo send error to %s: %s", to, e)
         return False
 
 
