@@ -66,14 +66,14 @@ class Settings(BaseSettings):
     # Each cycle the user's credits reset to their tier's monthly allowance.
     stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
-    # Email via SendGrid HTTP API (free 100/day, verify sender email only, no domain needed).
-    sendgrid_api_key: str = Field("", alias="SENDGRID_API_KEY")
-    sendgrid_from: str = Field("", alias="SENDGRID_FROM")
+    # Email via Resend HTTP API. Set RESEND_API_KEY + RESEND_FROM in Railway.
+    resend_api_key: str = Field("", alias="RESEND_API_KEY")
+    resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.sendgrid_api_key and self.sendgrid_from)
+        return bool(self.resend_api_key)
 
     @property
     def billing_enabled(self) -> bool:

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { adminListUsers, adminFeatures, adminUpdateUser, adminDeleteUser, adminEmailConfig, adminTestEmail } from "../api.js";
+import { adminListUsers, adminFeatures, adminUpdateUser, adminDeleteUser, adminResetLink, adminEmailConfig, adminTestEmail } from "../api.js";
 
 const PLANS = ["free", "pro", "business"];
 
@@ -30,8 +30,8 @@ function EmailDiagPanel() {
       <h3 style={{ margin: "0 0 12px" }}>Email delivery diagnostics</h3>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13, marginBottom: 12 }}>
-        <KV k="SendGrid API key" v={cfg.sendgrid_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.sendgrid_api_key_set} />
-        <KV k="From address (SENDGRID_FROM)" v={cfg.sendgrid_from} warn={cfg.sendgrid_from === "(not set)"} />
+        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.resend_api_key_set} />
+        <KV k="From address (RESEND_FROM)" v={cfg.resend_from} warn={cfg.resend_from === "(not set)"} />
         <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={baseUrlMissing} />
       </div>
 
@@ -56,7 +56,7 @@ function EmailDiagPanel() {
         </button>
       </div>
       {!cfg.email_enabled && (
-        <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Set RESEND_API_KEY in Railway to enable.</p>
+        <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Set <code>RESEND_API_KEY</code> in Railway to enable.</p>
       )}
 
       {result && (
@@ -101,6 +101,7 @@ export default function Admin() {
   const [expanded, setExpanded] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [resetLinks, setResetLinks] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -134,6 +135,15 @@ export default function Admin() {
   const setPlan = (u, plan) => patch(u.id, { plan });
   const toggleStatus = (u) =>
     patch(u.id, { status: u.status === "active" ? "suspended" : "active" });
+
+  const getResetLink = async (u) => {
+    try {
+      const r = await adminResetLink(u.id);
+      setResetLinks((prev) => ({ ...prev, [u.id]: r.reset_url }));
+    } catch (e) {
+      setErr(e.message || "Could not generate reset link");
+    }
+  };
 
   const deleteUser = async (u) => {
     if (!window.confirm(`Delete ${u.email}? This cannot be undone.`)) return;
@@ -204,12 +214,14 @@ export default function Admin() {
                 saving={savingId === u.id}
                 deleting={deletingId === u.id}
                 expanded={expanded === u.id}
+                resetLink={resetLinks[u.id]}
                 onExpand={() => setExpanded(expanded === u.id ? null : u.id)}
                 onPlan={setPlan}
                 onStatus={toggleStatus}
                 onFeature={toggleFeature}
                 onClear={clearOverrides}
                 onDelete={deleteUser}
+                onResetLink={getResetLink}
               />
             ))}
           </tbody>
@@ -219,8 +231,17 @@ export default function Admin() {
   );
 }
 
-function UserRow({ u, features, planFeatures, saving, deleting, expanded, onExpand, onPlan, onStatus, onFeature, onClear, onDelete }) {
+function UserRow({ u, features, planFeatures, saving, deleting, expanded, resetLink, onExpand, onPlan, onStatus, onFeature, onClear, onDelete, onResetLink }) {
   const hasOverride = u.entitlements_override && Object.keys(u.entitlements_override).length > 0;
+  const [copied, setCopied] = useState(false);
+
+  const copyResetLink = () => {
+    navigator.clipboard.writeText(resetLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <>
       <tr style={{ borderTop: "1px solid #ececf3", opacity: (saving || deleting) ? 0.5 : 1 }}>
@@ -255,21 +276,39 @@ function UserRow({ u, features, planFeatures, saving, deleting, expanded, onExpa
             {expanded ? "Hide" : "Edit"}{hasOverride && !expanded ? " *" : ""}
           </button>
         </td>
-        <td style={td}>
+        <td style={{ ...td, whiteSpace: "nowrap" }}>
           {!u.is_admin && (
-            <button
-              onClick={() => onDelete(u)}
-              disabled={saving || deleting}
-              style={{ fontSize: 12, padding: "4px 10px", background: "none", border: "1px solid #fca5a5", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}
-            >
-              {deleting ? "…" : "Delete"}
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {resetLink ? (
+                <button
+                  onClick={copyResetLink}
+                  style={{ fontSize: 12, padding: "4px 10px", background: copied ? "#f0fdf4" : "none", border: `1px solid ${copied ? "#86efac" : "#a3e635"}`, color: copied ? "#166534" : "#65a30d", borderRadius: 6, cursor: "pointer" }}
+                >
+                  {copied ? "✓ Copied!" : "Copy link"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => onResetLink(u)}
+                  disabled={saving}
+                  style={{ fontSize: 12, padding: "4px 10px", background: "none", border: "1px solid #d9d9e3", color: "#6b6b80", borderRadius: 6, cursor: "pointer" }}
+                >
+                  Reset link
+                </button>
+              )}
+              <button
+                onClick={() => onDelete(u)}
+                disabled={saving || deleting}
+                style={{ fontSize: 12, padding: "4px 10px", background: "none", border: "1px solid #fca5a5", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}
+              >
+                {deleting ? "…" : "Delete"}
+              </button>
+            </div>
           )}
         </td>
       </tr>
       {expanded && (
         <tr style={{ background: "#faf9ff" }}>
-          <td style={{ padding: 16 }} colSpan={7}>
+          <td style={{ padding: 16 }} colSpan={8}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div className="muted" style={{ fontSize: 12 }}>
                 Toggle features for this user (overrides their <b>{u.plan}</b> plan).

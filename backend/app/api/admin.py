@@ -34,8 +34,8 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def email_config(_: User = Depends(require_admin)) -> dict:
     return {
         "email_enabled": settings.email_enabled,
-        "sendgrid_api_key_set": bool(settings.sendgrid_api_key),
-        "sendgrid_from": settings.sendgrid_from or "(not set)",
+        "resend_api_key_set": bool(settings.resend_api_key),
+        "resend_from": settings.resend_from or "(not set)",
         "app_base_url": settings.app_base_url or "(not set — links will be broken)",
     }
 
@@ -65,35 +65,31 @@ async def test_email(
       <hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0'>
       <p style='font-size:13px;color:#666'><b>APP_BASE_URL:</b> {app_base_warn}</p>
       <p style='font-size:13px;color:#666'>{'<b style="color:red">⚠ APP_BASE_URL is missing — verify/reset links in real emails will be broken.</b>' if not base else '✓ APP_BASE_URL is set correctly.'}</p>
-      {'<p><a href="' + base + '/#verify?token=SAMPLE_TOKEN" style="display:inline-block;background:#0d9488;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Sample verify link (click to test)</a></p>' if body.include_verify_link and base else ''}
     </div>
     """
 
     import httpx
     error: str | None = None
+    resend_response: str | None = None
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                "https://api.sendgrid.com/v3/mail/send",
-                headers={"Authorization": f"Bearer {settings.sendgrid_api_key}", "Content-Type": "application/json"},
-                json={
-                    "personalizations": [{"to": [{"email": target}]}],
-                    "from": {"email": settings.sendgrid_from, "name": "Autopilot"},
-                    "subject": "Autopilot — email test",
-                    "content": [{"type": "text/html", "value": html}],
-                },
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={"from": settings.resend_from, "to": [target], "subject": "Autopilot — email test", "html": html},
             )
-        if r.status_code not in (200, 202):
-            error = f"SendGrid error {r.status_code}: {r.text[:400]}"
+        if r.status_code >= 400:
+            resend_response = r.text[:400]
+            error = f"Resend error {r.status_code}: {resend_response}"
     except Exception as e:
-        error = f"SendGrid connection error: {e}"
+        error = f"Resend connection error: {e}"
 
     if error:
-        return {"ok": False, "error": error, "sent_to": target}
+        return {"ok": False, "error": error, "resend_response": resend_response, "sent_to": target}
     return {
         "ok": True, "sent_to": target,
         "app_base_url": base or "(not set)",
-        "message": f"Sent to {target} via SendGrid. Check inbox + spam.",
+        "message": f"Sent to {target} via Resend. Check inbox + spam.",
     }
 
 
@@ -165,6 +161,34 @@ async def update_user(
         select(func.count(LinkedInAccount.id)).where(LinkedInAccount.user_id == user.id)
     )
     return _to_out(user, int(count or 0))
+
+
+@router.post("/users/{user_id}/reset-link")
+async def generate_reset_link(
+    user_id: int,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Generate a password reset link for any user. Admin copies it and shares manually."""
+    import hashlib, secrets
+    from datetime import datetime, timedelta, timezone
+    from app.models.password_reset import PasswordResetToken
+
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+
+    raw = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw.encode()).hexdigest()
+    db.add(PasswordResetToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    ))
+    await db.commit()
+    base = (settings.app_base_url or "").rstrip("/")
+    reset_url = f"{base}/#reset?token={raw}"
+    return {"ok": True, "email": user.email, "reset_url": reset_url, "expires_in": "24 hours"}
 
 
 @router.delete("/users/{user_id}", status_code=204)

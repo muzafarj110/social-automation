@@ -221,6 +221,7 @@ export const adminListUsers = () => apiGet("/admin/users");
 export const adminFeatures = () => apiGet("/admin/features");
 export const adminUpdateUser = (id, data) => apiSend(`/admin/users/${id}`, "PATCH", data);
 export const adminDeleteUser = (id) => apiSend(`/admin/users/${id}`, "DELETE");
+export const adminResetLink = (id) => apiSend(`/admin/users/${id}/reset-link`, "POST", {});
 export const adminEmailConfig = () => apiGet("/admin/email-config");
 export const adminTestEmail = (to) => apiSend("/admin/test-email", "POST", to ? { to } : {});
 

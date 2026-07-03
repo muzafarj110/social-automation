@@ -92,32 +92,22 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     if existing:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
-    # The admin is auto-verified. So is everyone if email isn't configured — otherwise
-    # no one could ever verify and the app would be unusable (a hard lockout).
-    is_admin_email = body.email.strip().lower() == settings.admin_email.strip().lower()
-    auto_verified = is_admin_email or not settings.email_enabled
+    # Auto-verify all users — no email gate during beta.
+    # When a custom domain is verified in Resend, flip this to require email verification.
     user = User(
         email=body.email,
         password_hash=hash_password(body.password),
         full_name=body.full_name,
-        email_verified=auto_verified,
+        email_verified=True,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
-
-    if auto_verified:
-        return {
-            "ok": True,
-            "verification_required": False,
-            "access_token": create_access_token(user.id),
-            "token_type": "bearer",
-        }
-    await _send_verification(user, db)
     return {
         "ok": True,
-        "verification_required": True,
-        "message": "Account created. Check your email for a verification link, then sign in.",
+        "verification_required": False,
+        "access_token": create_access_token(user.id),
+        "token_type": "bearer",
     }
 
 
