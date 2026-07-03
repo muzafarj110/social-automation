@@ -66,15 +66,14 @@ class Settings(BaseSettings):
     # Each cycle the user's credits reset to their tier's monthly allowance.
     stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
-    # Email via Brevo HTTP API (free 300/day, no custom domain needed).
-    # Sign up at brevo.com, verify sender email, get API key.
-    brevo_api_key: str = Field("", alias="BREVO_API_KEY")
-    brevo_from: str = Field("", alias="BREVO_FROM")
+    # Email via SendGrid HTTP API (free 100/day, verify sender email only, no domain needed).
+    sendgrid_api_key: str = Field("", alias="SENDGRID_API_KEY")
+    sendgrid_from: str = Field("", alias="SENDGRID_FROM")
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.brevo_api_key and self.brevo_from)
+        return bool(self.sendgrid_api_key and self.sendgrid_from)
 
     @property
     def billing_enabled(self) -> bool:

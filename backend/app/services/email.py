@@ -1,8 +1,8 @@
 """
-Email via Brevo (formerly Sendinblue) HTTP API — https://brevo.com
-Free plan: 300 emails/day, no custom domain needed (just verify sender email).
-Railway blocks SMTP so we use their HTTP API.
-Set BREVO_API_KEY + BREVO_FROM in Railway to enable.
+Email via SendGrid HTTP API — https://sendgrid.com
+Free: 100 emails/day, no custom domain needed (just verify one sender email).
+Railway-compatible (HTTP, not SMTP).
+Set SENDGRID_API_KEY + SENDGRID_FROM in Railway to enable.
 """
 
 from __future__ import annotations
@@ -14,32 +14,35 @@ import httpx
 from app.core.config import settings
 
 log = logging.getLogger("uvicorn.error")
-_BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+_SG_URL = "https://api.sendgrid.com/v3/mail/send"
 
 
 async def send_email(*, to: str, subject: str, html: str) -> bool:
     if not settings.email_enabled:
-        log.warning("Email disabled — set BREVO_API_KEY + BREVO_FROM in Railway")
+        log.warning("Email disabled — set SENDGRID_API_KEY + SENDGRID_FROM in Railway")
         return False
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                _BREVO_URL,
-                headers={"api-key": settings.brevo_api_key, "Content-Type": "application/json"},
+                _SG_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.sendgrid_api_key}",
+                    "Content-Type": "application/json",
+                },
                 json={
-                    "sender": {"name": "Autopilot", "email": settings.brevo_from},
-                    "to": [{"email": to}],
+                    "personalizations": [{"to": [{"email": to}]}],
+                    "from": {"email": settings.sendgrid_from, "name": "Autopilot"},
                     "subject": subject,
-                    "htmlContent": html,
+                    "content": [{"type": "text/html", "value": html}],
                 },
             )
-        if r.status_code >= 400:
-            log.error("Brevo error (%s) to %s: %s", r.status_code, to, r.text[:400])
+        if r.status_code not in (200, 202):
+            log.error("SendGrid error (%s) to %s: %s", r.status_code, to, r.text[:400])
             return False
-        log.info("Email sent to %s via Brevo", to)
+        log.info("Email sent to %s via SendGrid", to)
         return True
     except Exception as e:
-        log.error("Brevo send error to %s: %s", to, e)
+        log.error("SendGrid send error to %s: %s", to, e)
         return False
 
 
