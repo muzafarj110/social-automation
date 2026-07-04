@@ -19,6 +19,7 @@ import Calendar from "./components/Calendar.jsx";
 import Leads from "./components/Leads.jsx";
 import Opportunities from "./components/Opportunities.jsx";
 import Studio from "./components/Studio.jsx";
+import VideoAgent from "./components/VideoAgent.jsx";
 import ContentTeam from "./components/ContentTeam.jsx";
 import Competitor from "./components/Competitor.jsx";
 import SocialListening from "./components/SocialListening.jsx";
@@ -34,6 +35,7 @@ const NAV = [
     ["campaigns", "Autopilot agent", "autopilot", true],
     ["strategy", "Brand strategist", "strategy", false],
     ["studio", "Studio agent", null, false],
+    ["videoagent", "Video agent", null, false],
     ["generate", "Quick post", "generate", false],
   ] },
   { group: "Growth agents", items: [
@@ -56,6 +58,7 @@ const TITLES = {
   strategy: ["Brand strategist", "Your voice, persona and positioning — used by every agent"],
   generate: ["Quick post", "Write one post right now, by hand with AI"],
   studio: ["Studio agent", "Reports, email, SEO, formats & graphics — powered by AI"],
+  videoagent: ["Video agent", "Turn a topic into a short + long video, ready to post"],
   campaigns: ["Autopilot agent", "Set it once — AI writes, tailors and posts on a schedule"],
   posts: ["Posts", "Drafts, scheduled and published"],
   inbox: ["Approvals", "AI-drafted replies, DMs and outreach to approve"],
@@ -248,6 +251,7 @@ export default function App() {
           )}
           {tab === "strategy" && <Strategy />}
           {tab === "studio" && <Studio />}
+          {tab === "videoagent" && <VideoAgent accounts={accounts} />}
           {tab === "team" && <ContentTeam goTab={setTab} initialBrief={teamBrief} />}
           {tab === "generate" && (
             <Generate

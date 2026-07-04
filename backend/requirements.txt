@@ -28,6 +28,15 @@ rq>=1.16
 # Billing (usage-based credits)
 stripe>=9.0
 
+# Video agent — Faceless Video Pipeline (vendored in app/vendor/faceless_pipeline)
+openai>=1.40.0            # OpenRouter client (OpenAI-compatible REST) for script generation
+requests>=2.31.0          # Pexels stock footage API
+python-dotenv>=1.0.0      # vendored config.py's own load_dotenv() call
+pyyaml>=6.0.1
+Pillow>=10.0.0
+edge-tts>=6.1.9
+openai-whisper>=20231117  # NOT mlx-whisper — Railway runs Linux, not Apple Silicon
+
 # Dev / test
 pytest>=8.0
 pytest-asyncio>=0.23

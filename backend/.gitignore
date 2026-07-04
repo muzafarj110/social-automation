@@ -8,3 +8,15 @@ venv/
 .pytest_cache/
 *.egg-info/
 .DS_Store
+
+# User-uploaded media (images/videos) — local dev only, Railway uses its own
+# ephemeral /app/uploads. Never commit real or test-generated user data.
+uploads/
+
+# Vendored video pipeline — runtime-generated, never commit
+app/vendor/faceless_pipeline/channels/*.yaml
+app/vendor/faceless_pipeline/output/*
+app/vendor/faceless_pipeline/temp/*
+!app/vendor/faceless_pipeline/channels/.gitkeep
+!app/vendor/faceless_pipeline/output/.gitkeep
+!app/vendor/faceless_pipeline/temp/.gitkeep

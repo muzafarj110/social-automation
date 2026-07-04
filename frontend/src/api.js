@@ -233,6 +233,17 @@ export const adminResetLink = (id) => apiSend(`/admin/users/${id}/reset-link`, "
 export const adminEmailConfig = () => apiGet("/admin/email-config");
 export const adminTestEmail = (to) => apiSend("/admin/test-email", "POST", to ? { to } : {});
 
+// --- Video agent (Faceless Video Pipeline) ---
+export const getVideoChannel = () => apiGet("/videos/channel");
+export const createVideoChannel = (data) => apiSend("/videos/channel", "POST", data);
+export const updateVideoChannel = (data) => apiSend("/videos/channel", "PATCH", data);
+export const generateVideo = (topic) => apiSend("/videos/generate", "POST", { topic });
+export const getVideoJob = (id) => apiGet(`/videos/jobs/${id}`);
+export const listVideos = () => apiGet("/videos");
+export const deleteVideo = (id) => apiSend(`/videos/${id}`, "DELETE");
+export const createPostFromVideo = (id, account_id, variant) =>
+  apiSend(`/videos/${id}/create-post`, "POST", { account_id, variant });
+
 // --- Analytics ---
 export const zernioMetrics = () => apiGet("/analytics/zernio");
 export const getInsights = (data) => apiSend("/analytics/insights", "POST", data);

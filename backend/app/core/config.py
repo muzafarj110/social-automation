@@ -87,9 +87,20 @@ class Settings(BaseSettings):
     # a local relative dir so dev "just works"; Railway sets UPLOAD_DIR=/app/uploads.
     upload_dir: str = Field("./uploads", alias="UPLOAD_DIR")
 
+    # Video agent (Faceless Video Pipeline). Script generation goes through a
+    # free model via OpenRouter, not a paid Anthropic key — see
+    # app/vendor/faceless_pipeline/steps/generate_script.py.
+    openrouter_api_key: str = Field("", alias="OPENROUTER_API_KEY")
+    script_llm_model: str = Field("z-ai/glm-4.7-flash:free", alias="SCRIPT_LLM_MODEL")
+    pexels_api_key: str = Field("", alias="PEXELS_API_KEY")
+
     @property
     def email_enabled(self) -> bool:
         return bool(self.resend_api_key)
+
+    @property
+    def video_agent_enabled(self) -> bool:
+        return bool(self.openrouter_api_key and self.pexels_api_key)
 
     @property
     def billing_enabled(self) -> bool:

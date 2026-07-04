@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api import (
     accounts, admin, analytics, auth, billing, brand, campaigns, clients, competitor, connections,
     content, inbox, leads, media, opportunities, posts, proactive, profile, routes, seo_geo,
-    social_listening, team,
+    social_listening, team, videos,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -45,6 +45,8 @@ async def lifespan(app: FastAPI):
         log.warning("HUB_API_KEY not set — generation will need a per-user key.")
     if not settings.zernio_api_key or settings.zernio_api_key.startswith("paste-"):
         log.warning("ZERNIO_API_KEY not set — publishing endpoints unavailable.")
+    if not settings.video_agent_enabled:
+        log.warning("OPENROUTER_API_KEY / PEXELS_API_KEY not set — video agent unavailable.")
     # Autopilot: recurring campaign top-up (no-op if APScheduler is unavailable).
     from app.services import scheduler
     scheduler.start()
@@ -115,6 +117,8 @@ app.include_router(clients.router, prefix="/api")
 app.include_router(connections.router, prefix="/api")
 # Media uploads
 app.include_router(media.router, prefix="/api")
+# Video agent — Faceless Video Pipeline integration
+app.include_router(videos.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------

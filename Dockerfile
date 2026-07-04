@@ -20,8 +20,25 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 WORKDIR /app/backend
 
+# ffmpeg: required by the video agent's pipeline (merge/mix/caption-burn/
+# thumbnail/quality-validation steps all shell out to the ffmpeg binary).
+# fonts-liberation: caption/intro-card rendering falls back to this system
+# font when no bundled font is found.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY backend/requirements.txt ./
+# openai-whisper pulls in torch as a transitive dependency. The default PyPI
+# wheel bundles CUDA binaries (multi-GB, useless on Railway — no GPU) and
+# would balloon build time/image size. Install the CPU-only wheel first so
+# pip's resolver is satisfied before openai-whisper tries to pull the default.
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install -r requirements.txt
+# Pre-bake the Whisper "base" model weights into the image so every video
+# generation is reliably fast from the first request after each deploy,
+# rather than depending on OpenAI's CDN being reachable at that moment.
+RUN python -c "import whisper; whisper.load_model('base')"
 
 COPY backend/ ./
 # Built frontend served by FastAPI (see app/main.py FRONTEND_DIST).
