@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import (
     accounts, admin, analytics, auth, billing, brand, campaigns, clients, competitor, connections,
-    content, inbox, leads, opportunities, posts, proactive, profile, routes, seo_geo,
+    content, inbox, leads, media, opportunities, posts, proactive, profile, routes, seo_geo,
     social_listening, team,
 )
 from app.core.config import settings
@@ -109,6 +109,8 @@ app.include_router(team.router, prefix="/api")
 app.include_router(clients.router, prefix="/api")
 # Channel connections — WhatsApp Business + Telegram
 app.include_router(connections.router, prefix="/api")
+# Media uploads
+app.include_router(media.router, prefix="/api")
 
 
 # --- Static frontend (production single-service deploy) ---------------------
@@ -120,6 +122,12 @@ _INDEX = FRONTEND_DIST / "index.html"
 
 if _ASSETS.is_dir():
     app.mount("/assets", StaticFiles(directory=_ASSETS), name="assets")
+
+# User-uploaded media files (images/videos attached to posts).
+# Files live in /app/uploads on Railway — ephemeral across deploys, fine for beta.
+_UPLOADS = Path("/app/uploads")
+_UPLOADS.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_UPLOADS), name="uploads")
 
 
 @app.get("/", include_in_schema=False)

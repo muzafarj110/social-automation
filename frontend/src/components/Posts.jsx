@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   listPosts, syncPosts, publishPost, schedulePost, deletePost, getPostInfographic, updatePost,
 } from "../api.js";
+import { uploadMedia } from "../api.js";
 
 const MEDIA_REQUIRED = new Set(["instagram", "tiktok", "youtube", "pinterest", "snapchat"]);
 const PLATFORM_LABEL = {
@@ -10,7 +11,7 @@ const PLATFORM_LABEL = {
   bluesky: "Bluesky", threads: "Threads", googlebusiness: "Google Business",
   telegram: "Telegram", snapchat: "Snapchat", whatsapp: "WhatsApp", discord: "Discord",
 };
-const FILTERS = [
+const STATUS_FILTERS = [
   ["all", "All"], ["draft", "Drafts"], ["scheduled", "Scheduled"],
   ["published", "Published"], ["failed", "Failed"],
 ];
@@ -20,6 +21,8 @@ function PostCard({ post, onChange }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [mediaUrl, setMediaUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
 
   const hasMedia = Array.isArray(post.media) && post.media.length > 0;
   const needsMedia = MEDIA_REQUIRED.has(post.platform) && !hasMedia;
@@ -36,26 +39,42 @@ function PostCard({ post, onChange }) {
   const act = (fn) => async () => {
     setError("");
     setBusy(true);
-    try {
-      await fn();
-      onChange();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
+    try { await fn(); onChange(); }
+    catch (e) { setError(e.message); }
+    finally { setBusy(false); }
   };
 
   const doSchedule = act(async () => {
     if (!when) throw new Error("Pick a date and time.");
-    // datetime-local has no timezone; send as ISO with local offset.
-    const iso = new Date(when).toISOString();
-    await schedulePost(post.id, iso, "UTC");
+    await schedulePost(post.id, new Date(when).toISOString(), "UTC");
+  });
+
+  const doUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    try {
+      const { url } = await uploadMedia(file);
+      await updatePost(post.id, { media: [{ type: file.type.startsWith("video") ? "video" : "image", url }] });
+      onChange();
+    } catch (e) {
+      setError(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const doAttachUrl = act(async () => {
+    if (!mediaUrl.trim()) throw new Error("Paste a URL first.");
+    await updatePost(post.id, { media: [{ type: "image", url: mediaUrl.trim() }] });
+    setMediaUrl("");
   });
 
   const published = post.status === "published";
   const scheduled = post.status === "scheduled";
-  const editable = !published && !scheduled; // draft or failed
+  const editable = !published && !scheduled;
 
   return (
     <div className="card">
@@ -74,8 +93,8 @@ function PostCard({ post, onChange }) {
         <div className="spacer" />
         {post.platform_post_url && (
           <a href={post.platform_post_url} target="_blank" rel="noreferrer"
-             style={{ color: "var(--teal)", fontSize: 13, fontWeight: 600 }}>
-            View on LinkedIn ↗
+            style={{ color: "var(--teal)", fontSize: 13, fontWeight: 600 }}>
+            View on {PLATFORM_LABEL[post.platform] || "platform"} ↗
           </a>
         )}
       </div>
@@ -88,27 +107,34 @@ function PostCard({ post, onChange }) {
       {error && <div className="error">{error}</div>}
 
       {editable && (MEDIA_REQUIRED.has(post.platform) || hasMedia) && (
-        <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8,
-                      background: needsMedia ? "#fff7ed" : "#f6f7fb" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+        <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 8,
+          background: needsMedia ? "#fff7ed" : "#f6f7fb", border: needsMedia ? "1px solid #fed7aa" : "none" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
             {needsMedia
               ? `${PLATFORM_LABEL[post.platform] || post.platform} needs an image or video to publish`
               : "Media attached"}
           </div>
           {hasMedia && (
-            <div className="muted" style={{ fontSize: 12, marginBottom: 6, wordBreak: "break-all" }}>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8, wordBreak: "break-all" }}>
               {post.media.map((m) => m.url).filter(Boolean).join(", ")}
             </div>
           )}
-          <div className="row">
-            <input style={{ flex: 1 }} placeholder="Paste an image or video URL…"
+
+          {/* Upload file */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input ref={fileRef} type="file" accept="image/*,video/*"
+              style={{ display: "none" }} onChange={doUpload} disabled={busy || uploading} />
+            <button className="btn-secondary" disabled={busy || uploading}
+              onClick={() => fileRef.current?.click()}
+              style={{ whiteSpace: "nowrap" }}>
+              {uploading ? "Uploading…" : "Upload file"}
+            </button>
+            <span className="muted" style={{ fontSize: 12 }}>or paste URL</span>
+            <input style={{ flex: 1, minWidth: 160 }} placeholder="https://…"
               value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} />
-            <button className="btn-secondary" disabled={busy || !mediaUrl.trim()}
-              onClick={act(async () => {
-                await updatePost(post.id, { media: [{ type: "image", url: mediaUrl.trim() }] });
-                setMediaUrl("");
-              })}>
-              {hasMedia ? "Replace media" : "Attach media"}
+            <button className="btn-secondary" disabled={busy || uploading || !mediaUrl.trim()}
+              onClick={doAttachUrl}>
+              {hasMedia ? "Replace" : "Attach"}
             </button>
           </div>
         </div>
@@ -119,12 +145,8 @@ function PostCard({ post, onChange }) {
           <button className="btn-primary" disabled={busy || needsMedia} onClick={act(() => publishPost(post.id))}>
             Publish now
           </button>
-          <input
-            type="datetime-local"
-            style={{ width: 220 }}
-            value={when}
-            onChange={(e) => setWhen(e.target.value)}
-          />
+          <input type="datetime-local" style={{ width: 220 }} value={when}
+            onChange={(e) => setWhen(e.target.value)} />
           <button className="btn-secondary" disabled={busy || needsMedia} onClick={doSchedule}>
             Schedule
           </button>
@@ -137,56 +159,58 @@ function PostCard({ post, onChange }) {
 
       {scheduled && (
         <div className="row" style={{ marginTop: 12 }}>
-          <span className="muted">Scheduled — it will publish automatically at the time above.</span>
+          <span className="muted">Scheduled — publishes automatically.</span>
           <div className="spacer" />
-          <button className="btn-ghost" disabled={busy} onClick={act(() => deletePost(post.id))}>
-            Cancel
-          </button>
+          <button className="btn-ghost" disabled={busy} onClick={act(() => deletePost(post.id))}>Cancel</button>
         </div>
       )}
     </div>
   );
 }
 
-export default function Posts({ refreshKey }) {
+export default function Posts({ refreshKey, accounts = [] }) {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [filter, setFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [platformFilter, setPlatformFilter] = useState("all");
+
+  // Platforms the user actually has connected accounts for
+  const connectedPlatforms = [...new Set(accounts.map((a) => a.platform).filter(Boolean))];
 
   const load = async () => {
     setError("");
-    try {
-      setPosts(await listPosts());
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    try { setPosts(await listPosts()); }
+    catch (e) { setError(e.message); }
+    finally { setLoading(false); }
   };
 
-  // Refresh reconciles scheduled posts with Zernio (did they publish / fail?).
   const refresh = async () => {
-    setError("");
-    setSyncing(true);
-    try {
-      setPosts(await syncPosts());
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSyncing(false);
-      setLoading(false);
-    }
+    setError(""); setSyncing(true);
+    try { setPosts(await syncPosts()); }
+    catch (e) { setError(e.message); }
+    finally { setSyncing(false); setLoading(false); }
   };
 
-  useEffect(() => {
-    load();
-  }, [refreshKey]); // eslint-disable-line
+  useEffect(() => { load(); }, [refreshKey]); // eslint-disable-line
 
   if (loading) return <div className="empty">Loading…</div>;
 
-  const shown = filter === "all" ? posts : posts.filter((p) => p.status === filter);
+  // Filter by connected platforms first (if user has connected accounts)
+  const platformPosts = connectedPlatforms.length > 0
+    ? posts.filter((p) => connectedPlatforms.includes(p.platform))
+    : posts;
+
+  // Then filter by selected platform tab
+  const channelPosts = platformFilter === "all"
+    ? platformPosts
+    : platformPosts.filter((p) => p.platform === platformFilter);
+
+  // Then filter by status
+  const shown = statusFilter === "all"
+    ? channelPosts
+    : channelPosts.filter((p) => p.status === statusFilter);
 
   return (
     <>
@@ -198,29 +222,49 @@ export default function Posts({ refreshKey }) {
           {syncing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
+
+      {/* Platform (channel) tabs — only connected platforms */}
+      {connectedPlatforms.length > 1 && (
+        <div className="filter-row" style={{ marginBottom: 8 }}>
+          <button className={`filter-chip ${platformFilter === "all" ? "active" : ""}`}
+            onClick={() => setPlatformFilter("all")}>
+            All channels
+          </button>
+          {connectedPlatforms.map((p) => (
+            <button key={p} className={`filter-chip ${platformFilter === p ? "active" : ""}`}
+              onClick={() => setPlatformFilter(p)}>
+              {PLATFORM_LABEL[p] || p}
+              {(() => { const n = platformPosts.filter((x) => x.platform === p).length; return n > 0 ? <span style={{ opacity: 0.6 }}> · {n}</span> : null; })()}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Status filters */}
+      {platformPosts.length > 0 && (
+        <div className="filter-row" style={{ marginBottom: 16 }}>
+          {STATUS_FILTERS.map(([key, label]) => {
+            const n = key === "all" ? channelPosts.length : channelPosts.filter((p) => p.status === key).length;
+            return (
+              <button key={key} className={`filter-chip ${statusFilter === key ? "active" : ""}`}
+                onClick={() => setStatusFilter(key)}>
+                {label}{n > 0 ? <span style={{ opacity: 0.7 }}> · {n}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {posts.length === 0 ? (
         <div className="empty">No posts yet. Generate one to get started.</div>
+      ) : platformPosts.length === 0 ? (
+        <div className="empty">No posts for your connected channels yet.</div>
+      ) : shown.length === 0 ? (
+        <div className="empty">No {statusFilter} posts.</div>
       ) : (
-        <>
-          <div className="filter-row">
-            {FILTERS.map(([key, label]) => {
-              const n = key === "all" ? posts.length : posts.filter((p) => p.status === key).length;
-              return (
-                <button key={key} className={`filter-chip ${filter === key ? "active" : ""}`}
-                  onClick={() => setFilter(key)}>
-                  {label}{n > 0 ? <span style={{ opacity: 0.7 }}> · {n}</span> : null}
-                </button>
-              );
-            })}
-          </div>
-          {shown.length === 0 ? (
-            <div className="empty">No {filter} posts.</div>
-          ) : (
-            <div className="masonry">
-              {shown.map((p) => <PostCard key={p.id} post={p} onChange={load} />)}
-            </div>
-          )}
-        </>
+        <div className="masonry">
+          {shown.map((p) => <PostCard key={p.id} post={p} onChange={load} />)}
+        </div>
       )}
     </>
   );

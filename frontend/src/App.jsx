@@ -236,7 +236,7 @@ export default function App() {
               onSaved={() => { setPostsRefresh((n) => n + 1); setTab("posts"); }}
             />
           )}
-          {tab === "posts" && <Posts refreshKey={postsRefresh} />}
+          {tab === "posts" && <Posts refreshKey={postsRefresh} accounts={accounts} />}
           {tab === "campaigns" && <Campaigns accounts={accounts} goTab={setTab} />}
           {tab === "inbox" && <Inbox accounts={accounts} />}
           {tab === "profile" && <ProfileStudio />}

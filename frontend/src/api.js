@@ -216,6 +216,14 @@ export const getBilling = () => apiGet("/billing");
 export const startCheckout = (price_id) => apiSend("/billing/checkout", "POST", { price_id });
 export const openBillingPortal = () => apiSend("/billing/portal", "POST", {});
 
+// --- Media upload ---
+export async function uploadMedia(file) {
+  const form = new FormData();
+  form.append("file", file);
+  const r = await http.post("/media/upload", form);
+  return r.data;
+}
+
 // --- Admin ---
 export const adminListUsers = () => apiGet("/admin/users");
 export const adminFeatures = () => apiGet("/admin/features");
