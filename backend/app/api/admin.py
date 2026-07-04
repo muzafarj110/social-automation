@@ -191,7 +191,7 @@ async def generate_reset_link(
     return {"ok": True, "email": user.email, "reset_url": reset_url, "expires_in": "24 hours"}
 
 
-@router.delete("/users/{user_id}", status_code=204)
+@router.delete("/users/{user_id}", status_code=204, response_model=None)
 async def delete_user(
     user_id: int,
     current: User = Depends(require_admin),

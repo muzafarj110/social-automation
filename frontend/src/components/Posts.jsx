@@ -197,15 +197,11 @@ export default function Posts({ refreshKey, accounts = [] }) {
 
   if (loading) return <div className="empty">Loading…</div>;
 
-  // Filter by connected platforms first (if user has connected accounts)
-  const platformPosts = connectedPlatforms.length > 0
-    ? posts.filter((p) => connectedPlatforms.includes(p.platform))
-    : posts;
-
-  // Then filter by selected platform tab
+  // "All channels" always shows every post — connectedPlatforms only decides which
+  // per-platform tabs exist, it must never hide posts from the default/all view.
   const channelPosts = platformFilter === "all"
-    ? platformPosts
-    : platformPosts.filter((p) => p.platform === platformFilter);
+    ? posts
+    : posts.filter((p) => p.platform === platformFilter);
 
   // Then filter by status
   const shown = statusFilter === "all"
@@ -234,14 +230,14 @@ export default function Posts({ refreshKey, accounts = [] }) {
             <button key={p} className={`filter-chip ${platformFilter === p ? "active" : ""}`}
               onClick={() => setPlatformFilter(p)}>
               {PLATFORM_LABEL[p] || p}
-              {(() => { const n = platformPosts.filter((x) => x.platform === p).length; return n > 0 ? <span style={{ opacity: 0.6 }}> · {n}</span> : null; })()}
+              {(() => { const n = posts.filter((x) => x.platform === p).length; return n > 0 ? <span style={{ opacity: 0.6 }}> · {n}</span> : null; })()}
             </button>
           ))}
         </div>
       )}
 
       {/* Status filters */}
-      {platformPosts.length > 0 && (
+      {channelPosts.length > 0 && (
         <div className="filter-row" style={{ marginBottom: 16 }}>
           {STATUS_FILTERS.map(([key, label]) => {
             const n = key === "all" ? channelPosts.length : channelPosts.filter((p) => p.status === key).length;
@@ -257,7 +253,7 @@ export default function Posts({ refreshKey, accounts = [] }) {
 
       {posts.length === 0 ? (
         <div className="empty">No posts yet. Generate one to get started.</div>
-      ) : platformPosts.length === 0 ? (
+      ) : channelPosts.length === 0 ? (
         <div className="empty">No posts for your connected channels yet.</div>
       ) : shown.length === 0 ? (
         <div className="empty">No {statusFilter} posts.</div>

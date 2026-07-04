@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.clients.hub_client import HubClient, HubError
 from app.clients.zernio_client import ZernioClient
@@ -362,7 +362,8 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
     created: list[Post] = []
     notes: list[str] = []
     # Usage-based billing: each produced post costs a credit (admins exempt).
-    credits_left = None if is_admin(user) else user.credits
+    initial_credits = None if is_admin(user) else user.credits
+    credits_left = initial_credits
     out_of_credits = False
 
     # angles to rotate through (content variety); fall back to the single type
@@ -473,9 +474,18 @@ async def run_campaign(campaign: Campaign, db, *, count: int | None = None) -> l
             if out_of_credits:
                 break  # stop the whole run — no credits left
 
-    # Persist the user's remaining balance (credits spent this run).
-    if credits_left is not None:
-        user.credits = credits_left
+    # Persist credits spent this run as an atomic relative decrement (not an
+    # absolute overwrite) so a concurrent run (manual "Run Now" racing the
+    # scheduler tick) can't silently clobber the other's deduction.
+    if initial_credits is not None:
+        spent = initial_credits - credits_left
+        if spent > 0:
+            result = await db.execute(
+                update(User).where(User.id == user.id, User.credits >= spent)
+                .values(credits=User.credits - spent)
+            )
+            if result.rowcount:
+                await db.refresh(user)
 
     campaign.last_run_at = datetime.now(timezone.utc)
     campaign.next_run_at = _compute_next_run(campaign)

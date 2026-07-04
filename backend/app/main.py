@@ -48,6 +48,10 @@ async def lifespan(app: FastAPI):
     # Autopilot: recurring campaign top-up (no-op if APScheduler is unavailable).
     from app.services import scheduler
     scheduler.start()
+    # User-uploaded media files live here (see also app/api/media.py). Created
+    # at startup — not import time — so a missing/unwritable path fails loudly
+    # instead of crashing the whole app before the server can even start.
+    _UPLOADS.mkdir(parents=True, exist_ok=True)
     try:
         yield
     finally:
@@ -124,10 +128,14 @@ if _ASSETS.is_dir():
     app.mount("/assets", StaticFiles(directory=_ASSETS), name="assets")
 
 # User-uploaded media files (images/videos attached to posts).
-# Files live in /app/uploads on Railway — ephemeral across deploys, fine for beta.
-_UPLOADS = Path("/app/uploads")
-_UPLOADS.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=_UPLOADS), name="uploads")
+# Files live in settings.upload_dir — "/app/uploads" on Railway (ephemeral
+# across deploys, fine for beta) or "./uploads" locally by default. The
+# directory itself is created at startup in `lifespan`, not here at import
+# time, so an unwritable path doesn't crash the app before it can boot.
+_UPLOADS = Path(settings.upload_dir)
+# check_dir=False: the directory is created in `lifespan` (below), which runs
+# after this module-level mount call, so it may not exist yet at import time.
+app.mount("/uploads", StaticFiles(directory=_UPLOADS, check_dir=False), name="uploads")
 
 
 @app.get("/", include_in_schema=False)

@@ -235,11 +235,14 @@ function UserRow({ u, features, planFeatures, saving, deleting, expanded, resetL
   const hasOverride = u.entitlements_override && Object.keys(u.entitlements_override).length > 0;
   const [copied, setCopied] = useState(false);
 
-  const copyResetLink = () => {
-    navigator.clipboard.writeText(resetLink).then(() => {
+  const copyResetLink = async () => {
+    try {
+      await navigator.clipboard.writeText(resetLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      // clipboard API unavailable — no confirmation shown
+    }
   };
 
   return (

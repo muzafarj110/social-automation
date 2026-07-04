@@ -83,7 +83,9 @@ export default function App() {
   });
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [tab, setTab] = useState("home");
+  const [teamBrief, setTeamBrief] = useState("");
   const [postsRefresh, setPostsRefresh] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [wizardSkipped, setWizardSkipped] = useState(
@@ -99,7 +101,9 @@ export default function App() {
     catch { logout(); setAuthed(false); }
   };
   const reloadAccounts = async () => {
-    try { setAccounts(await listAccounts()); } catch { /* ignore */ }
+    try { setAccounts(await listAccounts()); }
+    catch { /* ignore */ }
+    finally { setAccountsLoaded(true); }
   };
   const [clients, setClients] = useState([]);
   const loadClients = async () => {
@@ -124,21 +128,31 @@ export default function App() {
   // When any request gets a 401 (token expired after ~1h), drop straight to the
   // login screen rather than showing a logged-in shell with empty data.
   useEffect(() => {
-    const onExpired = () => { logout(); setAuthed(false); setUser(null); setAccounts([]); };
+    const onExpired = () => { logout(); setAuthed(false); setUser(null); setAccounts([]); setAuthView("login"); };
     window.addEventListener("auth:expired", onExpired);
     return () => window.removeEventListener("auth:expired", onExpired);
   }, []);
 
+  const onAuthed = () => setAuthed(true);
+
+  // A reset/verify link (#reset?token=... or #verify?token=...) must open the
+  // Auth screen even if a valid session token already exists in localStorage —
+  // otherwise it silently does nothing for already-logged-in users.
+  const hasUrlToken = /token=/.test((window.location.hash || "") + (window.location.search || ""));
+  if (hasUrlToken) {
+    return <Auth initialMode="login" onAuthed={onAuthed} onBack={() => setAuthView(null)} />;
+  }
+
   if (!authed) {
     if (!authView) return <Landing onStart={() => setAuthView("register")} onLogin={() => setAuthView("login")} />;
-    return <Auth initialMode={authView} onAuthed={() => setAuthed(true)} onBack={() => setAuthView(null)} />;
+    return <Auth initialMode={authView} onAuthed={onAuthed} onBack={() => setAuthView(null)} />;
   }
   if (!user) return <div className="empty" style={{ padding: 80 }}>Loading…</div>;
   if (!user.profile_type) return <Onboarding onDone={refreshUser} />;
 
   // First-run guided setup: shown until the user connects an account or skips.
   const connected = accounts.length > 0;
-  if (!wizardSkipped && !connected) {
+  if (!wizardSkipped && accountsLoaded && !connected) {
     return (
       <Wizard
         user={user}
@@ -225,10 +239,16 @@ export default function App() {
           </div>
         </header>
         <div className={bodyClass} key={user.active_client_id || "self"}>
-          {tab === "home" && <Home goTab={setTab} user={user} />}
+          {tab === "home" && (
+            <Home
+              goTab={setTab}
+              user={user}
+              onDirective={(text) => { setTeamBrief(text); setTab("team"); }}
+            />
+          )}
           {tab === "strategy" && <Strategy />}
           {tab === "studio" && <Studio />}
-          {tab === "team" && <ContentTeam goTab={setTab} />}
+          {tab === "team" && <ContentTeam goTab={setTab} initialBrief={teamBrief} />}
           {tab === "generate" && (
             <Generate
               accounts={accounts}

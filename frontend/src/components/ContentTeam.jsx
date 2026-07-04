@@ -17,14 +17,14 @@ function Pipeline({ active }) {
   );
 }
 
-export default function ContentTeam({ goTab }) {
+export default function ContentTeam({ goTab, initialBrief }) {
   const [run, setRun] = useState(null);
   const [loading, setLoading] = useState(true);
   const [planning, setPlanning] = useState(false);
   const [running, setRunning] = useState(false);
   const [approving, setApproving] = useState(false);
   const [count, setCount] = useState(3);
-  const [brief, setBrief] = useState("");
+  const [brief, setBrief] = useState(initialBrief || "");
   const [topics, setTopics] = useState(null); // null = no plan yet; array = plan editor
   const [learning, setLearning] = useState(null);
   const [error, setError] = useState("");

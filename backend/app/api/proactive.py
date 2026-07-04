@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,8 +67,9 @@ async def dismiss_item(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     p = await db.get(ProactiveItem, pid)
-    if p and p.user_id == current.id:
-        p.status = "dismissed"
-        await db.commit()
-        await db.refresh(p)
-    return _serialize(p) if p else {}
+    if p is None or p.user_id != current.id:
+        raise HTTPException(404, "Not found")
+    p.status = "dismissed"
+    await db.commit()
+    await db.refresh(p)
+    return _serialize(p)

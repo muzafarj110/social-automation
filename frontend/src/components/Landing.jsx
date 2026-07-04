@@ -67,8 +67,14 @@ function Mono({ bg, fg, children }) {
   return <span className="mono" style={{ background: bg, color: fg }}>{children}</span>;
 }
 
+const LEGAL_NOTE = {
+  Privacy: "We're finalizing our Privacy Policy. In the meantime, please reach out with any questions and we'll be happy to help.",
+  Terms: "We're finalizing our Terms of Service. In the meantime, please reach out with any questions and we'll be happy to help.",
+};
+
 export default function Landing({ onStart, onLogin }) {
   const [cap, setCap] = useState("social");
+  const [legalOpen, setLegalOpen] = useState(null); // "Privacy" | "Terms" | null
   const c = CAPS[cap];
 
   return (
@@ -291,13 +297,32 @@ export default function Landing({ onStart, onLogin }) {
             </div>
             <div>
               <h4>Legal</h4>
-              <a onClick={onStart}>Privacy</a>
-              <a onClick={onStart}>Terms</a>
+              <a onClick={() => setLegalOpen("Privacy")}>Privacy</a>
+              <a onClick={() => setLegalOpen("Terms")}>Terms</a>
             </div>
           </div>
           <div className="lp-foot-bottom">© 2026 Autopilot. All rights reserved.</div>
         </div>
       </footer>
+
+      {/* legal placeholder modal (real Privacy/Terms pages pending legal review) */}
+      {legalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLegalOpen(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(16,24,40,0.45)", display: "grid", placeItems: "center", zIndex: 1000, padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#fff", borderRadius: 16, padding: "28px 26px", maxWidth: 380, width: "100%", boxShadow: "var(--shadow-lift, 0 20px 50px rgba(16,24,40,0.2))" }}
+          >
+            <h3 style={{ margin: "0 0 10px", fontSize: 18, fontWeight: 700, color: "var(--ink)" }}>{legalOpen}</h3>
+            <p style={{ margin: 0, fontSize: 14.5, color: "#475467", lineHeight: 1.6 }}>{LEGAL_NOTE[legalOpen]}</p>
+            <button className="lp-btn lp-btn-primary" style={{ marginTop: 20 }} onClick={() => setLegalOpen(null)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

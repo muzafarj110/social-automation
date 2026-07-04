@@ -68,7 +68,7 @@ function ago(dateStr) {
   return d.toLocaleDateString();
 }
 
-export default function Home({ goTab, user }) {
+export default function Home({ goTab, user, onDirective }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [directive, setDirective] = useState("");
@@ -128,7 +128,10 @@ export default function Home({ goTab, user }) {
 
   const submitDirective = (e) => {
     e.preventDefault();
-    if (directive.trim()) goTab("team");
+    const text = directive.trim();
+    if (!text) return;
+    if (onDirective) onDirective(text);
+    else goTab("team");
   };
 
   const dismiss = async (id) => {

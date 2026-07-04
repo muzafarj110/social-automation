@@ -119,7 +119,7 @@ async def connect_whatsapp(
     return _wa_out(conn)
 
 
-@router.delete("/whatsapp", status_code=204)
+@router.delete("/whatsapp", status_code=204, response_model=None)
 async def disconnect_whatsapp(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -210,7 +210,7 @@ async def connect_telegram(
     return _tg_out(conn)
 
 
-@router.delete("/telegram", status_code=204)
+@router.delete("/telegram", status_code=204, response_model=None)
 async def disconnect_telegram(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

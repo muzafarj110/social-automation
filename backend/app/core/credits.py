@@ -15,6 +15,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException
+from sqlalchemy import case, update
 
 from app.core.config import settings
 from app.core.entitlements import is_admin
@@ -74,24 +75,61 @@ def has_credits(user: User, n: int = 1) -> bool:
 
 
 async def charge(db, user: User, n: int = 1) -> None:
-    """Deduct for an AI action, or raise 402 if the user can't afford it."""
+    """Deduct for an AI action, or raise 402 if the user can't afford it.
+
+    SECURITY: this must be an atomic conditional UPDATE, not a check-then-act
+    (read balance, decide, then write). Two concurrent requests for the same
+    user both reading the same "before" balance would otherwise both pass the
+    check and both deduct, letting a user overspend credits or blow through
+    free_daily_limit. The WHERE clause re-validates the balance in the same
+    statement that writes it, so the database — not this process — is the
+    single point of truth and a losing race just gets rowcount == 0.
+    """
     if is_admin(user):
         return
     if is_subscribed(user):
-        if user.credits < n:
+        result = await db.execute(
+            update(User)
+            .where(User.id == user.id, User.credits >= n)
+            .values(credits=User.credits - n)
+        )
+        if result.rowcount == 0:
             raise HTTPException(402, _OUT_OF_CREDITS)
-        user.credits -= n
         await db.commit()
+        await db.refresh(user)
         return
-    # Free trial path — lazily start the trial window on first spend.
+
+    # Free trial path — lazily start the trial window on first spend. This is
+    # a local, in-memory field on the caller's own User row; it's flushed
+    # atomically together with the guarded UPDATE below (same transaction),
+    # so it never persists unless the charge itself succeeds.
     if user.trial_ends_at is None:
         user.trial_ends_at = datetime.now(timezone.utc) + timedelta(days=settings.free_trial_days)
     if trial_expired(user):
         raise HTTPException(402, _TRIAL_OVER)
-    if user.free_quota_date != _today():
-        user.free_quota_date = _today()
-        user.free_used_today = 0
-    if user.free_used_today + n > settings.free_daily_limit:
+
+    today = _today()
+    limit = settings.free_daily_limit
+    # Single atomic UPDATE that both rolls the counter over on a new day and
+    # enforces the limit — whether today's counter needs resetting or not is
+    # decided inside the same statement, so there's no gap for another
+    # request to slip through between the read and the write.
+    result = await db.execute(
+        update(User)
+        .where(User.id == user.id)
+        .where(case(
+            (User.free_quota_date == today, User.free_used_today + n <= limit),
+            else_=(n <= limit),
+        ))
+        .values(
+            free_quota_date=today,
+            free_used_today=case(
+                (User.free_quota_date == today, User.free_used_today + n),
+                else_=n,
+            ),
+        )
+    )
+    if result.rowcount == 0:
         raise HTTPException(402, _DAILY_LIMIT)
-    user.free_used_today += n
     await db.commit()
+    await db.refresh(user)

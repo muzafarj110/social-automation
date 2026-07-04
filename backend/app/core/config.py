@@ -7,14 +7,26 @@ Import the singleton: `from app.core.config import settings`.
 
 from __future__ import annotations
 
+import logging
+import os
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+logger = logging.getLogger(__name__)
+
 # backend/.env  (two levels up from this file: app/core/config.py -> backend/)
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+
+# Any of these being present means we're deployed on Railway, not a laptop.
+_RAILWAY_ENV_MARKERS = (
+    "RAILWAY_ENVIRONMENT",
+    "RAILWAY_PROJECT_ID",
+    "RAILWAY_STATIC_URL",
+    "RAILWAY_SERVICE_ID",
+)
 
 
 class Settings(BaseSettings):
@@ -71,6 +83,10 @@ class Settings(BaseSettings):
     resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
+    # Where user-uploaded media files (images/videos) are stored. Defaults to
+    # a local relative dir so dev "just works"; Railway sets UPLOAD_DIR=/app/uploads.
+    upload_dir: str = Field("./uploads", alias="UPLOAD_DIR")
+
     @property
     def email_enabled(self) -> bool:
         return bool(self.resend_api_key)
@@ -112,7 +128,22 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    instance = Settings()
+    weak_secret = not instance.jwt_secret or instance.jwt_secret == "change-me"
+    on_railway = any(os.environ.get(var) for var in _RAILWAY_ENV_MARKERS)
+    if weak_secret and on_railway:
+        raise RuntimeError(
+            "JWT_SECRET is unset or still the default 'change-me'. This secret also "
+            "derives the encryption key for stored Zernio/Hub API keys, so leaving it "
+            "unset lets anyone forge admin JWTs and decrypt every user's secrets. "
+            "Set a strong JWT_SECRET in Railway's project variables before deploying."
+        )
+    elif weak_secret:
+        logger.warning(
+            "JWT_SECRET is unset or the default 'change-me'; fine for local dev, "
+            "but never deploy like this."
+        )
+    return instance
 
 
 settings = get_settings()

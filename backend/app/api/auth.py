@@ -88,6 +88,14 @@ async def _send_verification(user: User, db: AsyncSession) -> None:
 
 @router.post("/register", status_code=201)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) -> dict:
+    if (
+        settings.admin_email
+        and body.email.strip().lower() == settings.admin_email.strip().lower()
+    ):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "This email address cannot self-register."
+        )
+
     existing = await db.scalar(select(User).where(User.email == body.email))
     if existing:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
