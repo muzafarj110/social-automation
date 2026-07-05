@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TIER_DATA, TIER_ORDER } from "../constants/pricing.js";
 
 // Public marketing site. `onStart` opens the auth screen in register mode,
 // `onLogin` in login mode. Copy is original; structure mirrors a modern
@@ -49,14 +50,6 @@ const CAPS = {
     pts: ["Live competitor monitoring", "Winning-tactic detection", "Positioning gap alerts", "Actionable playbooks"],
   },
 };
-
-// Kept in sync with Billing.jsx's real tiers — update both if pricing changes.
-const PRICING_TEASER = [
-  { price: "$0", suffix: "", label: "Free", note: "30 credits/day, no card needed" },
-  { price: "$29", suffix: "/mo", label: "Starter", note: "for getting serious" },
-  { price: "$79", suffix: "/mo", label: "Growth", note: "for growing teams", popular: true },
-  { price: "$149", suffix: "/mo", label: "Pro", note: "for full automation" },
-];
 
 const SECURITY = [
   { i: "⚿", t: "Your tokens stay yours", d: "Connected-account credentials are encrypted at rest and never exposed to third parties." },
@@ -204,7 +197,7 @@ export default function Landing({ onStart, onLogin }) {
               <h3>{c.h}</h3>
               <p>{c.p}</p>
               <ul className="lp-cap-list">{c.pts.map((p) => <li key={p}>{p}</li>)}</ul>
-              <button className="lp-btn lp-btn-primary" style={{ marginTop: 20 }} onClick={onStart}>Start for free</button>
+              <button className="lp-btn lp-btn-ghost" style={{ marginTop: 20 }} onClick={onStart}>Try {c.label} free →</button>
             </div>
             <div className="lp-cap-visual">
               <div className="lp-mock-chat" style={{ borderRadius: 12 }}>{c.label} agent working… <span className="send">✦</span></div>
@@ -229,19 +222,35 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* pricing teaser */}
+      {/* pricing */}
       <section id="pricing" className="lp-sec">
         <div className="lp-wrap">
           <div className="lp-kicker">Simple pricing</div>
           <h2 className="lp-h2">Free to start. Upgrade when you're ready.</h2>
-          <div className="lp-grid c4">
-            {PRICING_TEASER.map((p) => (
-              <div className="lp-card" key={p.label} style={p.popular ? { borderColor: "var(--teal)" } : undefined}>
-                {p.popular && <div className="lp-kicker" style={{ marginBottom: 6 }}>Most popular</div>}
-                <h3>{p.price}<span style={{ fontSize: 13, fontWeight: 500, color: "var(--muted)" }}>{p.suffix}</span></h3>
-                <p>{p.label} — {p.note}</p>
-              </div>
-            ))}
+          <div className="pricing-grid">
+            {TIER_ORDER.map((key) => {
+              const meta = TIER_DATA[key];
+              return (
+                <div className={`tier${meta.popular ? " featured" : ""}`} key={key}>
+                  {meta.popular && <span className="badge-pop">Most popular</span>}
+                  <div className="accent" />
+                  <div className="name">{meta.label}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "6px 0 2px" }}>
+                    <span className="amt">{meta.price}</span><span className="unit" style={{ fontSize: 13 }}>/mo</span>
+                  </div>
+                  {meta.note && <div className="unit">{meta.note}</div>}
+                  <ul style={{ marginTop: 12 }}>
+                    {meta.included.map((f) => <li key={f}><span style={{ color: "var(--teal)", marginRight: 6 }}>✓</span>{f}</li>)}
+                    {meta.excluded.map((f) => <li key={f} style={{ color: "var(--muted)", listStyle: "none" }}><span style={{ marginRight: 6 }}>–</span>{f}</li>)}
+                  </ul>
+                  <div className="pick">
+                    <button className="lp-btn lp-btn-primary" style={{ width: "100%" }} onClick={onStart}>
+                      {key === "free" ? "Start for free" : `Choose ${meta.label}`}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <p className="lp-hero-note" style={{ textAlign: "center" }}>No card required to start.</p>
         </div>

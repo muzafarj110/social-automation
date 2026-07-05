@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getToken, logout, me, listAccounts, listClients, createClient, activateClient, deactivateClient } from "./api.js";
 import Auth from "./components/Auth.jsx";
 import Landing from "./components/Landing.jsx";
@@ -86,6 +86,10 @@ export default function App() {
   const [teamBrief, setTeamBrief] = useState("");
   const [postsRefresh, setPostsRefresh] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [welcomeToast, setWelcomeToast] = useState(null);
+  const sidebarRef = useRef(null);
+  const menuBtnRef = useRef(null);
+  const prevMenuOpen = useRef(false);
 
   const refreshUser = async () => {
     try { setUser(await me()); }
@@ -122,6 +126,41 @@ export default function App() {
     return () => window.removeEventListener("auth:expired", onExpired);
   }, []);
 
+  // Close the mobile drawer with Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  // Move focus into the drawer when it opens, and back to the hamburger
+  // button when it closes (skip on initial mount before it's ever opened).
+  useEffect(() => {
+    if (menuOpen) {
+      const el = sidebarRef.current?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      el?.focus();
+    } else if (prevMenuOpen.current) {
+      menuBtnRef.current?.focus();
+    }
+    prevMenuOpen.current = menuOpen;
+  }, [menuOpen]);
+
+  // Show a one-time welcome toast right after a fresh registration (Auth.jsx
+  // sets this sessionStorage key just before calling onAuthed()). Depends on
+  // "authed" (not just []) since registration flips that state without
+  // remounting App — a mount-only effect would miss it.
+  useEffect(() => {
+    if (!authed) return;
+    const msg = sessionStorage.getItem("welcomeToast");
+    if (msg) {
+      sessionStorage.removeItem("welcomeToast");
+      setWelcomeToast(msg);
+      const t = setTimeout(() => setWelcomeToast(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [authed]);
+
   const onAuthed = () => setAuthed(true);
 
   // A reset/verify link (#reset?token=... or #verify?token=...) must open the
@@ -137,7 +176,12 @@ export default function App() {
     return <Auth initialMode={authView} onAuthed={onAuthed} onBack={() => setAuthView(null)} />;
   }
   if (!user) return <div className="empty" style={{ padding: 80 }}>Loading…</div>;
-  if (!user.profile_type) return <Onboarding onDone={refreshUser} />;
+  if (!user.profile_type) return (
+    <>
+      {welcomeToast && <div className="flash success" role="status">{welcomeToast}</div>}
+      <Onboarding onDone={refreshUser} />
+    </>
+  );
 
   const doLogout = () => { logout(); setAuthed(false); setUser(null); };
   const [title, subtitle] = TITLES[tab] || ["", ""];
@@ -152,8 +196,9 @@ export default function App() {
 
   return (
     <div className={`app ${menuOpen ? "drawer" : ""}`}>
+      {welcomeToast && <div className="flash success" role="status">{welcomeToast}</div>}
       <div className="scrim" onClick={() => setMenuOpen(false)} />
-      <aside className="sidebar">
+      <aside className="sidebar" ref={sidebarRef}>
         <div className="brand">
           <div className="logo">A</div>
           <div>
@@ -209,7 +254,7 @@ export default function App() {
 
       <main className="main">
         <header className="page-head">
-          <button className="menu-btn" aria-label="Menu" onClick={() => setMenuOpen(true)}>☰</button>
+          <button className="menu-btn" ref={menuBtnRef} aria-label="Menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>☰</button>
           <div style={{ flex: 1 }}>
             <h1>{title}</h1>
             <div className="sub">{subtitle}</div>
@@ -223,7 +268,7 @@ export default function App() {
               onDirective={(text) => { setTeamBrief(text); setTab("team"); }}
             />
           )}
-          {tab === "strategy" && <Strategy />}
+          {tab === "strategy" && <Strategy goTab={setTab} />}
           {tab === "studio" && <Studio />}
           {tab === "videoagent" && <VideoAgent accounts={accounts} />}
           {tab === "team" && (
@@ -241,7 +286,7 @@ export default function App() {
           {tab === "profile" && <ProfileStudio />}
           {tab === "analytics" && <Analytics />}
           {tab === "accounts" && (
-            <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} />
+            <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} goTab={setTab} />
           )}
           {tab === "calendar" && <Calendar />}
           {tab === "competitor" && <Competitor />}

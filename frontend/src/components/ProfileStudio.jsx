@@ -100,12 +100,12 @@ export default function ProfileStudio() {
           <div className="grid-2">
             {cfg.fields.map((f) => (
               <div key={f.name} style={f.area ? { gridColumn: "1 / -1" } : undefined}>
-                <label>
+                <label htmlFor={`profile-${tool}-${f.name}`}>
                   {f.label} {f.req ? <span className="req-mark">*</span> : <span className="muted">(optional)</span>}
                 </label>
                 {f.area
-                  ? <textarea value={form[f.name] || ""} onChange={set(f.name)} style={{ minHeight: 90 }} />
-                  : <input value={form[f.name] || ""} onChange={set(f.name)} />}
+                  ? <textarea id={`profile-${tool}-${f.name}`} value={form[f.name] || ""} onChange={set(f.name)} style={{ minHeight: 90 }} />
+                  : <input id={`profile-${tool}-${f.name}`} value={form[f.name] || ""} onChange={set(f.name)} />}
               </div>
             ))}
           </div>

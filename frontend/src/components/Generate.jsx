@@ -193,8 +193,9 @@ export default function Generate({ accounts, onSaved, goConnect }) {
       <div className="card">
         <h2>Generate a LinkedIn post</h2>
         <form onSubmit={doGenerate}>
-          <label>Topic</label>
+          <label htmlFor="gen-topic">Topic</label>
           <textarea
+            id="gen-topic"
             style={{ minHeight: 70 }}
             value={form.topic}
             onChange={set("topic")}
@@ -203,26 +204,26 @@ export default function Generate({ accounts, onSaved, goConnect }) {
           />
           <div className="row">
             <div style={{ flex: 1, minWidth: 200 }}>
-              <label>Post type</label>
-              <select value={form.post_type} onChange={set("post_type")}>
+              <label htmlFor="gen-post-type">Post type</label>
+              <select id="gen-post-type" value={form.post_type} onChange={set("post_type")}>
                 {POST_TYPES.map((t) => (
                   <option key={t}>{t}</option>
                 ))}
               </select>
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <label>Audience</label>
-              <input value={form.audience} onChange={set("audience")} />
+              <label htmlFor="gen-audience">Audience</label>
+              <input id="gen-audience" value={form.audience} onChange={set("audience")} />
             </div>
           </div>
           <div className="row">
             <div style={{ flex: 1, minWidth: 200 }}>
-              <label>Tone</label>
-              <input value={form.tone} onChange={set("tone")} />
+              <label htmlFor="gen-tone">Tone</label>
+              <input id="gen-tone" value={form.tone} onChange={set("tone")} />
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <label>Call to action</label>
-              <input value={form.include_cta} onChange={set("include_cta")} />
+              <label htmlFor="gen-cta">Call to action</label>
+              <input id="gen-cta" value={form.include_cta} onChange={set("include_cta")} />
             </div>
           </div>
           <div className="row" style={{ marginTop: 14 }}>
@@ -237,8 +238,8 @@ export default function Generate({ accounts, onSaved, goConnect }) {
         <div className="card">
           <h2>Review & save</h2>
           {result.why_this_works && <p className="muted">Why this works: {result.why_this_works}</p>}
-          <label>Post body (editable)</label>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} />
+          <label htmlFor="gen-body">Post body (editable)</label>
+          <textarea id="gen-body" value={body} onChange={(e) => setBody(e.target.value)} />
           {result.hashtags?.length > 0 && (
             <div className="hashtags">
               {result.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}

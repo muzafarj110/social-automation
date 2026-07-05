@@ -226,12 +226,13 @@ export default function Inbox({ accounts, refreshKey }) {
           <div className="grid-2">
             {fields.map((f) => (
               <div key={f.name}>
-                <label>
+                <label htmlFor={`inbox-${kind}-${f.name}`}>
                   {f.label}{" "}
                   {f.req ? <span className="req-mark">*</span>
                          : <span className="muted">(optional)</span>}
                 </label>
                 <input
+                  id={`inbox-${kind}-${f.name}`}
                   type={f.type || "text"}
                   value={params[f.name] ?? ""}
                   placeholder={f.placeholder}
@@ -243,11 +244,11 @@ export default function Inbox({ accounts, refreshKey }) {
 
           {kind === "comment" && (
             <>
-              <label>Target post URL <span className="muted">(optional — for your reference)</span></label>
-              <input value={postUrl} placeholder="https://linkedin.com/posts/…"
+              <label htmlFor="inbox-post-url">Target post URL <span className="muted">(optional — for your reference)</span></label>
+              <input id="inbox-post-url" value={postUrl} placeholder="https://linkedin.com/posts/…"
                      onChange={(e) => setPostUrl(e.target.value)} />
-              <label>Company-page comment ID <span className="muted">(optional — enables auto-reply)</span></label>
-              <input value={commentId} placeholder="leave blank for a personal comment you'll post yourself"
+              <label htmlFor="inbox-comment-id">Company-page comment ID <span className="muted">(optional — enables auto-reply)</span></label>
+              <input id="inbox-comment-id" value={commentId} placeholder="leave blank for a personal comment you'll post yourself"
                      onChange={(e) => setCommentId(e.target.value)} />
               {commentId.trim() && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
@@ -261,8 +262,8 @@ export default function Inbox({ accounts, refreshKey }) {
 
           {accounts.length > 0 && (
             <>
-              <label>Account <span className="muted">(optional)</span></label>
-              <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+              <label htmlFor="inbox-account">Account <span className="muted">(optional)</span></label>
+              <select id="inbox-account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
                 <option value="">— none —</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>

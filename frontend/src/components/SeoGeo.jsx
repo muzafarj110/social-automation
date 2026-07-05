@@ -63,24 +63,27 @@ export default function SeoGeo() {
         <form onSubmit={add}>
           <div className="grid-2">
             <div>
-              <label>Website <span className="muted">(optional)</span></label>
+              <label htmlFor="seo-website">Website <span className="muted">(optional)</span></label>
               <input
+                id="seo-website"
                 value={form.website}
                 onChange={(e) => setForm({ ...form, website: e.target.value })}
                 placeholder="yoursite.com"
               />
             </div>
             <div>
-              <label>Target audience <span className="muted">(optional)</span></label>
+              <label htmlFor="seo-audience">Target audience <span className="muted">(optional)</span></label>
               <input
+                id="seo-audience"
                 value={form.audience}
                 onChange={(e) => setForm({ ...form, audience: e.target.value })}
                 placeholder="e.g. B2B SaaS founders"
               />
             </div>
           </div>
-          <label>Keywords / topics to rank for</label>
+          <label htmlFor="seo-keywords">Keywords / topics to rank for</label>
           <textarea
+            id="seo-keywords"
             value={form.target_keywords}
             onChange={(e) => setForm({ ...form, target_keywords: e.target.value })}
             placeholder="e.g. LinkedIn automation, AI marketing tools, B2B lead generation…"

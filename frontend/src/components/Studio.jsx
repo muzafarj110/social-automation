@@ -272,10 +272,10 @@ export default function Studio() {
           <div className="grid-2">
             {tool.fields.map((f) => (
               <div key={f[0]} style={f[3] === "a" ? { gridColumn: "1 / -1" } : undefined}>
-                <label>{f[1]} {f[2] ? <span className="req-mark">*</span> : <span className="muted">(optional)</span>}</label>
+                <label htmlFor={`studio-${toolKey}-${f[0]}`}>{f[1]} {f[2] ? <span className="req-mark">*</span> : <span className="muted">(optional)</span>}</label>
                 {f[3] === "a"
-                  ? <textarea value={form[f[0]] || ""} onChange={set(f[0])} style={{ minHeight: 90 }} />
-                  : <input type={f[3] === "n" ? "number" : "text"} value={form[f[0]] || ""} onChange={set(f[0])} />}
+                  ? <textarea id={`studio-${toolKey}-${f[0]}`} value={form[f[0]] || ""} onChange={set(f[0])} style={{ minHeight: 90 }} />
+                  : <input id={`studio-${toolKey}-${f[0]}`} type={f[3] === "n" ? "number" : "text"} value={form[f[0]] || ""} onChange={set(f[0])} />}
               </div>
             ))}
           </div>

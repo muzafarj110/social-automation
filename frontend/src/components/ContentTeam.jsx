@@ -156,13 +156,13 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
                 ? `Adapting from your last ${learning.recent_count} post${learning.recent_count === 1 ? "" : "s"} — fresh angles, avoiding repeats. Engagement data will sharpen this once your posts gather results.`
                 : "First run — planning from your brand profile. Future runs will learn from how these posts perform."}
           </div>
-          <label>This week's brief</label>
-          <textarea value={brief} onChange={(e) => setBrief(e.target.value)} style={{ minHeight: 90 }} />
-          <label style={{ marginTop: 12 }}>Topics ({topics.length})</label>
-          <div className="pill-list" style={{ marginTop: 6 }}>
+          <label htmlFor="ct-brief">This week's brief</label>
+          <textarea id="ct-brief" value={brief} onChange={(e) => setBrief(e.target.value)} style={{ minHeight: 90 }} />
+          <label id="ct-topics-heading" style={{ marginTop: 12 }}>Topics ({topics.length})</label>
+          <div className="pill-list" style={{ marginTop: 6 }} role="group" aria-labelledby="ct-topics-heading">
             {topics.map((t, i) => (
               <div className="row" key={i} style={{ gap: 8 }}>
-                <input value={t} onChange={(e) => setTopicAt(i, e.target.value)} style={{ flex: 1 }} placeholder={`Topic ${i + 1}`} />
+                <input value={t} onChange={(e) => setTopicAt(i, e.target.value)} style={{ flex: 1 }} placeholder={`Topic ${i + 1}`} aria-label={`Topic ${i + 1}`} />
                 <button className="btn-ghost" onClick={() => removeTopic(i)} title="Remove" aria-label="Remove">✕</button>
               </div>
             ))}

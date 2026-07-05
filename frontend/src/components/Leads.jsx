@@ -102,8 +102,9 @@ export default function Leads({ refreshUser }) {
         <form onSubmit={add}>
           <div className="grid-2">
             <div>
-              <label>Name</label>
+              <label htmlFor="lead-name">Name</label>
               <input
+                id="lead-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g. Sarah Chen"
@@ -111,8 +112,9 @@ export default function Leads({ refreshUser }) {
               />
             </div>
             <div>
-              <label>Handle / email <span className="muted">(optional)</span></label>
+              <label htmlFor="lead-handle">Handle / email <span className="muted">(optional)</span></label>
               <input
+                id="lead-handle"
                 value={form.handle}
                 onChange={(e) => setForm({ ...form, handle: e.target.value })}
                 placeholder="@sarahchen or sarah@co.com"
@@ -121,22 +123,24 @@ export default function Leads({ refreshUser }) {
           </div>
           <div className="grid-2">
             <div>
-              <label>Platform</label>
-              <select value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })}>
+              <label htmlFor="lead-platform">Platform</label>
+              <select id="lead-platform" value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })}>
                 {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label>How did you find them? <span className="muted">(optional)</span></label>
+              <label htmlFor="lead-source">How did you find them? <span className="muted">(optional)</span></label>
               <input
+                id="lead-source"
                 value={form.source}
                 onChange={(e) => setForm({ ...form, source: e.target.value })}
                 placeholder="e.g. commented on your post"
               />
             </div>
           </div>
-          <label>What's their pain or goal? <span className="muted">(drives the AI outreach)</span></label>
+          <label htmlFor="lead-notes">What's their pain or goal? <span className="muted">(drives the AI outreach)</span></label>
           <textarea
+            id="lead-notes"
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             placeholder="e.g. Frustrated with manual LinkedIn outreach, growing a SaaS to $1M ARR, asked about automation tools…"

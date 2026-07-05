@@ -59,7 +59,10 @@ export default function Auth({ onAuthed, initialMode = "login", onBack }) {
         if (r.verification_required) {
           setInfo(r.message || "Account created. Check your email to verify, then sign in.");
           setMode("login"); setPassword("");
-        } else { onAuthed(); }
+        } else {
+          sessionStorage.setItem("welcomeToast", "Account created — you're all set.");
+          onAuthed();
+        }
       }
       else if (mode === "forgot") {
         const r = await forgotPassword(email);
@@ -126,22 +129,23 @@ export default function Auth({ onAuthed, initialMode = "login", onBack }) {
             <>
               {mode === "register" && (
                 <>
-                  <label>Full name</label>
-                  <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Optional" />
+                  <label htmlFor="auth-full-name">Full name</label>
+                  <input id="auth-full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Optional" />
                 </>
               )}
 
               {(mode === "login" || mode === "register" || mode === "forgot") && (
                 <>
-                  <label>Email</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@company.com" />
+                  <label htmlFor="auth-email">Email</label>
+                  <input id="auth-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@company.com" />
                 </>
               )}
 
               {(mode === "login" || mode === "register" || mode === "reset") && (
                 <>
-                  <label>{mode === "reset" ? "New password" : "Password"}</label>
+                  <label htmlFor="auth-password">{mode === "reset" ? "New password" : "Password"}</label>
                   <input
+                    id="auth-password"
                     type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                     required minLength={8}
                     placeholder={mode === "login" ? "••••••••" : "At least 8 characters"}

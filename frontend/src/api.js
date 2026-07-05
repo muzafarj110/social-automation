@@ -59,7 +59,7 @@ export async function apiSend(path, method, data) {
 // --- Auth ---
 export async function register(email, password, full_name) {
   const body = await apiSend("/auth/register", "POST", { email, password, full_name });
-  if (body?.access_token) setToken(body.access_token);
+  if (body?.access_token && !body?.verification_required) setToken(body.access_token);
   return body;
 }
 

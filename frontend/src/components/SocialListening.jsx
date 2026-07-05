@@ -73,8 +73,9 @@ export default function SocialListening() {
         <form onSubmit={add}>
           <div className="grid-2">
             <div>
-              <label>Keyword / topic</label>
+              <label htmlFor="listen-keyword">Keyword / topic</label>
               <input
+                id="listen-keyword"
                 value={form.keyword}
                 onChange={(e) => setForm({ ...form, keyword: e.target.value })}
                 placeholder="e.g. LinkedIn automation tool"
@@ -82,8 +83,9 @@ export default function SocialListening() {
               />
             </div>
             <div>
-              <label>Platform</label>
+              <label htmlFor="listen-platform">Platform</label>
               <select
+                id="listen-platform"
                 value={form.platform}
                 onChange={(e) => setForm({ ...form, platform: e.target.value })}
               >
@@ -91,8 +93,9 @@ export default function SocialListening() {
               </select>
             </div>
           </div>
-          <label>What signals are you looking for? <span className="muted">(optional)</span></label>
+          <label htmlFor="listen-desc">What signals are you looking for? <span className="muted">(optional)</span></label>
           <textarea
+            id="listen-desc"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="e.g. founders frustrated with manual LinkedIn outreach, asking for a better tool…"

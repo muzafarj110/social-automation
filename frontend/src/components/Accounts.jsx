@@ -95,7 +95,7 @@ function UsageCard({ data }) {
   );
 }
 
-export default function Accounts({ user, accounts, reloadAccounts, refreshUser }) {
+export default function Accounts({ user, accounts, reloadAccounts, refreshUser, goTab }) {
   const [available, setAvailable] = useState(null);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
@@ -106,6 +106,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const [manualPlatform, setManualPlatform] = useState("linkedin");
   const [busy, setBusy] = useState(false);
   const [usage, setUsage] = useState(null);
+  const [showNextStep, setShowNextStep] = useState(false);
 
   useEffect(() => {
     reloadAccounts();
@@ -115,6 +116,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   const wrap = (fn) => async (...a) => {
     setError("");
     setMsg("");
+    setShowNextStep(false);
     setBusy(true);
     try {
       await fn(...a);
@@ -158,6 +160,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
       account_type: account_type || "personal",
     });
     setMsg("Account linked.");
+    if (accounts.length === 0) setShowNextStep(true);
     reloadAccounts();
   });
 
@@ -185,7 +188,11 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         try { await linkAccount({ zernio_account_id: id, display_name: name, platform, account_type: type }); linked++; } catch { /* skip */ }
       }
     }
-    if (linked) { setMsg(`Imported ${linked} account${linked === 1 ? "" : "s"}.`); reloadAccounts(); }
+    if (linked) {
+      setMsg(`Imported ${linked} account${linked === 1 ? "" : "s"}.`);
+      if (accounts.length === 0) setShowNextStep(true);
+      reloadAccounts();
+    }
     else if (!list.length) setMsg("No connected accounts found yet — click Connect above.");
   });
 
@@ -205,6 +212,7 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
     setManualId("");
     setManualName("");
     setMsg("Account linked.");
+    if (accounts.length === 0) setShowNextStep(true);
     reloadAccounts();
   });
 
@@ -224,7 +232,16 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
   return (
     <>
       {error && <div className="flash error" role="alert">{error}</div>}
-      {msg && <div className="flash success" role="status">{msg}</div>}
+      {msg && (
+        <div className="flash success" role="status">
+          {msg}
+          {showNextStep && goTab && (
+            <> · <button className="btn-ghost btn-compact" onClick={() => goTab("strategy")}>
+              Next: brief your brand strategist →
+            </button></>
+          )}
+        </div>
+      )}
 
       <div className="card" style={user?.automation_paused ? { borderLeft: "4px solid #d97706" } : undefined}>
         <div className="row" style={{ alignItems: "center" }}>
@@ -287,8 +304,8 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser }
         <p className="muted">Pick a platform and click Connect. You sign in on the platform itself — no keys, no copying IDs — then you're brought right back here.</p>
         <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
-            <label>Platform</label>
-            <select value={connectPlatform} onChange={(e) => setConnectPlatform(e.target.value)}>
+            <label htmlFor="acct-platform">Platform</label>
+            <select id="acct-platform" value={connectPlatform} onChange={(e) => setConnectPlatform(e.target.value)}>
               {PLATFORMS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>

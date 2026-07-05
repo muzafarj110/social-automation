@@ -134,6 +134,7 @@ button {
 .btn-ghost:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
 .btn-danger { background: #fef2f2; color: #b91c1c; border-color: #fbd5d5; }
 .btn-danger:hover { background: #fee2e2; }
+.btn-compact { padding: 5px 12px; font-size: 13px; }
 button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
 
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -372,6 +373,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
   .nav-item { padding: 12px; min-height: 44px; }
   .filter-chip { min-height: 40px; padding: 10px 16px; }
   select, input[type="checkbox"], input[type="radio"] { min-height: 44px; }
+  .btn-compact { min-height: 44px; padding: 10px 14px; }
 }
 
 /* Floating toast — always visible regardless of scroll position. */

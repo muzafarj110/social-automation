@@ -186,12 +186,12 @@ export default function Analytics() {
         </p>
         <div className="row">
           <div style={{ flex: 2 }}>
-            <label>Goal</label>
-            <input value={goal} onChange={(e) => setGoal(e.target.value)} />
+            <label htmlFor="an-goal">Goal</label>
+            <input id="an-goal" value={goal} onChange={(e) => setGoal(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
-            <label>Followers <span className="muted">(optional)</span></label>
-            <input type="number" min="0" value={followers}
+            <label htmlFor="an-followers">Followers <span className="muted">(optional)</span></label>
+            <input id="an-followers" type="number" min="0" value={followers}
               onChange={(e) => setFollowers(e.target.value)} placeholder="e.g. 1200" />
           </div>
         </div>
@@ -221,18 +221,20 @@ export default function Analytics() {
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
-        {zernio == null ? (
-          <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
-        ) : summary ? (
-          <Summary s={summary} />
-        ) : zernio.ok ? (
-          <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
-        ) : (
-          <div className="empty" style={{ marginTop: 8 }}>
-            No performance data yet. Connect a social account and publish a few posts —
-            your reach and engagement will show up here automatically.
-          </div>
-        )}
+        <div aria-live="polite">
+          {zernio == null ? (
+            <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
+          ) : summary ? (
+            <Summary s={summary} />
+          ) : zernio.ok ? (
+            <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
+          ) : (
+            <div className="empty" style={{ marginTop: 8 }}>
+              No performance data yet. Connect a social account and publish a few posts —
+              your reach and engagement will show up here automatically.
+            </div>
+          )}
+        </div>
       </div>
       </div>
     </>

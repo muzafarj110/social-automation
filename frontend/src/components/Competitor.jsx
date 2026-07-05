@@ -55,16 +55,16 @@ export default function Competitor() {
         <form onSubmit={add}>
           <div className="grid-2">
             <div>
-              <label>Name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Brandly" required />
+              <label htmlFor="comp-name">Name</label>
+              <input id="comp-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Brandly" required />
             </div>
             <div>
-              <label>Website <span className="muted">(optional)</span></label>
-              <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="brandly.com" />
+              <label htmlFor="comp-website">Website <span className="muted">(optional)</span></label>
+              <input id="comp-website" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="brandly.com" />
             </div>
           </div>
-          <label>What do you know about them? <span className="muted">(optional)</span></label>
-          <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          <label htmlFor="comp-notes">What do you know about them? <span className="muted">(optional)</span></label>
+          <textarea id="comp-notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
             placeholder="Their positioning, channels, recent campaigns…" style={{ minHeight: 70 }} />
           <div style={{ marginTop: 12 }}>
             <button className="btn-primary" disabled={adding}>{adding ? "Adding…" : "Add competitor"}</button>

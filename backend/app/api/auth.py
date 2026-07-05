@@ -135,6 +135,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     return {
         "ok": True,
         "verification_required": False,
+        "message": "Account created — you're all set.",
         "access_token": create_access_token(user.id),
         "token_type": "bearer",
     }

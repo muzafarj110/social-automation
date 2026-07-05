@@ -86,7 +86,7 @@ function PostCard({ post, onChange }) {
           <span className="muted">for {new Date(post.scheduled_for).toLocaleString()}</span>
         )}
         {post.has_infographic && (
-          <button className="btn-ghost" style={{ padding: "2px 8px", fontSize: 12 }} onClick={viewInfographic}>
+          <button className="btn-ghost btn-compact" onClick={viewInfographic}>
             View infographic
           </button>
         )}
@@ -251,17 +251,19 @@ export default function Posts({ refreshKey, accounts = [] }) {
         </div>
       )}
 
-      {posts.length === 0 ? (
-        <div className="empty">No posts yet. Generate one to get started.</div>
-      ) : channelPosts.length === 0 ? (
-        <div className="empty">No posts for your connected channels yet.</div>
-      ) : shown.length === 0 ? (
-        <div className="empty">No {statusFilter} posts.</div>
-      ) : (
-        <div className="masonry">
-          {shown.map((p) => <PostCard key={p.id} post={p} onChange={load} />)}
-        </div>
-      )}
+      <div aria-live="polite">
+        {posts.length === 0 ? (
+          <div className="empty">No posts yet. Generate one to get started.</div>
+        ) : channelPosts.length === 0 ? (
+          <div className="empty">No posts for your connected channels yet.</div>
+        ) : shown.length === 0 ? (
+          <div className="empty">No {statusFilter} posts.</div>
+        ) : (
+          <div className="masonry">
+            {shown.map((p) => <PostCard key={p.id} post={p} onChange={load} />)}
+          </div>
+        )}
+      </div>
     </>
   );
 }

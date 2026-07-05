@@ -40,8 +40,8 @@ function CampaignPosts({ campaignId }) {
           <div style={{ fontSize: 13, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{p.body.slice(0, 280)}{p.body.length > 280 ? "…" : ""}</div>
           {(p.status === "draft" || p.status === "failed") && (
             <div className="row">
-              <button className="btn-primary" style={{ padding: "5px 12px" }} disabled={busy === p.id} onClick={act(p.id, () => publishPost(p.id))}>Publish now</button>
-              <button className="btn-danger" style={{ padding: "5px 12px" }} disabled={busy === p.id} onClick={act(p.id, () => deletePost(p.id))}>Discard</button>
+              <button className="btn-primary btn-compact" disabled={busy === p.id} onClick={act(p.id, () => publishPost(p.id))}>Publish now</button>
+              <button className="btn-danger btn-compact" disabled={busy === p.id} onClick={act(p.id, () => deletePost(p.id))}>Discard</button>
             </div>
           )}
         </div>
@@ -149,10 +149,10 @@ function CampaignCard({ c, onChange, goTab }) {
       {c.last_error && <div className="error" role="alert">{c.last_error}</div>}
       {error && <div className="flash error" role="alert">{error}</div>}
       {msg && (
-        <div className="success" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="success" style={{ display: "flex", alignItems: "center", gap: 10 }} aria-live="polite">
           <span>{msg}</span>
           {ranCount > 0 && goTab && (
-            <button className="btn-secondary" style={{ padding: "4px 10px" }} onClick={() => goTab("posts")}>
+            <button className="btn-secondary btn-compact" onClick={() => goTab("posts")}>
               Review in Posts →
             </button>
           )}
@@ -287,13 +287,13 @@ export default function Campaigns({ accounts, goTab }) {
         <form onSubmit={submit}>
           <div className="grid-2">
             <div>
-              <label>Name</label>
-              <input value={form.name} onChange={set("name")} placeholder="My weekly thought leadership" />
+              <label htmlFor="camp-name">Name</label>
+              <input id="camp-name" value={form.name} onChange={set("name")} placeholder="My weekly thought leadership" />
             </div>
             {accounts.length > 0 && (
               <div>
-                <label>Account</label>
-                <select value={form.account_id} onChange={set("account_id")}>
+                <label htmlFor="camp-account">Account</label>
+                <select id="camp-account" value={form.account_id} onChange={set("account_id")}>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.display_name || a.zernio_account_id} ({a.account_type})
@@ -325,8 +325,9 @@ export default function Campaigns({ accounts, goTab }) {
 
           {form.platforms.some((p) => p !== "linkedin") && (
             <>
-              <label>Your content for other platforms (one post per line)</label>
+              <label htmlFor="camp-byo-text">Your content for other platforms (one post per line)</label>
               <textarea
+                id="camp-byo-text"
                 value={form.byoText}
                 onChange={(e) => setForm({ ...form, byoText: e.target.value })}
                 placeholder={"Paste a post you want to share on X / Instagram / etc.\nOne per line — AI will optimize each for the platform."}
@@ -363,31 +364,31 @@ export default function Campaigns({ accounts, goTab }) {
 
           {form.topic_source === "topics" ? (
             <>
-              <label>Topics (one per line)</label>
-              <textarea value={form.topicsText} onChange={set("topicsText")} style={{ minHeight: 90 }}
+              <label htmlFor="camp-topics">Topics (one per line)</label>
+              <textarea id="camp-topics" value={form.topicsText} onChange={set("topicsText")} style={{ minHeight: 90 }}
                 placeholder={"Lessons from scaling a startup\nWhy most marketing fails\nAI tools I use daily"} />
             </>
           ) : (
             <div className="grid-2">
               <div>
-                <label>Niche</label>
-                <input value={form.niche} onChange={set("niche")} placeholder="AI consulting for SMBs" />
+                <label htmlFor="camp-niche">Niche</label>
+                <input id="camp-niche" value={form.niche} onChange={set("niche")} placeholder="AI consulting for SMBs" />
               </div>
               <div>
-                <label>Goal</label>
-                <input value={form.goal} onChange={set("goal")} placeholder="grow following and generate leads" />
+                <label htmlFor="camp-goal">Goal</label>
+                <input id="camp-goal" value={form.goal} onChange={set("goal")} placeholder="grow following and generate leads" />
               </div>
             </div>
           )}
 
           <div className="grid-2">
             <div>
-              <label>Audience</label>
-              <input value={form.audience} onChange={set("audience")} placeholder="early-stage founders" />
+              <label htmlFor="camp-audience">Audience</label>
+              <input id="camp-audience" value={form.audience} onChange={set("audience")} placeholder="early-stage founders" />
             </div>
             <div>
-              <label>Tone</label>
-              <input value={form.tone} onChange={set("tone")} />
+              <label htmlFor="camp-tone">Tone</label>
+              <input id="camp-tone" value={form.tone} onChange={set("tone")} />
             </div>
           </div>
 
@@ -416,8 +417,8 @@ export default function Campaigns({ accounts, goTab }) {
             <span>Learn from analytics <span className="muted">(double down on your best-performing past posts — needs your channels connected)</span></span>
           </label>
 
-          <label>Posts per week</label>
-          <input type="number" min="1" max="14" value={form.frequency_per_week}
+          <label htmlFor="camp-freq">Posts per week</label>
+          <input id="camp-freq" type="number" min="1" max="14" value={form.frequency_per_week}
             onChange={set("frequency_per_week")} style={{ width: 100 }} />
 
           <label style={{ marginTop: 12 }}>Posting times</label>
@@ -444,12 +445,12 @@ export default function Campaigns({ accounts, goTab }) {
               </div>
               <div className="row">
                 <div>
-                  <label>Time of day</label>
-                  <input type="time" value={form.time_of_day} onChange={set("time_of_day")} style={{ width: 140 }} />
+                  <label htmlFor="camp-time">Time of day</label>
+                  <input id="camp-time" type="time" value={form.time_of_day} onChange={set("time_of_day")} style={{ width: 140 }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label>Timezone</label>
-                  <input value={form.timezone} onChange={set("timezone")} />
+                  <label htmlFor="camp-tz">Timezone</label>
+                  <input id="camp-tz" value={form.timezone} onChange={set("timezone")} />
                 </div>
               </div>
             </>
