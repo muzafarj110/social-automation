@@ -35,7 +35,7 @@ export default function Calendar() {
     return m;
   }, [posts]);
 
-  if (err) return <div className="error">{err}</div>;
+  if (err) return <div className="error" role="alert">{err}</div>;
   if (!posts) return <div className="empty">Loading…</div>;
 
   const today = new Date(); today.setHours(0, 0, 0, 0);

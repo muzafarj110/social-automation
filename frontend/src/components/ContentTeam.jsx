@@ -113,8 +113,8 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
 
       {mode === "weekly" && (
       <>
-      {error && <div className="flash error">{error}</div>}
-      {info && <div className="flash success">{info}</div>}
+      {error && <div className="flash error" role="alert">{error}</div>}
+      {info && <div className="flash success" role="status">{info}</div>}
 
       <div className="card aicard">
         <div className="row" style={{ alignItems: "center" }}>
@@ -163,7 +163,7 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
             {topics.map((t, i) => (
               <div className="row" key={i} style={{ gap: 8 }}>
                 <input value={t} onChange={(e) => setTopicAt(i, e.target.value)} style={{ flex: 1 }} placeholder={`Topic ${i + 1}`} />
-                <button className="btn-ghost" onClick={() => removeTopic(i)} title="Remove">✕</button>
+                <button className="btn-ghost" onClick={() => removeTopic(i)} title="Remove" aria-label="Remove">✕</button>
               </div>
             ))}
           </div>

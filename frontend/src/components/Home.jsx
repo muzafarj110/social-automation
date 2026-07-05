@@ -106,7 +106,7 @@ export default function Home({ goTab, user, onDirective }) {
     })();
   }, []);
 
-  if (error) return <div className="error">{error}</div>;
+  if (error) return <div className="error" role="alert">{error}</div>;
   if (!data) return <div className="empty">Loading your team…</div>;
 
   const scheduled = data.posts

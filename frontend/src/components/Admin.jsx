@@ -198,7 +198,7 @@ export default function Admin() {
 
   return (
     <div>
-      {err && <div className="error" style={{ marginBottom: 12 }}>{err}</div>}
+      {err && <div className="error" role="alert" style={{ marginBottom: 12 }}>{err}</div>}
 
       <EmailDiagPanel />
 

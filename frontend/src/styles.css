@@ -109,6 +109,7 @@ a { color: var(--teal-dark); text-decoration: none; }
 
 /* ---------- Forms ---------- */
 label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; color: var(--ink); }
+.req-mark { color: var(--teal); }
 input, textarea, select {
   width: 100%; padding: 10px 13px; border: 1px solid #dcdbe8; border-radius: var(--radius);
   font-family: var(--font); font-size: 14px; background: #fff; color: var(--ink);
@@ -182,6 +183,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
 .tool-tile.active { border-color: var(--teal); background: var(--grad-soft); }
 .tool-tile .tt-name { font-weight: 700; font-size: 13.5px; color: var(--ink); }
 .tool-tile .tt-blurb { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.cost-pill { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; flex-shrink: 0; }
+.cost-pill-low { background: #d1faf4; color: #1f7a72; }
+.cost-pill-mid { background: #dbe8ff; color: #2352b8; }
+.cost-pill-high { background: #fce0f7; color: #901d86; }
 .spinner { width: 18px; height: 18px; border: 2px solid var(--light); border-top-color: var(--teal); border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite; vertical-align: -4px; margin-right: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .studio-loading { display: flex; align-items: center; gap: 4px; padding: 30px; color: var(--mid); font-size: 14px; justify-content: center; }
@@ -350,7 +355,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
 @media (max-width: 860px) {
   .auth-brand { display: none; }
   .auth-form-wrap { width: 100%; }
-  .menu-btn { display: flex; }
+  .menu-btn { display: flex; width: 44px; height: 44px; }
   .sidebar {
     position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%);
     transition: transform 0.26s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
@@ -361,6 +366,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
   }
   .page-body, .page-head { padding-left: 16px; padding-right: 16px; }
   .grid-2 { grid-template-columns: 1fr; }
+
+  /* Touch targets: WCAG/Apple HIG recommend ~44px minimum hit area. */
+  button { min-height: 44px; }
+  .nav-item { padding: 12px; min-height: 44px; }
+  .filter-chip { min-height: 40px; padding: 10px 16px; }
+  select, input[type="checkbox"], input[type="radio"] { min-height: 44px; }
 }
 
 /* Floating toast — always visible regardless of scroll position. */

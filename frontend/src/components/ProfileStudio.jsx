@@ -5,53 +5,7 @@ import {
   profileFeatured,
   profileRecommendation,
 } from "../api.js";
-
-function objText(o) {
-  return Object.entries(o)
-    .filter(([k]) => !k.startsWith("_"))
-    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v && typeof v === "object" ? JSON.stringify(v) : v}`)
-    .join(" — ");
-}
-function renderVal(v) {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") return <p style={{ margin: "2px 0", lineHeight: 1.5, fontSize: 13 }}>{v}</p>;
-  if (typeof v === "number" || typeof v === "boolean") return <span style={{ fontSize: 13 }}>{String(v)}</span>;
-  if (Array.isArray(v))
-    return (
-      <ul style={{ margin: "2px 0", paddingLeft: 18, fontSize: 13 }}>
-        {v.map((x, i) => <li key={i} style={{ marginBottom: 4 }}>{x && typeof x === "object" ? objText(x) : String(x)}</li>)}
-      </ul>
-    );
-  if (typeof v === "object")
-    return (
-      <div>
-        {Object.entries(v).filter(([k]) => !k.startsWith("_")).map(([k, vv]) => (
-          <div key={k} style={{ fontSize: 13, marginBottom: 2 }}>
-            <span style={{ fontWeight: 600, color: "var(--mid)" }}>{k.replace(/_/g, " ")}: </span>
-            {vv && typeof vv === "object" ? objText(vv) : String(vv)}
-          </div>
-        ))}
-      </div>
-    );
-  return <span>{String(v)}</span>;
-}
-function HubBlocks({ data }) {
-  if (!data) return null;
-  const entries = Object.entries(data).filter(([k]) => !k.startsWith("_"));
-  if (!entries.length) return <div className="muted">No details.</div>;
-  return (
-    <div>
-      {entries.map(([k, v]) => (
-        <div key={k} style={{ marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, color: "var(--mid)", textTransform: "capitalize", fontSize: 13 }}>
-            {k.replace(/_/g, " ")}
-          </div>
-          {renderVal(v)}
-        </div>
-      ))}
-    </div>
-  );
-}
+import HubBlocks from "./HubResult.jsx";
 
 const TOOLS = {
   optimize: {
@@ -147,7 +101,7 @@ export default function ProfileStudio() {
             {cfg.fields.map((f) => (
               <div key={f.name} style={f.area ? { gridColumn: "1 / -1" } : undefined}>
                 <label>
-                  {f.label} {f.req ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}
+                  {f.label} {f.req ? <span className="req-mark">*</span> : <span className="muted">(optional)</span>}
                 </label>
                 {f.area
                   ? <textarea value={form[f.name] || ""} onChange={set(f.name)} style={{ minHeight: 90 }} />
@@ -155,7 +109,7 @@ export default function ProfileStudio() {
               </div>
             ))}
           </div>
-          {error && <div className="flash error">{error}</div>}
+          {error && <div className="flash error" role="alert">{error}</div>}
           <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={busy}>
               {busy ? "Generating…" : "Generate"}

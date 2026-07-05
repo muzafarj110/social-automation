@@ -110,20 +110,21 @@ function GenerateSection({ channel }) {
           {submitting ? "Starting…" : "Generate"}
         </button>
       </div>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       {job && (
-        <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 8, background: "#f6f7fb" }}>
+        <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 8, background: "#f6f7fb" }}
+          aria-live="polite">
           <div className="row">
             <span className={`badge ${job.status}`}>{STATUS_LABEL[job.status] || job.status}</span>
             {job.progress_step && <span className="muted">{PROGRESS_LABEL[job.progress_step] || job.progress_step}</span>}
           </div>
-          {job.status === "failed" && <div className="error" style={{ marginTop: 8 }}>{job.error}</div>}
+          {job.status === "failed" && <div className="error" role="alert" style={{ marginTop: 8 }}>{job.error}</div>}
           {job.status === "completed" && (
             <div style={{ marginTop: 10 }}>
               <div style={{ fontWeight: 600 }}>{job.title}</div>
               <div className="row" style={{ marginTop: 8, gap: 12 }}>
-                {job.thumbnail_url && <img src={job.thumbnail_url} alt="" style={{ width: 90, borderRadius: 6 }} />}
+                {job.thumbnail_url && <img src={job.thumbnail_url} alt={`Thumbnail for ${job.title || "generated video"}`} style={{ width: 90, borderRadius: 6 }} />}
                 <div className="muted" style={{ fontSize: 12 }}>
                   {job.video_short_url && <div>✓ Short cut ready</div>}
                   {job.video_long_url && <div>✓ Long cut ready</div>}
@@ -171,13 +172,13 @@ function VideoCard({ video, accounts, onChange }) {
         <span className="muted" style={{ fontSize: 12 }}>{new Date(video.requested_at).toLocaleDateString()}</span>
       </div>
       <div style={{ fontWeight: 600, marginTop: 6 }}>{video.title || video.topic}</div>
-      {video.error && <div className="error" style={{ fontSize: 12 }}>{video.error}</div>}
-      {error && <div className="error" style={{ fontSize: 12 }}>{error}</div>}
+      {video.error && <div className="error" role="alert" style={{ fontSize: 12 }}>{video.error}</div>}
+      {error && <div className="error" role="alert" style={{ fontSize: 12 }}>{error}</div>}
 
       {video.status === "completed" && (
         <>
           {video.thumbnail_url && (
-            <img src={video.thumbnail_url} alt="" style={{ width: "100%", borderRadius: 8, marginTop: 8 }} />
+            <img src={video.thumbnail_url} alt={`Thumbnail for ${video.title || video.topic}`} style={{ width: "100%", borderRadius: 8, marginTop: 8 }} />
           )}
           <div className="row" style={{ marginTop: 10, flexWrap: "wrap", gap: 8 }}>
             {video.video_short_url && <a href={video.video_short_url} target="_blank" rel="noreferrer" className="btn-ghost">View short</a>}
@@ -235,7 +236,7 @@ function GallerySection({ accounts }) {
   if (loading) return <div className="empty">Loading…</div>;
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
       {videos.length === 0 ? (
         <div className="empty">No videos yet. Generate one to get started.</div>
       ) : (
@@ -282,7 +283,7 @@ export default function VideoAgent({ accounts = [] }) {
 
   return (
     <div>
-      {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
+      {error && <div className="error" role="alert" style={{ marginBottom: 12 }}>{error}</div>}
       <div className="filter-row" style={{ marginBottom: 16 }}>
         <button className={`filter-chip ${section === "generate" ? "active" : ""}`}
           disabled={!channel} onClick={() => setSection("generate")}>Generate</button>

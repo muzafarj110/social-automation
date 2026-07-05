@@ -181,6 +181,7 @@ export default function App() {
                 const locked = feat && ent[feat] === false;
                 return (
                   <button key={id} className={`nav-item ${tab === id ? "active" : ""}`}
+                    aria-current={tab === id ? "page" : undefined}
                     title={locked ? "Upgrade your plan to unlock" : working ? "Working 24/7" : undefined}
                     style={locked ? { opacity: 0.5 } : undefined}
                     onClick={() => (locked ? go("accounts") : go(id))}>

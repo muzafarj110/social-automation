@@ -89,7 +89,7 @@ export default function Opportunities({ goTab }) {
         )}
       </div>
 
-      {err && <div className="error" style={{ marginBottom: 12 }}>{err}</div>}
+      {err && <div className="error" role="alert" style={{ marginBottom: 12 }}>{err}</div>}
 
       {loading && !data && (
         <div className="empty">Scanning your data for opportunities…</div>

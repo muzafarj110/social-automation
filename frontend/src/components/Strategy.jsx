@@ -149,7 +149,7 @@ export default function Strategy() {
 
   return (
     <>
-      {error && <div className="flash error">{error}</div>}
+      {error && <div className="flash error" role="alert">{error}</div>}
       {savedMsg && <div className="success">{savedMsg}</div>}
 
       <div className="card">
@@ -166,7 +166,7 @@ export default function Strategy() {
           <div className="grid-2">
             {cfg.fields.map((f) => (
               <div key={f.name} style={f.area ? { gridColumn: "1 / -1" } : undefined}>
-                <label>{f.label} {f.req ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}</label>
+                <label>{f.label} {f.req ? <span className="req-mark">*</span> : <span className="muted">(optional)</span>}</label>
                 {f.area
                   ? <textarea value={toolForm[f.name] || ""} onChange={setT(f.name)} style={{ minHeight: 80 }} />
                   : <input value={toolForm[f.name] || ""} onChange={setT(f.name)} />}

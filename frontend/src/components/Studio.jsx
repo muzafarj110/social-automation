@@ -239,7 +239,7 @@ export default function Studio() {
 
   return (
     <>
-      {error && <div className="flash error">{error}</div>}
+      {error && <div className="flash error" role="alert">{error}</div>}
 
       <div className="card">
         <h2>Marketing Studio</h2>
@@ -256,12 +256,7 @@ export default function Studio() {
               <div key={k} className={`tool-tile${toolKey === k ? " active" : ""}`} onClick={() => selectTool(k)}>
                 <div className="row" style={{ alignItems: "center", marginBottom: 2 }}>
                   <div className="tt-name" style={{ flex: 1 }}>{t.label}</div>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999,
-                    background: cost >= 5 ? "#fce0f7" : cost >= 2 ? "#dbe8ff" : "#d1faf4",
-                    color: cost >= 5 ? "#901d86" : cost >= 2 ? "#2352b8" : "#1f7a72",
-                    flexShrink: 0,
-                  }}>{cost}cr</span>
+                  <span className={`cost-pill ${cost >= 5 ? "cost-pill-high" : cost >= 2 ? "cost-pill-mid" : "cost-pill-low"}`}>{cost}cr</span>
                 </div>
                 <div className="tt-blurb">{t.blurb}</div>
               </div>
@@ -277,7 +272,7 @@ export default function Studio() {
           <div className="grid-2">
             {tool.fields.map((f) => (
               <div key={f[0]} style={f[3] === "a" ? { gridColumn: "1 / -1" } : undefined}>
-                <label>{f[1]} {f[2] ? <span style={{ color: "var(--teal)" }}>*</span> : <span className="muted">(optional)</span>}</label>
+                <label>{f[1]} {f[2] ? <span className="req-mark">*</span> : <span className="muted">(optional)</span>}</label>
                 {f[3] === "a"
                   ? <textarea value={form[f[0]] || ""} onChange={set(f[0])} style={{ minHeight: 90 }} />
                   : <input type={f[3] === "n" ? "number" : "text"} value={form[f[0]] || ""} onChange={set(f[0])} />}

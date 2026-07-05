@@ -165,7 +165,7 @@ export default function Analytics() {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       {summary && (
         <div className="kpi-strip">

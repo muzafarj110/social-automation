@@ -53,7 +53,7 @@ export default function SeoGeo() {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <div className="card aicard">
         <h2 style={{ marginBottom: 4 }}>New SEO + GEO project</h2>
@@ -116,7 +116,7 @@ export default function SeoGeo() {
                     ? <><span className="spinner" />Analyzing…</>
                     : res ? "Re-analyze (2 credits)" : "Analyze (2 credits)"}
                 </button>
-                <button className="btn-ghost" onClick={() => remove(p.id)} title="Remove">✕</button>
+                <button className="btn-ghost" onClick={() => remove(p.id)} title="Remove" aria-label="Remove">✕</button>
               </div>
 
               <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>

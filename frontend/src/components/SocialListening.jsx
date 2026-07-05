@@ -63,7 +63,7 @@ export default function SocialListening() {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <div className="card aicard">
         <h2 style={{ marginBottom: 4 }}>Track a keyword or topic</h2>
@@ -121,7 +121,7 @@ export default function SocialListening() {
                 <button className="btn-primary" onClick={() => scan(t.id)} disabled={busy}>
                   {busy ? <><span className="spinner" />Scanning…</> : t.results ? "Re-scan (1 credit)" : "Scan (1 credit)"}
                 </button>
-                <button className="btn-ghost" onClick={() => remove(t.id)} title="Remove">✕</button>
+                <button className="btn-ghost" onClick={() => remove(t.id)} title="Remove" aria-label="Remove">✕</button>
               </div>
 
               {t.description && (

@@ -113,7 +113,7 @@ export default function Auth({ onAuthed, initialMode = "login", onBack }) {
           <h2>{titles[mode]}</h2>
           <div className="lead">{leads[mode]}</div>
 
-          {error && <div className="error">{error}</div>}
+          {error && <div className="error" role="alert">{error}</div>}
           {info && <div className="success">{info}</div>}
 
           {mode === "verify" ? (

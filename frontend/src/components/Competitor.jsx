@@ -45,7 +45,7 @@ export default function Competitor() {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <div className="card aicard">
         <h2 style={{ marginBottom: 4 }}>Track a competitor</h2>
@@ -86,7 +86,7 @@ export default function Competitor() {
               <button className="btn-primary" onClick={() => analyze(c.id)} disabled={busyId === c.id}>
                 {busyId === c.id ? <><span className="spinner" />Analyzing…</> : c.analysis ? "Re-analyze" : "Analyze (1 credit)"}
               </button>
-              <button className="btn-ghost" onClick={() => remove(c.id)} title="Remove">✕</button>
+              <button className="btn-ghost" onClick={() => remove(c.id)} title="Remove" aria-label="Remove">✕</button>
             </div>
 
             {c.notes && <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>{c.notes}</p>}

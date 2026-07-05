@@ -91,7 +91,7 @@ export default function Leads({ refreshUser }) {
 
   return (
     <>
-      {err && <div className="error">{err}</div>}
+      {err && <div className="error" role="alert">{err}</div>}
 
       {/* Add prospect form */}
       <div className="card aicard">
@@ -207,7 +207,7 @@ export default function Leads({ refreshUser }) {
 
                 <div className="row" style={{ gap: 8, flexShrink: 0, alignItems: "center" }}>
                   <StageBadge value={l.status} onChange={(s) => changeStatus(l.id, s)} />
-                  <button className="btn-ghost" onClick={() => remove(l.id)} title="Remove prospect">✕</button>
+                  <button className="btn-ghost" onClick={() => remove(l.id)} title="Remove prospect" aria-label="Remove prospect">✕</button>
                 </div>
               </div>
 

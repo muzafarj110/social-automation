@@ -24,7 +24,7 @@ function CampaignPosts({ campaignId }) {
     try { await fn(); await load(); } catch (e) { setErr(e.message); } finally { setBusy(0); }
   };
 
-  if (err) return <div className="error">{err}</div>;
+  if (err) return <div className="error" role="alert">{err}</div>;
   if (!posts) return <div className="muted" style={{ padding: "8px 0" }}>Loading…</div>;
   if (!posts.length) return <div className="muted" style={{ padding: "8px 0" }}>No posts generated yet — hit “Run now”.</div>;
   return (
@@ -146,8 +146,8 @@ function CampaignCard({ c, onChange, goTab }) {
         {" · "}{(c.post_types || [c.post_type]).length} angle
         {(c.post_types || [c.post_type]).length === 1 ? "" : "s"}
       </div>
-      {c.last_error && <div className="error">{c.last_error}</div>}
-      {error && <div className="flash error">{error}</div>}
+      {c.last_error && <div className="error" role="alert">{c.last_error}</div>}
+      {error && <div className="flash error" role="alert">{error}</div>}
       {msg && (
         <div className="success" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span>{msg}</span>
@@ -282,7 +282,7 @@ export default function Campaigns({ accounts, goTab }) {
       <div className="card">
         <h2>New campaign</h2>
         {accounts.length === 0 && (
-          <div className="error">Link a social account first (Accounts tab).</div>
+          <div className="error" role="alert">Link a social account first (Accounts tab).</div>
         )}
         <form onSubmit={submit}>
           <div className="grid-2">
@@ -455,8 +455,8 @@ export default function Campaigns({ accounts, goTab }) {
             </>
           )}
 
-          {error && <div className="flash error">{error}</div>}
-          {msg && <div className="flash success">{msg}</div>}
+          {error && <div className="flash error" role="alert">{error}</div>}
+          {msg && <div className="flash success" role="status">{msg}</div>}
           <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" type="submit" disabled={busy || accounts.length === 0}>
               {busy ? "Saving…" : "Create campaign"}

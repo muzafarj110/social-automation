@@ -103,8 +103,8 @@ function PostCard({ post, onChange }) {
       {post.hashtags?.length > 0 && (
         <div className="hashtags">{post.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}</div>
       )}
-      {post.error && <div className="error">{post.error}</div>}
-      {error && <div className="error">{error}</div>}
+      {post.error && <div className="error" role="alert">{post.error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       {editable && (MEDIA_REQUIRED.has(post.platform) || hasMedia) && (
         <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 8,
@@ -210,7 +210,7 @@ export default function Posts({ refreshKey, accounts = [] }) {
 
   return (
     <>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
       <div className="row" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0, color: "var(--blue)" }}>Your posts</h2>
         <div className="spacer" />

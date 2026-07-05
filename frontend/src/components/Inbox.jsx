@@ -110,8 +110,8 @@ function InboxCard({ item, onChange }) {
         <div className="post-body">{item.draft_text}</div>
       )}
 
-      {item.error && <div className="error">{item.error}</div>}
-      {error && <div className="error">{error}</div>}
+      {item.error && <div className="error" role="alert">{item.error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
       {msg && <div className="success">{msg}</div>}
 
       {pending && (
@@ -228,7 +228,7 @@ export default function Inbox({ accounts, refreshKey }) {
               <div key={f.name}>
                 <label>
                   {f.label}{" "}
-                  {f.req ? <span style={{ color: "var(--teal)" }}>*</span>
+                  {f.req ? <span className="req-mark">*</span>
                          : <span className="muted">(optional)</span>}
                 </label>
                 <input
@@ -273,7 +273,7 @@ export default function Inbox({ accounts, refreshKey }) {
             </>
           )}
 
-          {error && <div className="error">{error}</div>}
+          {error && <div className="error" role="alert">{error}</div>}
           <div className="row" style={{ marginTop: 14 }}>
             <button className="btn-primary" disabled={busy} type="submit">
               {busy ? "Drafting…" : "Generate draft"}

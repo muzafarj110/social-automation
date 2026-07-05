@@ -102,7 +102,7 @@ export default function Billing({ user }) {
 
   return (
     <>
-      {err && <div className="flash error">{err}</div>}
+      {err && <div className="flash error" role="alert">{err}</div>}
 
       <div className="card">
         <h2>Your plan</h2>
