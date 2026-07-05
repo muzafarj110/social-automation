@@ -101,7 +101,9 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
     # Auto-verify all users — no email gate during beta.
-    # When a custom domain is verified in Resend, flip this to require email verification.
+    # Once Mailjet's sender verification for MAILJET_FROM is confirmed working
+    # (it can then deliver to any recipient), flip this to require real
+    # email verification.
     user = User(
         email=body.email,
         password_hash=hash_password(body.password),

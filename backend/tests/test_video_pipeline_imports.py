@@ -52,24 +52,21 @@ def test_vendored_pipeline_modules_import():
         merge_clips, mix_audio, render_intro_outro, validate_output,
     )
     assert hasattr(generate_script, "generate_script")
-    assert hasattr(generate_script, "_call_llm")
+    assert hasattr(generate_script, "_call_claude")
 
 
-def test_generate_script_uses_openrouter_not_anthropic():
-    """Regression guard: confirms the provider swap actually stuck — this
-    file was migrated off the Anthropic SDK to a free model via OpenRouter."""
+def test_generate_script_uses_anthropic():
     if str(VENDOR_ROOT) not in sys.path:
         sys.path.insert(0, str(VENDOR_ROOT))
     from steps import generate_script
     import inspect
-    source = inspect.getsource(generate_script._call_llm)
-    assert "openai" in source
-    assert "anthropic" not in source.lower()
+    source = inspect.getsource(generate_script._call_claude)
+    assert "anthropic" in source.lower()
 
 
-def test_config_validates_openrouter_not_anthropic_key():
+def test_config_validates_anthropic_key():
     if str(VENDOR_ROOT) not in sys.path:
         sys.path.insert(0, str(VENDOR_ROOT))
     import config as cfg
-    assert hasattr(cfg, "OPENROUTER_API_KEY")
-    assert not hasattr(cfg, "ANTHROPIC_API_KEY")
+    assert hasattr(cfg, "ANTHROPIC_API_KEY")
+    assert not hasattr(cfg, "OPENROUTER_API_KEY")

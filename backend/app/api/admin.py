@@ -34,8 +34,9 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def email_config(_: User = Depends(require_admin)) -> dict:
     return {
         "email_enabled": settings.email_enabled,
-        "resend_api_key_set": bool(settings.resend_api_key),
-        "resend_from": settings.resend_from or "(not set)",
+        "mailjet_api_key_set": bool(settings.mailjet_api_key),
+        "mailjet_secret_key_set": bool(settings.mailjet_secret_key),
+        "mailjet_from": settings.mailjet_from or "(not set)",
         "app_base_url": settings.app_base_url or "(not set — links will be broken)",
     }
 
@@ -50,9 +51,9 @@ async def test_email(
     body: TestEmailBody = TestEmailBody(),
     current: User = Depends(require_admin),
 ) -> dict:
-    """Send a diagnostic test email via Resend. Accepts optional target address."""
+    """Send a diagnostic test email via Mailjet. Accepts optional target address."""
     if not settings.email_enabled:
-        return {"ok": False, "error": "Email disabled — RESEND_API_KEY not set in Railway."}
+        return {"ok": False, "error": "Email disabled — MAILJET_API_KEY / MAILJET_SECRET_KEY not set in Railway."}
 
     target = body.to.strip() or current.email
     base = (settings.app_base_url or "").rstrip("/")
@@ -61,7 +62,7 @@ async def test_email(
     html = f"""
     <div style='font-family:system-ui,sans-serif;max-width:480px'>
       <h2>Autopilot — email delivery test</h2>
-      <p>If you received this, Resend can deliver to <b>{target}</b>.</p>
+      <p>If you received this, Mailjet can deliver to <b>{target}</b>.</p>
       <hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0'>
       <p style='font-size:13px;color:#666'><b>APP_BASE_URL:</b> {app_base_warn}</p>
       <p style='font-size:13px;color:#666'>{'<b style="color:red">⚠ APP_BASE_URL is missing — verify/reset links in real emails will be broken.</b>' if not base else '✓ APP_BASE_URL is set correctly.'}</p>
@@ -70,26 +71,33 @@ async def test_email(
 
     import httpx
     error: str | None = None
-    resend_response: str | None = None
+    mailjet_response: str | None = None
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={"from": settings.resend_from, "to": [target], "subject": "Autopilot — email test", "html": html},
+                "https://api.mailjet.com/v3.1/send",
+                auth=(settings.mailjet_api_key, settings.mailjet_secret_key),
+                json={
+                    "Messages": [{
+                        "From": {"Email": settings.mailjet_from, "Name": "Autopilot"},
+                        "To": [{"Email": target}],
+                        "Subject": "Autopilot — email test",
+                        "HTMLPart": html,
+                    }]
+                },
             )
         if r.status_code >= 400:
-            resend_response = r.text[:400]
-            error = f"Resend error {r.status_code}: {resend_response}"
+            mailjet_response = r.text[:400]
+            error = f"Mailjet error {r.status_code}: {mailjet_response}"
     except Exception as e:
-        error = f"Resend connection error: {e}"
+        error = f"Mailjet connection error: {e}"
 
     if error:
-        return {"ok": False, "error": error, "resend_response": resend_response, "sent_to": target}
+        return {"ok": False, "error": error, "mailjet_response": mailjet_response, "sent_to": target}
     return {
         "ok": True, "sent_to": target,
         "app_base_url": base or "(not set)",
-        "message": f"Sent to {target} via Resend. Check inbox + spam.",
+        "message": f"Sent to {target} via Mailjet. Check inbox + spam.",
     }
 
 

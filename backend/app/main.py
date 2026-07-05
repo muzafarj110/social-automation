@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     if not settings.zernio_api_key or settings.zernio_api_key.startswith("paste-"):
         log.warning("ZERNIO_API_KEY not set — publishing endpoints unavailable.")
     if not settings.video_agent_enabled:
-        log.warning("OPENROUTER_API_KEY / PEXELS_API_KEY not set — video agent unavailable.")
+        log.warning("ANTHROPIC_API_KEY / PEXELS_API_KEY not set — video agent unavailable.")
     # Autopilot: recurring campaign top-up (no-op if APScheduler is unavailable).
     from app.services import scheduler
     scheduler.start()

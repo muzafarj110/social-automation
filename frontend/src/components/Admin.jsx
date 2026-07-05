@@ -30,8 +30,9 @@ function EmailDiagPanel() {
       <h3 style={{ margin: "0 0 12px" }}>Email delivery diagnostics</h3>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 6, fontSize: 13, marginBottom: 12 }}>
-        <KV k="Resend API key" v={cfg.resend_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.resend_api_key_set} />
-        <KV k="From address (RESEND_FROM)" v={cfg.resend_from} warn={cfg.resend_from === "(not set)"} />
+        <KV k="Mailjet API key" v={cfg.mailjet_api_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.mailjet_api_key_set} />
+        <KV k="Mailjet secret key" v={cfg.mailjet_secret_key_set ? "●●●●●●●● (set)" : "NOT SET"} warn={!cfg.mailjet_secret_key_set} />
+        <KV k="From address (MAILJET_FROM)" v={cfg.mailjet_from} warn={cfg.mailjet_from === "(not set)"} />
         <KV k="APP_BASE_URL" v={cfg.app_base_url} warn={baseUrlMissing} />
       </div>
 
@@ -56,7 +57,7 @@ function EmailDiagPanel() {
         </button>
       </div>
       {!cfg.email_enabled && (
-        <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Set <code>RESEND_API_KEY</code> in Railway to enable.</p>
+        <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Set <code>MAILJET_API_KEY</code> and <code>MAILJET_SECRET_KEY</code> in Railway to enable.</p>
       )}
 
       {result && (
@@ -70,13 +71,13 @@ function EmailDiagPanel() {
             <>
               <b>✓ Email sent to {result.sent_to}</b><br />
               <span style={{ fontSize: 12 }}>APP_BASE_URL: {result.app_base_url}</span><br />
-              <span style={{ fontSize: 12 }}>Check inbox + spam. If it arrived, Resend is working. If the link inside doesn't work → APP_BASE_URL is wrong.</span>
+              <span style={{ fontSize: 12 }}>Check inbox + spam. If it arrived, Mailjet is working. If the link inside doesn't work → APP_BASE_URL is wrong.</span>
             </>
           ) : (
             <>
               <b>✗ Failed</b><br />
               <span style={{ fontSize: 12 }}>{result.error}</span>
-              {result.resend_response && <><br /><span style={{ fontSize: 11, opacity: 0.7 }}>Resend response: {result.resend_response}</span></>}
+              {result.mailjet_response && <><br /><span style={{ fontSize: 11, opacity: 0.7 }}>Mailjet response: {result.mailjet_response}</span></>}
             </>
           )}
         </div>

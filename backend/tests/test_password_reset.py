@@ -1,7 +1,7 @@
 """
 Password reset: forgot-password is enumeration-safe; reset works with a valid
 token and is rejected for bad/expired/used tokens. Offline — email is disabled
-(no RESEND_API_KEY), so we mint the token directly in the DB to test reset.
+(no MAILJET_API_KEY), so we mint the token directly in the DB to test reset.
 
 Run:  python -m pytest backend/tests/test_password_reset.py -v
 """

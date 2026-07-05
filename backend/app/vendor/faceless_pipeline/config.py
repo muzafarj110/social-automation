@@ -19,12 +19,8 @@ def _detect_whisper_backend() -> str:
 
 # ── Global settings (from .env) ───────────────────────────────────────────────
 
-PEXELS_API_KEY     = os.getenv("PEXELS_API_KEY", "")
-# Script generation calls a free model via OpenRouter (OpenAI-compatible REST),
-# not the Anthropic SDK — see steps/generate_script.py::_call_llm(). Env-driven
-# model id so a deprecated/rate-limited free model is a one-line swap.
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-SCRIPT_LLM_MODEL   = os.getenv("SCRIPT_LLM_MODEL", "z-ai/glm-4.7-flash:free")
+PEXELS_API_KEY    = os.getenv("PEXELS_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 TTS_ENGINE = os.getenv("TTS_ENGINE", "edge-tts")
 TTS_VOICE  = os.getenv("TTS_VOICE", "en-US-GuyNeural")
@@ -101,8 +97,8 @@ def validate():
     errors = []
     if not PEXELS_API_KEY:
         errors.append("PEXELS_API_KEY not set in .env")
-    if not OPENROUTER_API_KEY:
-        errors.append("OPENROUTER_API_KEY not set in .env")
+    if not ANTHROPIC_API_KEY:
+        errors.append("ANTHROPIC_API_KEY not set in .env")
     if not (ROOT / "assets" / "logo.png").exists():
         errors.append("assets/logo.png not found — add your logo file")
     if errors:

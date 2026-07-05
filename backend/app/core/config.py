@@ -78,29 +78,30 @@ class Settings(BaseSettings):
     # Each cycle the user's credits reset to their tier's monthly allowance.
     stripe_plans: str = Field("", alias="STRIPE_PLANS")
 
-    # Email via Resend HTTP API. Set RESEND_API_KEY + RESEND_FROM in Railway.
-    resend_api_key: str = Field("", alias="RESEND_API_KEY")
-    resend_from: str = Field("onboarding@resend.dev", alias="RESEND_FROM")
+    # Email via Mailjet HTTP API. Set MAILJET_API_KEY + MAILJET_SECRET_KEY in
+    # Railway. Sender is a single verified address (no domain needed) — once
+    # aitool4all@gmail.com is verified in Mailjet, it can send to any recipient.
+    mailjet_api_key: str = Field("", alias="MAILJET_API_KEY")
+    mailjet_secret_key: str = Field("", alias="MAILJET_SECRET_KEY")
+    mailjet_from: str = Field("aitool4all@gmail.com", alias="MAILJET_FROM")
     app_base_url: str = Field("", alias="APP_BASE_URL")
 
     # Where user-uploaded media files (images/videos) are stored. Defaults to
     # a local relative dir so dev "just works"; Railway sets UPLOAD_DIR=/app/uploads.
     upload_dir: str = Field("./uploads", alias="UPLOAD_DIR")
 
-    # Video agent (Faceless Video Pipeline). Script generation goes through a
-    # free model via OpenRouter, not a paid Anthropic key — see
-    # app/vendor/faceless_pipeline/steps/generate_script.py.
-    openrouter_api_key: str = Field("", alias="OPENROUTER_API_KEY")
-    script_llm_model: str = Field("z-ai/glm-4.7-flash:free", alias="SCRIPT_LLM_MODEL")
+    # Video agent (Faceless Video Pipeline). Script generation calls Claude
+    # directly — see app/vendor/faceless_pipeline/steps/generate_script.py.
+    anthropic_api_key: str = Field("", alias="ANTHROPIC_API_KEY")
     pexels_api_key: str = Field("", alias="PEXELS_API_KEY")
 
     @property
     def email_enabled(self) -> bool:
-        return bool(self.resend_api_key)
+        return bool(self.mailjet_api_key and self.mailjet_secret_key)
 
     @property
     def video_agent_enabled(self) -> bool:
-        return bool(self.openrouter_api_key and self.pexels_api_key)
+        return bool(self.anthropic_api_key and self.pexels_api_key)
 
     @property
     def billing_enabled(self) -> bool:

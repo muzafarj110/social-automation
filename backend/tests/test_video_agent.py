@@ -2,7 +2,7 @@
 Video agent: channel CRUD, generate/poll/create-post flow, credits charging,
 memory-first cache reuse.
 
-The real Faceless Video Pipeline (ffmpeg/whisper/OpenRouter/Pexels) is never
+The real Faceless Video Pipeline (ffmpeg/whisper/Claude/Pexels) is never
 invoked here — _run_pipeline_blocking is monkeypatched to a fast, deterministic
 fake, and schedule_generation runs inline (awaited) instead of fire-and-forget
 so tests don't need to poll/sleep for a background asyncio task.
@@ -103,7 +103,7 @@ def fake_pipeline(monkeypatch, tmp_path):
 @pytest.fixture
 def video_settings(monkeypatch):
     from app.core.config import settings
-    monkeypatch.setattr(settings, "openrouter_api_key", "test-key")
+    monkeypatch.setattr(settings, "anthropic_api_key", "test-key")
     monkeypatch.setattr(settings, "pexels_api_key", "test-key")
 
 

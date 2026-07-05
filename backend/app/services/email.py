@@ -1,8 +1,9 @@
 """
-Email via Resend HTTP API (https://resend.com).
-Set RESEND_API_KEY + RESEND_FROM in Railway.
-Note: without a verified domain, Resend only delivers to the account owner's email.
-For beta, registration auto-verifies users so they are never blocked by email.
+Email via Mailjet HTTP API (https://mailjet.com).
+Set MAILJET_API_KEY + MAILJET_SECRET_KEY in Railway.
+Sender is a verified single address (no domain needed) — MAILJET_FROM,
+defaulting to aitool4all@gmail.com. Once that address is verified in Mailjet
+(Account Settings -> Sender addresses), it can send to ANY recipient.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ import httpx
 from app.core.config import settings
 
 log = logging.getLogger("uvicorn.error")
-_RESEND_URL = "https://api.resend.com/emails"
+_MAILJET_URL = "https://api.mailjet.com/v3.1/send"
 
 
 async def send_email(*, to: str, subject: str, html: str) -> bool:
@@ -23,17 +24,24 @@ async def send_email(*, to: str, subject: str, html: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
             r = await c.post(
-                _RESEND_URL,
-                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={"from": settings.resend_from, "to": [to], "subject": subject, "html": html},
+                _MAILJET_URL,
+                auth=(settings.mailjet_api_key, settings.mailjet_secret_key),
+                json={
+                    "Messages": [{
+                        "From": {"Email": settings.mailjet_from, "Name": "Autopilot"},
+                        "To": [{"Email": to}],
+                        "Subject": subject,
+                        "HTMLPart": html,
+                    }]
+                },
             )
         if r.status_code >= 400:
-            log.warning("Resend error (%s) to %s: %s", r.status_code, to, r.text[:300])
+            log.warning("Mailjet error (%s) to %s: %s", r.status_code, to, r.text[:300])
             return False
-        log.info("Email sent to %s via Resend", to)
+        log.info("Email sent to %s via Mailjet", to)
         return True
     except Exception as e:
-        log.warning("Resend error to %s: %s", to, e)
+        log.warning("Mailjet error to %s: %s", to, e)
         return False
 
 

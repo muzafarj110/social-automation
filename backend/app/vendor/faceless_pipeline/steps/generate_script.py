@@ -2,18 +2,13 @@
 Step 1 — Script generation.
 
 Two modes:
-  LLM-auto: the model generates topic, Pexels keywords, short + long scripts.
+  Claude-auto: Claude generates topic, Pexels keywords, short + long scripts.
   Manual:      Reads a plain text file passed via --script flag.
 
 Standalone:
     python steps/generate_script.py --channel finance
     python steps/generate_script.py --channel finance --topic "5 money mistakes"
     python steps/generate_script.py --channel finance --script /path/to/script.txt
-
-NOTE (Autopilot integration): the LLM call goes through OpenRouter (OpenAI-
-compatible REST), not the Anthropic SDK, so the free model configured via
-SCRIPT_LLM_MODEL can be swapped with a single env var if it's ever
-deprecated/rate-limited — see _call_llm() below.
 """
 import sys, json, argparse
 from pathlib import Path
@@ -64,21 +59,15 @@ Suggest the single best video topic right now — high search volume, trending, 
 Return ONLY a short topic description (max 15 words), no explanation."""
 
 
-def _call_llm(prompt: str) -> str:
-    """Calls the configured free model via OpenRouter's OpenAI-compatible API.
-    SCRIPT_LLM_MODEL is env-driven so a deprecated/rate-limited free model can
-    be swapped without touching this code."""
-    import openai
-    client = openai.OpenAI(
-        api_key=cfg.OPENROUTER_API_KEY,
-        base_url="https://openrouter.ai/api/v1",
+def _call_claude(prompt: str) -> str:
+    import anthropic
+    client = anthropic.Anthropic(api_key=cfg.ANTHROPIC_API_KEY)
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}]
     )
-    resp = client.chat.completions.create(
-        model=cfg.SCRIPT_LLM_MODEL,
-        max_tokens=3000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return resp.choices[0].message.content.strip()
+    return msg.content[0].text.strip()
 
 
 def _strip_fences(raw: str) -> str:
@@ -87,12 +76,11 @@ def _strip_fences(raw: str) -> str:
     return re.sub(r"\s*```$", "", raw)
 
 
-def _call_llm_json(prompt: str) -> dict:
-    """Free models are less reliably strict-JSON than Claude was — one repair
-    retry before giving up, since a stray sentence before/after the JSON is a
-    common failure mode for smaller models."""
+def _call_claude_json(prompt: str) -> dict:
+    """One repair retry before giving up, in case a stray sentence sneaks in
+    before/after the JSON despite the "return ONLY JSON" instruction."""
     import json
-    raw = _strip_fences(_call_llm(prompt))
+    raw = _strip_fences(_call_claude(prompt))
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
@@ -100,7 +88,7 @@ def _call_llm_json(prompt: str) -> dict:
             "Your previous response was not valid JSON. Return ONLY the "
             f"corrected valid JSON, nothing else:\n\n{raw}"
         )
-        raw = _strip_fences(_call_llm(repair_prompt))
+        raw = _strip_fences(_call_claude(repair_prompt))
         return json.loads(raw)
 
 
@@ -110,7 +98,7 @@ def auto_pick_topic(channel: dict) -> str:
         handle=channel["handle"],
         niche=channel["niche"],
     )
-    topic = _call_llm(prompt)
+    topic = _call_claude(prompt)
     print(f"  Claude picked topic: {topic}")
     return topic
 
@@ -139,7 +127,7 @@ Script:
 {manual_text[:800]}
 
 Return ONLY JSON: {{"title": "...", "pexels_keywords": ["kw1", "kw2", "kw3"]}}"""
-        meta = _call_llm_json(extract_prompt)
+        meta = _call_claude_json(extract_prompt)
         return {
             "title":               meta["title"],
             "pexels_keywords":     meta["pexels_keywords"],
@@ -162,7 +150,7 @@ Return ONLY JSON: {{"title": "...", "pexels_keywords": ["kw1", "kw2", "kw3"]}}""
         system_prompt=channel.get("claude_system_prompt", ""),
     )
 
-    result = _call_llm_json(prompt)
+    result = _call_claude_json(prompt)
 
     print(f"  Title: {result['title']}")
     print(f"  Keywords: {result['pexels_keywords']}")
