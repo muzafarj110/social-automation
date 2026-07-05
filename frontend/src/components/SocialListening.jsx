@@ -4,7 +4,14 @@ import { listTopics, createTopic, deleteTopic, scanTopic } from "../api.js";
 const PLATFORM_OPTS = [
   { value: "linkedin", label: "LinkedIn" },
   { value: "twitter", label: "X / Twitter" },
+  { value: "instagram", label: "Instagram" },
+  { value: "facebook", label: "Facebook" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
   { value: "reddit", label: "Reddit" },
+  { value: "pinterest", label: "Pinterest" },
+  { value: "threads", label: "Threads" },
+  { value: "bluesky", label: "Bluesky" },
   { value: "all", label: "All platforms" },
 ];
 

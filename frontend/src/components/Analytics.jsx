@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { zernioMetrics, getInsights, analyzeViral } from "../api.js";
+import { zernioMetrics, getInsights } from "../api.js";
 
 function objText(o) {
   return Object.entries(o)
@@ -122,17 +122,21 @@ export default function Analytics() {
   const [goal, setGoal] = useState("grow followers and generate leads");
   const [followers, setFollowers] = useState("");
   const [insights, setInsights] = useState(null);
-  const [viral, setViral] = useState({ post: "", niche: "", impressions: 0, likes: 0, comments: 0, shares: 0 });
-  const [viralResult, setViralResult] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
 
   const loadZernio = async () => {
     setError("");
+    setRefreshing(true);
     try {
       setZernio(await zernioMetrics());
+      setLastRefreshed(new Date());
     } catch (e) {
       setZernio({ ok: false, error: e.message });
+    } finally {
+      setRefreshing(false);
     }
   };
   useEffect(() => { loadZernio(); }, []); // eslint-disable-line
@@ -155,19 +159,6 @@ export default function Analytics() {
         goal: goal || null,
       });
       setInsights(res.data);
-    } catch (e) { setError(e.message); }
-    finally { setBusy(""); }
-  };
-
-  const setV = (k, num = true) => (e) =>
-    setViral({ ...viral, [k]: num ? Number(e.target.value || 0) : e.target.value });
-
-  const runViral = async () => {
-    setError(""); setBusy("viral"); setViralResult(null);
-    try {
-      if (!viral.post.trim()) throw new Error("Paste the post text first.");
-      const res = await analyzeViral(viral);
-      setViralResult(res.data);
     } catch (e) { setError(e.message); }
     finally { setBusy(""); }
   };
@@ -218,39 +209,17 @@ export default function Analytics() {
       </div>
 
       <div className="card">
-        <h2>Analyze a single post</h2>
-        <p className="muted">
-          Paste any post and its numbers to get a breakdown of <em>why</em> it performed the way it
-          did and how to make the next one stronger. (The card above looks at your whole account;
-          this one zooms into one post.)
-        </p>
-        <label>Post text</label>
-        <textarea value={viral.post} onChange={setV("post", false)} style={{ minHeight: 100 }} />
-        <label>Niche <span className="muted">(optional)</span></label>
-        <input value={viral.niche} onChange={setV("niche", false)} placeholder="AI consulting for SMBs" />
-        <div className="row">
-          {[["impressions", "Impressions"], ["likes", "Likes"], ["comments", "Comments"], ["shares", "Shares"]].map(
-            ([k, label]) => (
-              <div key={k} style={{ minWidth: 120 }}>
-                <label>{label}</label>
-                <input type="number" min="0" value={viral[k]} onChange={setV(k)} />
-              </div>
-            )
-          )}
-        </div>
-        <div className="row" style={{ marginTop: 12 }}>
-          <button className="btn-primary" disabled={busy === "viral"} onClick={runViral}>
-            {busy === "viral" ? "Analyzing…" : "Analyze post"}
-          </button>
-        </div>
-        {viralResult && <div style={{ marginTop: 14 }}><HubResult data={viralResult} /></div>}
-      </div>
-
-      <div className="card">
         <div className="row">
           <h2 style={{ margin: 0 }}>Reach &amp; engagement</h2>
           <div className="spacer" />
-          <button className="btn-secondary" onClick={loadZernio}>Refresh</button>
+          {lastRefreshed && (
+            <span className="muted" style={{ fontSize: 12 }}>
+              {refreshing ? "Refreshing…" : `Updated ${lastRefreshed.toLocaleTimeString()}`}
+            </span>
+          )}
+          <button className="btn-secondary" onClick={loadZernio} disabled={refreshing}>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
         </div>
         {zernio == null ? (
           <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
