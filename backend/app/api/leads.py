@@ -18,6 +18,7 @@ from app.core.config import settings
 from app.core.hub_errors import hub_http
 from app.core.user_keys import resolve_hub_key
 from app.db.session import get_db
+from app.models.brand import BrandProfile
 from app.models.lead import Lead
 from app.models.user import User
 from app.schemas.lead import DraftOutreachRequest, LeadCreate, LeadOut, LeadUpdate
@@ -26,6 +27,15 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 
 # Free-form keys the Hub may use for the drafted message.
 _DRAFT_KEYS = ("message", "dm", "outreach", "draft", "full_message", "text", "content", "result")
+
+# Fallback "your_role" phrasing keyed by the user's onboarding profile_type,
+# used when there's no better source for who the outreach is coming from.
+_ROLE_BY_PROFILE_TYPE = {
+    "individual": "an independent professional",
+    "influencer": "a content creator",
+    "startup": "a startup founder",
+    "company": "a company representative",
+}
 
 
 async def _owned(lead_id: int, user: User, db: AsyncSession) -> Lead:
@@ -100,7 +110,18 @@ async def draft_outreach(
     if not key:
         raise HTTPException(400, "AI is temporarily unavailable. Please try again.")
 
+    brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == current.id))
+    your_role = (
+        _ROLE_BY_PROFILE_TYPE.get(current.profile_type)
+        or (brand.brand_name if brand else None)
+        or "a professional in your industry"
+    )
     payload = {
+        # Hub's "dm_writer" tool (POST /api/linkedin-dm) requires prospect_name,
+        # prospect_role, and your_role — see HubClient.write_dm docstring.
+        "prospect_name": lead.name,
+        "prospect_role": lead.platform or lead.source or "a prospect",
+        "your_role": your_role,
         "recipient": lead.name,
         "context": lead.notes or f"A lead from {lead.source or lead.platform or 'your audience'}.",
         "angle": body.angle,
@@ -118,6 +139,14 @@ async def draft_outreach(
         if isinstance(v, str) and v.strip():
             draft = v.strip()
             break
+    if draft is None:
+        # dm_writer's real shape is a multi-touch sequence: {"sequence": [{"message": ...}, ...]}.
+        sequence = data.get("sequence")
+        if isinstance(sequence, list):
+            for step in sequence:
+                if isinstance(step, dict) and isinstance(step.get("message"), str) and step["message"].strip():
+                    draft = step["message"].strip()
+                    break
     lead.draft = draft or "Couldn't draft a message — try again."
     await credits.charge(db, current, credits.COST_GENERATE)
     await db.refresh(lead)

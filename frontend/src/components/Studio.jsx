@@ -71,9 +71,9 @@ const CATEGORIES = [
       post_series: { label: "Post series", blurb: "A connected multi-post series.",
         fields: [["topic", "Topic", true], ["audience", "Audience"], ["series_length", "Posts", false, "n"], ["series_goal", "Goal"]] },
       outreach_campaign: { label: "Outreach sequence", blurb: "A multi-touch outreach sequence.",
-        fields: [["your_offer", "Your offer", true], ["target_role", "Target role", true], ["num_touchpoints", "Touchpoints", false, "n"]] },
+        fields: [["your_role", "Your role", true], ["your_offer", "Your offer", true], ["target_role", "Target role", true], ["num_touchpoints", "Touchpoints", false, "n"]] },
       linkedin_brand_audit: { label: "Profile brand audit", blurb: "Score & improve your brand.",
-        fields: [["headline", "Headline", true], ["about_section", "About section", true, "a"], ["niche", "Niche"], ["goal", "Goal"]] },
+        fields: [["name", "Your name", true], ["headline", "Headline", true], ["about_section", "About section", true, "a"], ["niche", "Niche"], ["goal", "Goal"]] },
     },
   },
   {

@@ -144,12 +144,27 @@ async def zernio_metrics(
     return {"ok": True, "summary": _aggregate(data), "data": data, "platforms": platforms}
 
 
+_INSIGHTS_STRING_FIELDS = (
+    "followers", "impressions", "profile_views", "post_count",
+    "avg_likes", "avg_comments", "avg_shares",
+)
+
+
 @router.post("/insights")
 async def insights(
     body: InsightsRequest, current: User = Depends(get_current_user)
 ) -> dict:
-    """Interpret account metrics via the Hub's analytics model."""
-    data = await _hub_call(current, "analytics", body.model_dump(exclude_none=True))
+    """Interpret account metrics via the Hub's analytics model.
+
+    The Hub's linkedin-analytics tool validates these metric fields as
+    strings (not numbers), even though they're counts — so stringify before
+    sending, or the Hub rejects the call with a 422.
+    """
+    payload = body.model_dump(exclude_none=True)
+    for k in _INSIGHTS_STRING_FIELDS:
+        if k in payload:
+            payload[k] = str(payload[k])
+    data = await _hub_call(current, "analytics", payload)
     return {"ok": True, "data": data}
 
 

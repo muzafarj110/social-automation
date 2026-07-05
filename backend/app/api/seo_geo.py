@@ -233,7 +233,10 @@ async def analyze_project(
         try:
             tech_data = await hub.call(
                 "technical_seo",
-                {"topic": " ".join(b for b in tech_bits if b), "website": p.website or ""},
+                {
+                    "target": " ".join(b for b in tech_bits if b),
+                    "primary_keyword": p.target_keywords,
+                },
             )
         except HubError as e:
             # technical_seo is secondary; if it fails, continue with SEO data only.
