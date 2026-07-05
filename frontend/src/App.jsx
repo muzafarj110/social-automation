@@ -46,7 +46,7 @@ const NAV = [
     ["analytics", "Growth analytics", "analytics", false],
   ] },
   { group: "Workspace", items: [["calendar", "Calendar", null], ["posts", "Posts", null], ["inbox", "Approvals", "inbox"]] },
-  { group: "Settings", items: [["accounts", "Accounts", null], ["connections", "Channels", null], ["billing", "Billing", null]] },
+  { group: "Settings", items: [["accounts", "Accounts", null], ["connections", "Messaging channels", null], ["billing", "Billing", null]] },
 ];
 // Admin-only nav group, appended when the user is an operator.
 const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
@@ -68,7 +68,7 @@ const TITLES = {
   opportunities: ["Opportunities", "What to act on next, from your own data"],
   leads: ["Lead-gen agent", "Capture leads and let AI draft outreach"],
   accounts: ["Accounts", "Keys, connected accounts and usage"],
-  connections: ["Channels", "Connect WhatsApp Business and Telegram for cross-channel posting"],
+  connections: ["Messaging channels", "Connect WhatsApp Business and Telegram for cross-channel posting"],
   billing: ["Billing", "Your credits and top-ups"],
   admin: ["Users", "Manage plans, access and account status"],
 };

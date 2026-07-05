@@ -262,7 +262,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform
 .tier .unit { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .tier ul { list-style: none; padding: 0; margin: 14px 0 18px; text-align: left; display: flex; flex-direction: column; gap: 9px; }
 .tier li { font-size: 13px; color: var(--ink); display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
-.tier li::before { content: "✓"; color: var(--teal); font-weight: 800; flex-shrink: 0; }
 .tier .pick { margin-top: auto; }
 .tier.featured { background: var(--grad); border-color: transparent; box-shadow: var(--glow); }
 .tier.featured .name, .tier.featured .amt, .tier.featured .unit, .tier.featured li { color: #fff; }

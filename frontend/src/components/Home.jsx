@@ -16,10 +16,10 @@ const AGENTS = {
 const TEAM = ["content", "autopilot", "competitor", "leadgen", "listening", "seo"];
 
 const PROFILE_LEAD = {
-  individual: "Tell your team what to focus on and they'll take it from here.",
-  influencer: "Direct your content engine across every platform.",
-  startup: "Point your team at a goal — they'll generate, schedule and engage.",
-  company: "Brief your AI marketing team once. They run the rest.",
+  individual: "Brief your content agent on what to focus on this week.",
+  influencer: "Brief your content agent — it'll plan across every platform.",
+  startup: "Point your content agent at a goal — it'll generate and schedule the week.",
+  company: "Brief your content agent once. It plans the rest of the week.",
 };
 
 function Avatar({ agent }) {
@@ -124,7 +124,7 @@ export default function Home({ goTab, user, onDirective }) {
     { done: hasCampaign, title: "Activate Autopilot", desc: "Hand your team a goal and let them run 24/7.", tab: "campaigns", cta: "Activate" },
   ];
   const setupDone = steps.every((s) => s.done);
-  const lead = PROFILE_LEAD[user?.profile_type] || "Tell your team what to focus on. They take it from here.";
+  const lead = PROFILE_LEAD[user?.profile_type] || "Brief your content agent on what to focus on this week.";
 
   const submitDirective = (e) => {
     e.preventDefault();
@@ -141,7 +141,7 @@ export default function Home({ goTab, user, onDirective }) {
 
   return (
     <>
-      {/* Chat bar — direct the whole team in natural language */}
+      {/* Chat bar — briefs the Content agent's weekly plan in natural language */}
       <form onSubmit={submitDirective} style={{
         display: "flex", alignItems: "center", gap: 10, background: "#fff",
         border: "1px solid var(--line)", borderRadius: 999, padding: "8px 8px 8px 18px",
@@ -151,7 +151,7 @@ export default function Home({ goTab, user, onDirective }) {
         <input
           value={directive}
           onChange={(e) => setDirective(e.target.value)}
-          placeholder="Tell your team what to focus on this week…"
+          placeholder="Tell your content agent what to focus on this week…"
           style={{ flex: 1, border: "none", padding: "8px 0", fontSize: 14.5, boxShadow: "none", background: "transparent" }}
         />
         <button type="submit" className="btn-primary" style={{ borderRadius: 999, width: 40, height: 40, padding: 0, fontSize: 18, flexShrink: 0 }} aria-label="Send to team">↑</button>

@@ -153,6 +153,26 @@ export default function Billing({ user }) {
       </div>
 
       <div className="card">
+        <h2>What a credit buys</h2>
+        <p className="muted" style={{ marginTop: -4, marginBottom: 10 }}>
+          Same cost table on every plan — only the monthly credit allowance changes.
+        </p>
+        <div className="row" style={{ flexWrap: "wrap", gap: 16 }}>
+          {[
+            ["1 credit", "Text posts, drafts, competitor/listening/lead-gen scans"],
+            ["2 credits", "Long-form content — articles, newsletters, sequences"],
+            ["5 credits", "Image generation — social cards, ad creatives, infographics"],
+            ["15 credits", "Video generation — short + long cut, both at once"],
+          ].map(([cost, desc]) => (
+            <div key={cost} style={{ minWidth: 180 }}>
+              <div style={{ fontWeight: 700, color: "var(--teal)" }}>{cost}</div>
+              <div className="muted" style={{ fontSize: 13 }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card">
         <h2>{active ? "Change your plan" : "Choose your plan"}</h2>
         {!data ? (
           <div className="empty">Loading…</div>
