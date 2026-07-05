@@ -456,7 +456,14 @@ function TelegramPanel({ status, onRefresh }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function Connections() {
+const PLATFORM_LABEL = {
+  linkedin: "LinkedIn", twitter: "X", instagram: "Instagram", facebook: "Facebook",
+  tiktok: "TikTok", youtube: "YouTube", pinterest: "Pinterest", reddit: "Reddit",
+  bluesky: "Bluesky", threads: "Threads", googlebusiness: "Google Business",
+  snapchat: "Snapchat", discord: "Discord",
+};
+
+export default function Connections({ accounts = [], goAccounts }) {
   const [status, setStatus] = useState(null);
   const [tab, setTab] = useState("wa");
   const [loading, setLoading] = useState(true);
@@ -503,6 +510,32 @@ export default function Connections() {
 
   return (
     <div style={{ maxWidth: 680 }}>
+      <div style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 12, padding: "1.25rem 1.5rem", marginBottom: 24 }}>
+        <div className="row" style={{ alignItems: "center", marginBottom: accounts.length ? 12 : 4 }}>
+          <h2 style={{ margin: 0, fontSize: 15 }}>Connected accounts</h2>
+          <div className="spacer" />
+          <button className="btn-ghost" onClick={goAccounts} style={{ fontSize: 12, padding: "4px 10px" }}>
+            Manage in Accounts →
+          </button>
+        </div>
+        {accounts.length === 0 ? (
+          <div className="muted" style={{ fontSize: 13 }}>
+            No social accounts linked yet — LinkedIn, TikTok, Instagram, YouTube and others are
+            connected under Accounts, not here.
+          </div>
+        ) : (
+          <div className="pill-list">
+            {accounts.map((a) => (
+              <div className="pill" key={a.id}>
+                <span className="badge kind">{PLATFORM_LABEL[a.platform] || a.platform}</span>
+                <strong>{a.display_name || a.zernio_account_id}</strong>
+                <span className="badge published">{a.status}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 20 }}>
         Connect messaging channels to cross-post your LinkedIn content automatically or on demand.
       </div>

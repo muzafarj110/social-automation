@@ -274,7 +274,7 @@ export default function App() {
           {tab === "seo" && <SeoGeo />}
           {tab === "opportunities" && <Opportunities goTab={setTab} />}
           {tab === "leads" && <Leads refreshUser={refreshUser} />}
-          {tab === "connections" && <Connections />}
+          {tab === "connections" && <Connections accounts={accounts} goAccounts={() => setTab("accounts")} />}
           {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}
         </div>

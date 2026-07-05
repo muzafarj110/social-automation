@@ -210,3 +210,159 @@ async def create_post_from_video(
     await db.commit()
     await db.refresh(post)
     return post
+
+
+# ============ Kids Video Agent Routes ============
+
+
+async def _get_owned_kids_channel(current: User, db: AsyncSession, channel_id: int) -> VideoChannel:
+    """Fetch a kids video channel owned by the current user."""
+    channel = await db.get(VideoChannel, channel_id)
+    if not channel or channel.user_id != current.id or channel.content_type != "kids_educational":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Kids video channel not found")
+    return channel
+
+
+@router.post("/kids/channels", response_model=VideoChannelOut, status_code=201)
+async def create_kids_channel(
+    body,  # TODO: type as KidsVideoChannelCreate from schemas.kids_video
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> VideoChannel:
+    """Create a new kids video channel."""
+    channel = VideoChannel(
+        user_id=current.id,
+        client_id=current.active_client_id,
+        content_type="kids_educational",
+        name=body.name,
+        handle=body.name.lower().replace(" ", "_"),
+        niche="kids_educational",
+        target_age_min=body.target_age_min,
+        target_age_max=body.target_age_max,
+        primary_theme=body.primary_theme,
+        character_style=body.character_style,
+        color_palette=",".join(body.color_palette) if body.color_palette else None,
+        music_preference=body.music_preference,
+    )
+    db.add(channel)
+    await db.commit()
+    await db.refresh(channel)
+    return channel
+
+
+@router.put("/kids/channels/{channel_id}", response_model=VideoChannelOut)
+async def update_kids_channel(
+    channel_id: int,
+    body,  # TODO: type as KidsVideoChannelUpdate
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> VideoChannel:
+    """Update a kids video channel."""
+    channel = await _get_owned_kids_channel(current, db, channel_id)
+    for k, v in body.model_dump(exclude_unset=True).items():
+        if k == "color_palette" and v is not None:
+            v = ",".join(v)
+        setattr(channel, k, v)
+    await db.commit()
+    await db.refresh(channel)
+    return channel
+
+
+@router.post("/kids/generate", response_model=GeneratedVideoOut)
+async def generate_kids_video(
+    body,  # TODO: type as KidsVideoGenerationRequest
+    response: Response,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> GeneratedVideo:
+    """Start a kids video generation job."""
+    from app.services import kids_video_generator
+
+    channel = await _get_owned_kids_channel(current, db, body.channel_id)
+
+    if not credits.has_credits(current, kids_video_generator.COST_KIDS_VIDEO):
+        raise HTTPException(402, "You're out of credits. Top up under Billing to continue.")
+
+    video = GeneratedVideo(
+        user_id=current.id,
+        channel_id=channel.id,
+        client_id=current.active_client_id,
+        topic=body.topic,
+        topic_cache_key=video_generator.topic_cache_key(channel.id, body.topic),
+        content_type="kids_educational",
+        status=QUEUED,
+        generation_metadata={
+            "learning_goal": body.learning_goal,
+            "tone": body.tone,
+            "age_min": channel.target_age_min,
+            "age_max": channel.target_age_max,
+            "theme": channel.primary_theme,
+            "character_style": channel.character_style,
+        },
+    )
+    db.add(video)
+    await db.commit()
+    await db.refresh(video)
+
+    # Deduct credits immediately (like faceless videos)
+    await credits.charge(db, current, kids_video_generator.COST_KIDS_VIDEO)
+    await db.commit()
+
+    # Schedule generation in background
+    kids_video_generator.schedule_generation(video.id)
+    response.status_code = status.HTTP_202_ACCEPTED
+    return video
+
+
+@router.get("/kids/{video_id}/progress")
+async def get_kids_video_progress(
+    video_id: int,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Poll generation progress."""
+    video = await db.get(GeneratedVideo, video_id)
+    if not video or video.user_id != current.id or video.content_type != "kids_educational":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Video not found")
+    return {
+        "id": video.id,
+        "status": video.status,
+        "progress_step": video.progress_step,
+        "generation_status": video.generation_status,
+        "error": video.error,
+    }
+
+
+@router.post("/kids/{video_id}/approve", response_model=GeneratedVideoOut)
+async def approve_kids_video(
+    video_id: int,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> GeneratedVideo:
+    """Approve a draft kids video to published status."""
+    video = await db.get(GeneratedVideo, video_id)
+    if not video or video.user_id != current.id or video.content_type != "kids_educational":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Video not found")
+    if video.status != COMPLETED:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only completed videos can be approved")
+    # Set a published status or move to a published section
+    # For now, we keep it as COMPLETED but could add a publication workflow
+    await db.commit()
+    await db.refresh(video)
+    return video
+
+
+@router.delete("/kids/{video_id}")
+async def delete_kids_video(
+    video_id: int,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Delete/reject a draft kids video."""
+    video = await db.get(GeneratedVideo, video_id)
+    if not video or video.user_id != current.id or video.content_type != "kids_educational":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Video not found")
+    # Delete the video and clean up files
+    await db.delete(video)
+    await db.commit()
+    return {"message": "Video deleted"}

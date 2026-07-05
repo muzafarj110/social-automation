@@ -42,6 +42,15 @@ class VideoChannel(Base):
     # topic is reused before generating fresh. User-configurable.
     cache_duration_days: Mapped[int] = mapped_column(Integer, default=7)
 
+    # Kids video content type fields
+    content_type: Mapped[str] = mapped_column(String(50), default="faceless")
+    target_age_min: Mapped[int] = mapped_column(Integer, default=0)
+    target_age_max: Mapped[int] = mapped_column(Integer, default=5)
+    primary_theme: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    character_style: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    color_palette: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    music_preference: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

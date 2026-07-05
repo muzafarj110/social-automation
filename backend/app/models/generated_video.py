@@ -66,6 +66,11 @@ class GeneratedVideo(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Kids video content type fields
+    content_type: Mapped[str] = mapped_column(String(50), default="faceless")
+    generation_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    generation_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
     @property
     def has_short(self) -> bool:
         return bool(self.video_short_url)
