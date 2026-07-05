@@ -167,6 +167,7 @@ async def scan_topic(
     brand = await db.scalar(select(BrandProfile).where(BrandProfile.user_id == current.id))
     my_brand = (brand.brand_name if brand else None) or "my brand"
     audience = (brand.audience if brand else None) or "B2B professionals"
+    niche = (brand.industry if brand else None) or t.platform
 
     bits = [
         f"Social listening strategy for keyword: '{t.keyword}' on {t.platform}.",
@@ -182,6 +183,7 @@ async def scan_topic(
     payload = {
         "topic": " ".join(bits),
         "audience": audience,
+        "niche": niche,
         "goal": "find high-intent prospects and surface engagement opportunities",
     }
 

@@ -165,8 +165,12 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser, 
   });
 
   const [connectPlatform, setConnectPlatform] = useState("linkedin");
+  // No hash here: Zernio appends "?connected=…&accountId=…" to this URL, and a
+  // "#accounts" suffix would put those query params inside the hash instead of
+  // the query string (the browser parses "path#accounts?x=1" as hash
+  // "accounts?x=1", search ""), so the OAuth-return detection below never saw it.
   const returnUrl = (typeof window !== "undefined")
-    ? window.location.origin + window.location.pathname + "#accounts" : "";
+    ? window.location.origin + window.location.pathname : "";
   const doConnect = wrap(async () => {
     const res = await connectUrl(connectPlatform, returnUrl);
     if (res?.auth_url) window.location.href = res.auth_url; // full-page; returns here after auth
