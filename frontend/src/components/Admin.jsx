@@ -3,18 +3,28 @@ import { adminListUsers, adminFeatures, adminUpdateUser, adminDeleteUser, adminR
 
 const PLANS = ["free", "pro", "business"];
 
+const EMAIL_CATEGORIES = [
+  { value: "generic", label: "Generic diagnostic" },
+  { value: "verification", label: "Email verification" },
+  { value: "reset", label: "Password reset" },
+  { value: "welcome", label: "Welcome email" },
+  { value: "marketing", label: "Marketing sample" },
+  { value: "support", label: "Support acknowledgment" },
+];
+
 function EmailDiagPanel() {
   const [cfg, setCfg] = useState(null);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState(null);
   const [testTo, setTestTo] = useState("");
+  const [category, setCategory] = useState("verification");
 
   useEffect(() => { adminEmailConfig().then(setCfg).catch(() => {}); }, []);
 
   const runTest = async () => {
     setTesting(true); setResult(null);
     try {
-      const r = await adminTestEmail(testTo.trim() || undefined);
+      const r = await adminTestEmail(testTo.trim() || undefined, category);
       setResult(r);
     } catch (e) {
       setResult({ ok: false, error: e.message });
@@ -52,6 +62,15 @@ function EmailDiagPanel() {
           onChange={(e) => setTestTo(e.target.value)}
           style={{ flex: 1, minWidth: 220, padding: "8px 12px", borderRadius: 8, border: "1px solid #d9d9e3", fontSize: 13 }}
         />
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #d9d9e3", fontSize: 13, background: "#fff" }}
+        >
+          {EMAIL_CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
         <button className="btn-secondary" onClick={runTest} disabled={testing || !cfg.email_enabled}>
           {testing ? "Sending…" : "Send test email →"}
         </button>

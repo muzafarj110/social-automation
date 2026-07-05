@@ -44,6 +44,7 @@ async def email_config(_: User = Depends(require_admin)) -> dict:
 class TestEmailBody(BaseModel):
     to: str = ""
     include_verify_link: bool = False
+    category: str = "generic"
 
 
 @router.post("/test-email")
@@ -51,7 +52,8 @@ async def test_email(
     body: TestEmailBody = TestEmailBody(),
     current: User = Depends(require_admin),
 ) -> dict:
-    """Send a diagnostic test email via Mailjet. Accepts optional target address."""
+    """Send a diagnostic test email via Mailjet. Accepts optional target address
+    and a template category to preview."""
     if not settings.email_enabled:
         return {"ok": False, "error": "Email disabled — MAILJET_API_KEY / MAILJET_SECRET_KEY not set in Railway."}
 
@@ -59,32 +61,80 @@ async def test_email(
     base = (settings.app_base_url or "").rstrip("/")
     app_base_warn = "(not set — links will be broken!)" if not base else base
 
-    html = f"""
-    <div style='font-family:system-ui,sans-serif;max-width:480px'>
-      <h2>Autopilot — email delivery test</h2>
-      <p>If you received this, Mailjet can deliver to <b>{target}</b>.</p>
-      <hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0'>
-      <p style='font-size:13px;color:#666'><b>APP_BASE_URL:</b> {app_base_warn}</p>
-      <p style='font-size:13px;color:#666'>{'<b style="color:red">⚠ APP_BASE_URL is missing — verify/reset links in real emails will be broken.</b>' if not base else '✓ APP_BASE_URL is set correctly.'}</p>
-    </div>
-    """
+    subject = "Autopilot — email test"
+    text: str | None = None
+    category = body.category or "generic"
+
+    if category == "verification":
+        subject = "Confirm your email address for Autopilot"
+        html, text = email_svc.verification_email_html(f"{base}/#verify?token=SAMPLE_TOKEN")
+    elif category == "reset":
+        subject = "Reset your Autopilot password"
+        html, text = email_svc.reset_email_html(f"{base}/#reset?token=SAMPLE_TOKEN")
+    elif category == "welcome":
+        subject = "Welcome to Autopilot — your AI marketing team is ready"
+        html, text = email_svc.welcome_email_html("there", base or "https://autopilot-io.up.railway.app")
+    elif category == "marketing":
+        subject = "Smart Send Times are here: let Autopilot pick your best posting time"
+        html, text = email_svc.marketing_email_html(
+            headline=subject,
+            body_html=(
+                "<p style=\"margin:0 0 16px 0;\">Your posts just got smarter. Autopilot now studies when your "
+                "audience is actually active and automatically times each post to land in that window — no more "
+                "guessing, no more manual scheduling grids.</p>"
+                "<p style=\"margin:0 0 16px 0;\">Smart Send Times is live today for every plan. Switch it on from "
+                "your workspace settings and Autopilot will handle the timing from here, while you focus on the "
+                "message.</p>"
+            ),
+            body_text=(
+                "Your posts just got smarter. Autopilot now studies when your audience is actually active and "
+                "automatically times each post to land in that window — no more guessing, no more manual "
+                "scheduling grids.\n\nSmart Send Times is live today for every plan. Switch it on from your "
+                "workspace settings and Autopilot will handle the timing from here, while you focus on the "
+                "message."
+            ),
+            cta_text="Turn on Smart Send Times",
+            cta_url=f"{base or 'https://autopilot-io.up.railway.app'}/#campaigns",
+        )
+    elif category == "support":
+        subject = "We've received your message — Autopilot Support"
+        html, text = email_svc.support_email_html(
+            name="Jordan Lee",
+            message_preview=(
+                "Hi, I'm trying to connect my Instagram account but the OAuth screen keeps redirecting back to "
+                "the login page. Can you help?"
+            ),
+        )
+    else:
+        html = f"""
+        <div style='font-family:system-ui,sans-serif;max-width:480px'>
+          <h2>Autopilot — email delivery test</h2>
+          <p>If you received this, Mailjet can deliver to <b>{target}</b>.</p>
+          <hr style='border:none;border-top:1px solid #e5e7eb;margin:16px 0'>
+          <p style='font-size:13px;color:#666'><b>APP_BASE_URL:</b> {app_base_warn}</p>
+          <p style='font-size:13px;color:#666'>{'<b style="color:red">⚠ APP_BASE_URL is missing — verify/reset links in real emails will be broken.</b>' if not base else '✓ APP_BASE_URL is set correctly.'}</p>
+        </div>
+        """
 
     import httpx
     error: str | None = None
     mailjet_response: str | None = None
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
+            message: dict = {
+                "From": {"Email": settings.mailjet_from, "Name": "Autopilot"},
+                "To": [{"Email": target}],
+                "Subject": subject,
+                "HTMLPart": html,
+            }
+            if text is not None:
+                message["TextPart"] = text
+            if category == "marketing":
+                message["Headers"] = {"List-Unsubscribe": f"<{email_svc.unsubscribe_mailto()}>"}
             r = await c.post(
                 "https://api.mailjet.com/v3.1/send",
                 auth=(settings.mailjet_api_key, settings.mailjet_secret_key),
-                json={
-                    "Messages": [{
-                        "From": {"Email": settings.mailjet_from, "Name": "Autopilot"},
-                        "To": [{"Email": target}],
-                        "Subject": "Autopilot — email test",
-                        "HTMLPart": html,
-                    }]
-                },
+                json={"Messages": [message]},
             )
         if r.status_code >= 400:
             mailjet_response = r.text[:400]

@@ -231,7 +231,8 @@ export const adminUpdateUser = (id, data) => apiSend(`/admin/users/${id}`, "PATC
 export const adminDeleteUser = (id) => apiSend(`/admin/users/${id}`, "DELETE");
 export const adminResetLink = (id) => apiSend(`/admin/users/${id}/reset-link`, "POST", {});
 export const adminEmailConfig = () => apiGet("/admin/email-config");
-export const adminTestEmail = (to) => apiSend("/admin/test-email", "POST", to ? { to } : {});
+export const adminTestEmail = (to, category) =>
+  apiSend("/admin/test-email", "POST", { ...(to ? { to } : {}), ...(category ? { category } : {}) });
 
 // --- Video agent (Faceless Video Pipeline) ---
 export const getVideoChannel = () => apiGet("/videos/channel");

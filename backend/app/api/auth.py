@@ -40,7 +40,12 @@ from app.schemas.auth import (
     UserOut,
     VerifyEmailRequest,
 )
-from app.services.email import reset_email_html, send_email, verification_email_html
+from app.services.email import (
+    reset_email_html,
+    send_email,
+    verification_email_html,
+    welcome_email_html,
+)
 
 
 import logging
@@ -78,9 +83,10 @@ async def _send_verification(user: User, db: AsyncSession) -> None:
     await db.commit()
     base = (settings.app_base_url or "").rstrip("/")
     verify_url = f"{base}/#verify?token={raw}"
+    html, text = verification_email_html(verify_url)
     sent = await send_email(
         to=user.email, subject="Verify your email",
-        html=verification_email_html(verify_url),
+        html=html, text=text,
     )
     # Logged so the link is retrievable if email delivery is misconfigured.
     log.info("Email verification for %s (sent=%s): %s", user.email, sent, verify_url)
@@ -113,6 +119,19 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) ->
     db.add(user)
     await db.commit()
     await db.refresh(user)
+
+    if settings.email_enabled:
+        try:
+            app_url = (settings.app_base_url or "").rstrip("/") or "https://autopilot-io.up.railway.app"
+            html, text = welcome_email_html(user.full_name, app_url)
+            await send_email(
+                to=user.email,
+                subject="Welcome to Autopilot — your AI marketing team is ready",
+                html=html, text=text,
+            )
+        except Exception as e:
+            log.warning("Welcome email failed for %s: %s", user.email, e)
+
     return {
         "ok": True,
         "verification_required": False,
@@ -245,9 +264,10 @@ async def forgot_password(
         await db.commit()
         base = (settings.app_base_url or "").rstrip("/")
         reset_url = f"{base}/#reset?token={raw}"
+        html, text = reset_email_html(reset_url)
         sent = await send_email(
             to=user.email, subject="Reset your password",
-            html=reset_email_html(reset_url),
+            html=html, text=text,
         )
         log.info("Password reset for %s (sent=%s): %s", user.email, sent, reset_url)
     return generic
