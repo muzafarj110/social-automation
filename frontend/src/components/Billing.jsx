@@ -121,7 +121,9 @@ export default function Billing({ user }) {
                     <span className="amt">{meta.price}</span>
                     <span className="unit" style={{ fontSize: 13 }}>/mo</span>
                   </div>
-                  <div className="unit">30 credits / day · 180 day trial</div>
+                  <div className="unit">
+                    {data.free?.daily_limit ?? 5} credits / day · {data.free?.trial_days ?? 14} day trial
+                  </div>
                   <ul style={{ marginTop: 12 }}>
                     {meta.included.map((f) => (
                       <li key={f} style={{ color: "var(--ink)" }}>

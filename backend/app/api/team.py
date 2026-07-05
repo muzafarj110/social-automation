@@ -21,6 +21,7 @@ router = APIRouter(prefix="/team", tags=["team"])
 
 class PlanRequest(BaseModel):
     count: int = Field(3, ge=1, le=7)
+    directive: str | None = None
 
 
 class RunRequest(BaseModel):
@@ -57,7 +58,7 @@ async def plan(
 ) -> dict:
     """Strategist only: return an editable brief + topics (no posts, no credit)."""
     try:
-        brief, topics, learning = await team.build_plan(db, current, body.count)
+        brief, topics, learning = await team.build_plan(db, current, body.count, directive=body.directive)
     except team.TeamError as e:
         raise HTTPException(e.status_code, e.message) from e
     return {"brief": brief, "topics": topics, "learning": learning}

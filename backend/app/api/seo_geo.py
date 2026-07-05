@@ -50,6 +50,64 @@ def _coerce_list(value) -> list[str]:
     return out[:10]
 
 
+def _flatten_on_page_issues(items) -> list[str]:
+    """Flatten technical_seo's on_page_issues [{issue, severity, fix}] into strings."""
+    out: list[str] = []
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            issue = item.get("issue") or item.get("title") or item.get("name")
+            if not issue:
+                continue
+            severity = item.get("severity")
+            fix = item.get("fix") or item.get("recommendation")
+            line = f"[{severity}] {issue}" if severity else str(issue)
+            if fix:
+                line = f"{line} — Fix: {fix}"
+            out.append(line)
+    return out[:10]
+
+
+def _flatten_topic_clusters(items) -> list[str]:
+    """Flatten keyword_research's topic_clusters [{cluster_name, keywords}] into strings.
+
+    Topic clusters signal topical authority, which is a key GEO lever (AI
+    chatbots favor citing sources that cover a topic comprehensively).
+    """
+    out: list[str] = []
+    if isinstance(items, list):
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("cluster_name") or item.get("name") or item.get("title")
+            if not name:
+                continue
+            kws = item.get("keywords")
+            if isinstance(kws, list) and kws:
+                out.append(f"{name}: {', '.join(str(k) for k in kws[:5])}")
+            else:
+                out.append(str(name))
+    return out[:10]
+
+
+def _flatten_schema_markup(value) -> list[str]:
+    """Turn technical_seo's schema_markup {type, recommended_fields} into a GEO tip.
+
+    Structured data makes content easier for AI engines to parse and cite.
+    """
+    if not isinstance(value, dict):
+        return []
+    schema_type = value.get("type")
+    if not schema_type:
+        return []
+    line = f"Add {schema_type} schema markup to help AI engines parse and cite this content"
+    fields = value.get("recommended_fields")
+    if isinstance(fields, list) and fields:
+        line += f" (fields: {', '.join(str(f) for f in fields[:8])})"
+    return [line]
+
+
 def _parse_seo(data: dict) -> dict:
     """Extract {summary, keywords[], geo[], technical[]} from Hub responses."""
     if not isinstance(data, dict):
@@ -69,19 +127,34 @@ def _parse_seo(data: dict) -> dict:
         if keywords:
             break
 
+    # GEO: prefer an explicit field; otherwise fall back to signals that
+    # actually appear in the Hub's real responses — keyword_research's
+    # topic_clusters (topical authority) or technical_seo's schema_markup
+    # (structured data AI engines can cite).
     geo: list[str] = []
     for k in ("geo_recommendations", "ai_optimization", "geo", "generative_engine",
               "content_recommendations", "content_strategy", "topics"):
         geo = _coerce_list(data.get(k))
         if geo:
             break
+    if not geo:
+        geo = _flatten_topic_clusters(data.get("topic_clusters"))
+    if not geo:
+        geo = _flatten_schema_markup(data.get("schema_markup"))
 
+    # Technical: prefer an explicit field; otherwise fall back to
+    # technical_seo's real response shape — on_page_issues (specific fixes)
+    # or keyword_optimization (placement guidance).
     technical: list[str] = []
     for k in ("technical", "technical_recommendations", "fixes", "improvements",
               "technical_seo", "actions", "next_steps"):
         technical = _coerce_list(data.get(k))
         if technical:
             break
+    if not technical:
+        technical = _flatten_on_page_issues(data.get("on_page_issues"))
+    if not technical:
+        technical = _coerce_list(data.get("keyword_optimization"))
 
     return {"summary": summary, "keywords": keywords, "geo": geo, "technical": technical}
 
@@ -89,15 +162,14 @@ def _parse_seo(data: dict) -> dict:
 def _merge_results(seo_data: dict, tech_data: dict) -> dict:
     """Merge keyword_research and technical_seo responses into one results dict."""
     base = _parse_seo(seo_data)
+    tech_parsed = _parse_seo(tech_data) if isinstance(tech_data, dict) else None
 
     # Pull technical items from technical_seo response if base is empty
-    if not base["technical"] and isinstance(tech_data, dict):
-        tech_parsed = _parse_seo(tech_data)
+    if not base["technical"] and tech_parsed:
         base["technical"] = tech_parsed["technical"] or tech_parsed["keywords"]
 
     # Pull GEO hints from technical_seo (it often has content strategy)
-    if not base["geo"] and isinstance(tech_data, dict):
-        tech_parsed = _parse_seo(tech_data)
+    if not base["geo"] and tech_parsed:
         base["geo"] = tech_parsed["geo"] or tech_parsed["keywords"]
 
     if not base["summary"] and isinstance(tech_data, dict):

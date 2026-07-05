@@ -29,10 +29,14 @@ KIND_TO_HUB: dict[str, str] = {
 }
 
 # Best-effort keys to pull human-editable text from each draft, in priority order.
+# Verified against live Hub responses: comment_writer returns "comment_primary";
+# dm_writer returns a "sequence" list of {message,...}; outreach_campaign returns
+# a "messages" list of {message,...} (its own "sequence" was never the real key —
+# that belonged to dm_writer's response shape).
 _TEXT_KEYS: dict[str, tuple[str, ...]] = {
-    "comment": ("comment", "full_comment", "comment_text", "text", "reply"),
-    "dm": ("message", "full_message", "dm", "text", "body"),
-    "outreach": ("first_message", "opener", "message", "sequence", "steps", "text"),
+    "comment": ("comment_primary", "comment", "full_comment", "comment_text", "text", "reply"),
+    "dm": ("sequence", "message", "full_message", "dm", "text", "body"),
+    "outreach": ("messages", "first_message", "opener", "message", "sequence", "steps", "text"),
     "profile": ("about", "optimized_about", "summary", "headline", "text"),
 }
 

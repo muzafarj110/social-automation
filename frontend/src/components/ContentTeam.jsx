@@ -49,7 +49,7 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
   const doPlan = async () => {
     setError(""); setInfo(""); setPlanning(true); setRun(null);
     try {
-      const p = await teamPlan(count);
+      const p = await teamPlan(count, brief);
       setBrief(p.brief || "");
       setTopics(p.topics || []);
       setLearning(p.learning || null);

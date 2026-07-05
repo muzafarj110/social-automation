@@ -7,9 +7,9 @@ export const TIER_DATA = {
   free: {
     price: "$0",
     label: "Free",
-    note: "30 credits/day, no card needed",
+    note: "5 credits/day, no card needed",
     included: [
-      "30 credits / day — no card needed",
+      "5 credits / day — no card needed",
       "Quick post generator (1 cr)",
       "Content agent drafts (1 cr)",
       "Competitor analysis (1 cr)",

@@ -194,7 +194,7 @@ export const activateClient = (id) => apiSend(`/clients/${id}/activate`, "POST",
 export const deactivateClient = () => apiSend("/clients/deactivate", "POST", {});
 
 // --- Content Team (agentic weekly cycle) ---
-export const teamPlan = (count = 3) => apiSend("/team/plan", "POST", { count });
+export const teamPlan = (count = 3, directive = "") => apiSend("/team/plan", "POST", { count, directive: directive || undefined });
 export const teamRun = (data) => apiSend("/team/run", "POST", data);
 export const listTeamRuns = () => apiGet("/team/runs");
 export const getTeamRun = (id) => apiGet(`/team/runs/${id}`);

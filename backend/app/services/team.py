@@ -120,14 +120,21 @@ async def _performance_insight(db, user: User) -> str | None:
         return None
 
 
-async def build_plan(db, user: User, count: int = 3, *, key: str | None = None):
-    """Strategist: this cycle's brief + topics, from brand + recent performance."""
+async def build_plan(db, user: User, count: int = 3, *, key: str | None = None, directive: str | None = None):
+    """Strategist: this cycle's brief + topics, from brand + recent performance.
+
+    `directive` is an optional free-text steer from the user (e.g. typed into
+    Home's chat bar). When present it takes priority over the brand's default
+    industry/name as the seed topic, so "brief your content agent" actually
+    changes what gets planned instead of being silently discarded.
+    """
     key = key or resolve_hub_key(user)
     if not key:
         raise TeamError("AI is temporarily unavailable. Please try again.")
     brand = await _brand_for(db, user)
     audience = (brand.audience if brand else None) or "your audience"
-    seed = (brand and (brand.industry or brand.brand_name)) or "your industry"
+    directive = (directive or "").strip() or None
+    seed = directive or (brand and (brand.industry or brand.brand_name)) or "your industry"
 
     perf = await _performance_insight(db, user)
     recent = await _recent_topics(db, user)
@@ -153,6 +160,8 @@ async def build_plan(db, user: User, count: int = 3, *, key: str | None = None):
 
     if not brief:
         brief = f"This week's focus: consistent, on-brand content for {audience}."
+    if directive:
+        brief = f'You asked to focus on: "{directive}". {brief}'
     learning = {"performance": perf, "recent_count": len(recent)}
     return brief, topics, learning
 

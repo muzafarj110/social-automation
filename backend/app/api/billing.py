@@ -83,6 +83,7 @@ async def billing_overview(current: User = Depends(get_current_user)) -> dict:
     if not credits.is_subscribed(current):
         free = {
             "daily_limit": settings.free_daily_limit,
+            "trial_days": settings.free_trial_days,
             "remaining_today": credits.free_remaining(current),
             "trial_ends_at": current.trial_ends_at.isoformat() if current.trial_ends_at else None,
             "trial_expired": credits.trial_expired(current),

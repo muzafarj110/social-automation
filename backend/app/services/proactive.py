@@ -190,11 +190,17 @@ async def generate_for_user(user: User, db: AsyncSession) -> ProactiveItem | Non
                     "topic": f"{industry} insights for {audience}",
                     "audience": audience,
                 })
-            hook = (data.get("hook") or data.get("viral_hook") or
+            hook = (data.get("best_hook") or data.get("hook") or data.get("viral_hook") or
                     data.get("text") or data.get("headline") or "")
             if isinstance(hook, list):
                 hook = hook[0] if hook else ""
-            hook = str(hook).strip()
+            if not hook:
+                # Real Hub shape: {"hooks": [{"hook_text": "...", ...}, ...]}
+                hooks_list = data.get("hooks")
+                if isinstance(hooks_list, list) and hooks_list:
+                    first = hooks_list[0]
+                    hook = first.get("hook_text") if isinstance(first, dict) else first
+            hook = str(hook or "").strip()
             if hook:
                 await credits.charge(db, user, credits.COST_GENERATE)
                 return await _save(db, user.id, "content",
