@@ -17,7 +17,7 @@ const TIER_DATA = {
       "Post calendar and scheduling",
     ],
     excluded: [
-      "Autopilot agent",
+      "Always-on Campaigns",
       "Studio images (5 cr each)",
       "SEO + GEO deep analysis (2 cr)",
     ],
@@ -33,7 +33,7 @@ const TIER_DATA = {
       "WhatsApp + Telegram cross-posting",
     ],
     excluded: [
-      "Autopilot agent",
+      "Always-on Campaigns",
       "SEO + GEO agent",
       "Studio images and carousels",
     ],
@@ -44,7 +44,7 @@ const TIER_DATA = {
     popular: true,
     included: [
       "Everything in Starter",
-      "Autopilot agent — set and forget posting",
+      "Always-on Campaigns — set and forget posting",
       "SEO + GEO agent",
       "Social listening agent",
       "Lead-gen agent",

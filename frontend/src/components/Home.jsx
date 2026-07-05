@@ -4,7 +4,7 @@ import { listPosts, listInbox, listCampaigns, zernioMetrics, listAccounts, getBr
 // ---- Agent identities (avatar + accent) used across the live work feed ----
 const AGENTS = {
   content:    { name: "Content agent",      mono: "Co", bg: "#e1f5ee", fg: "#0F6E56" },
-  autopilot:  { name: "Autopilot agent",    mono: "Au", bg: "#e6f1fb", fg: "#185FA5" },
+  autopilot:  { name: "Always-on Campaigns", mono: "AC", bg: "#e6f1fb", fg: "#185FA5" },
   approvals:  { name: "Approvals agent",    mono: "Ap", bg: "#faeeda", fg: "#854F0B" },
   competitor: { name: "Competitor agent",   mono: "Cp", bg: "#eeedfe", fg: "#534AB7" },
   leadgen:    { name: "Lead-gen agent",     mono: "Le", bg: "#fbeaf0", fg: "#993556" },

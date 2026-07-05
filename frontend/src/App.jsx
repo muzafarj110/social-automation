@@ -3,7 +3,6 @@ import { getToken, logout, me, listAccounts, listClients, createClient, activate
 import Auth from "./components/Auth.jsx";
 import Landing from "./components/Landing.jsx";
 import Onboarding from "./components/Onboarding.jsx";
-import Wizard from "./components/Wizard.jsx";
 import Home from "./components/Home.jsx";
 import Strategy from "./components/Strategy.jsx";
 import Accounts from "./components/Accounts.jsx";
@@ -31,7 +30,7 @@ const NAV = [
   { group: "Command center", items: [["home", "Live work feed", null]] },
   { group: "Your AI team", items: [
     ["team", "Content agent", null, true],
-    ["campaigns", "Autopilot agent", "autopilot", true],
+    ["campaigns", "Always-on Campaigns", "autopilot", true],
     ["strategy", "Brand strategist", "strategy", false],
     ["studio", "Studio agent", null, false],
     ["videoagent", "Video agent", null, false],
@@ -56,7 +55,7 @@ const TITLES = {
   strategy: ["Brand strategist", "Your voice, persona and positioning — used by every agent"],
   studio: ["Studio agent", "Reports, email, SEO, formats & graphics — powered by AI"],
   videoagent: ["Video agent", "Turn a topic into a short + long video, ready to post"],
-  campaigns: ["Autopilot agent", "Set it once — AI writes, tailors and posts on a schedule"],
+  campaigns: ["Always-on Campaigns", "Set it once — AI writes, tailors and posts on a schedule"],
   posts: ["Posts", "Drafts, scheduled and published"],
   inbox: ["Approvals", "AI-drafted replies, DMs and outreach to approve"],
   profile: ["Profile optimizer", "Optimize your professional profile"],
@@ -83,27 +82,17 @@ export default function App() {
   });
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
-  const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [tab, setTab] = useState("home");
   const [teamBrief, setTeamBrief] = useState("");
   const [postsRefresh, setPostsRefresh] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [wizardSkipped, setWizardSkipped] = useState(
-    () => localStorage.getItem("wizard_skipped") === "1"
-  );
-  const dismissWizard = () => {
-    localStorage.setItem("wizard_skipped", "1");
-    setWizardSkipped(true);
-  };
 
   const refreshUser = async () => {
     try { setUser(await me()); }
     catch { logout(); setAuthed(false); }
   };
   const reloadAccounts = async () => {
-    try { setAccounts(await listAccounts()); }
-    catch { /* ignore */ }
-    finally { setAccountsLoaded(true); }
+    try { setAccounts(await listAccounts()); } catch { /* ignore */ }
   };
   const [clients, setClients] = useState([]);
   const loadClients = async () => {
@@ -149,19 +138,6 @@ export default function App() {
   }
   if (!user) return <div className="empty" style={{ padding: 80 }}>Loading…</div>;
   if (!user.profile_type) return <Onboarding onDone={refreshUser} />;
-
-  // First-run guided setup: shown until the user connects an account or skips.
-  const connected = accounts.length > 0;
-  if (!wizardSkipped && accountsLoaded && !connected) {
-    return (
-      <Wizard
-        user={user}
-        accounts={accounts}
-        onSkip={dismissWizard}
-        goTab={(t) => { dismissWizard(); setTab(t); }}
-      />
-    );
-  }
 
   const doLogout = () => { logout(); setAuthed(false); setUser(null); };
   const [title, subtitle] = TITLES[tab] || ["", ""];

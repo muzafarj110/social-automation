@@ -118,7 +118,7 @@ export default function Landing({ onStart, onLogin }) {
             <div className="lp-mock-side">
               <div className="si on"><span className="sd" /> Live work feed</div>
               <div className="si"><span className="sd" /> Content agent</div>
-              <div className="si"><span className="sd" /> Autopilot agent</div>
+              <div className="si"><span className="sd" /> Always-on Campaigns</div>
               <div className="si"><span className="sd" /> Competitor agent</div>
               <div className="si idle"><span className="sd" /> SEO + GEO</div>
               <div className="si idle"><span className="sd" /> Lead-gen agent</div>
