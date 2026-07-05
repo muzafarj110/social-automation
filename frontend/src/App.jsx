@@ -7,7 +7,6 @@ import Wizard from "./components/Wizard.jsx";
 import Home from "./components/Home.jsx";
 import Strategy from "./components/Strategy.jsx";
 import Accounts from "./components/Accounts.jsx";
-import Generate from "./components/Generate.jsx";
 import Posts from "./components/Posts.jsx";
 import Inbox from "./components/Inbox.jsx";
 import Campaigns from "./components/Campaigns.jsx";
@@ -36,7 +35,6 @@ const NAV = [
     ["strategy", "Brand strategist", "strategy", false],
     ["studio", "Studio agent", null, false],
     ["videoagent", "Video agent", null, false],
-    ["generate", "Quick post", "generate", false],
   ] },
   { group: "Growth agents", items: [
     ["competitor", "Competitor agent", null, true],
@@ -54,9 +52,8 @@ const NAV = [
 const ADMIN_NAV = { group: "Admin", items: [["admin", "Users", null]] };
 const TITLES = {
   home: ["Live work feed", "What your AI marketing team is doing right now"],
-  team: ["Content agent", "Drafts a week of on-brand content — you approve once"],
+  team: ["Content agent", "One post now, or a week of drafts — you approve once"],
   strategy: ["Brand strategist", "Your voice, persona and positioning — used by every agent"],
-  generate: ["Quick post", "Write one post right now, by hand with AI"],
   studio: ["Studio agent", "Reports, email, SEO, formats & graphics — powered by AI"],
   videoagent: ["Video agent", "Turn a topic into a short + long video, ready to post"],
   campaigns: ["Autopilot agent", "Set it once — AI writes, tailors and posts on a schedule"],
@@ -252,9 +249,10 @@ export default function App() {
           {tab === "strategy" && <Strategy />}
           {tab === "studio" && <Studio />}
           {tab === "videoagent" && <VideoAgent accounts={accounts} />}
-          {tab === "team" && <ContentTeam goTab={setTab} initialBrief={teamBrief} />}
-          {tab === "generate" && (
-            <Generate
+          {tab === "team" && (
+            <ContentTeam
+              goTab={setTab}
+              initialBrief={teamBrief}
               accounts={accounts}
               goConnect={() => setTab("accounts")}
               onSaved={() => { setPostsRefresh((n) => n + 1); setTab("posts"); }}

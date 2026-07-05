@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { teamPlan, teamRun, listTeamRuns, getTeamRun, approveTeamRun, deletePost } from "../api.js";
+import Generate from "./Generate.jsx";
 
 const AGENTS = ["Strategist", "Packager", "Writer", "Producer", "Publisher"];
 const PLATFORM_LABEL = { linkedin: "LinkedIn", twitter: "X", instagram: "Instagram", facebook: "Facebook" };
@@ -17,7 +18,8 @@ function Pipeline({ active }) {
   );
 }
 
-export default function ContentTeam({ goTab, initialBrief }) {
+export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, onSaved }) {
+  const [mode, setMode] = useState("weekly"); // "weekly" | "single"
   const [run, setRun] = useState(null);
   const [loading, setLoading] = useState(true);
   const [planning, setPlanning] = useState(false);
@@ -96,6 +98,21 @@ export default function ContentTeam({ goTab, initialBrief }) {
 
   return (
     <>
+      <div className="filter-row" style={{ marginBottom: 16 }}>
+        <button className={`filter-chip ${mode === "weekly" ? "active" : ""}`} onClick={() => setMode("weekly")}>
+          Plan a week
+        </button>
+        <button className={`filter-chip ${mode === "single" ? "active" : ""}`} onClick={() => setMode("single")}>
+          Just one post now
+        </button>
+      </div>
+
+      {mode === "single" && (
+        <Generate accounts={accounts} goConnect={goConnect} onSaved={onSaved} />
+      )}
+
+      {mode === "weekly" && (
+      <>
       {error && <div className="flash error">{error}</div>}
       {info && <div className="flash success">{info}</div>}
 
@@ -211,6 +228,8 @@ export default function ContentTeam({ goTab, initialBrief }) {
 
       {!busy && topics === null && !run && (
         <div className="empty">Pick how many posts and hit "Plan my week" — your strategist drafts a plan for you to tweak.</div>
+      )}
+      </>
       )}
     </>
   );

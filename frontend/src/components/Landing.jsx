@@ -50,11 +50,12 @@ const CAPS = {
   },
 };
 
-const QUOTES = [
-  { q: "It's like hiring a five-person marketing team overnight. Our output tripled and I approve everything in five minutes a day.", n: "Sample Founder", r: "Founder & CEO, SaaS startup" },
-  { q: "The work feed changed how I run content. I just direct the agents and review — the busywork is gone.", n: "Sample Creator", r: "Content creator" },
-  { q: "Competitor tracking alone paid for itself. We spotted a winning campaign and matched it in a day.", n: "Sample Marketer", r: "Growth lead, e-commerce" },
-  { q: "I'm a team of one. This gives me the leverage of a whole department without the overhead.", n: "Sample Solopreneur", r: "Solopreneur" },
+// Kept in sync with Billing.jsx's real tiers — update both if pricing changes.
+const PRICING_TEASER = [
+  { price: "$0", suffix: "", label: "Free", note: "30 credits/day, no card needed" },
+  { price: "$29", suffix: "/mo", label: "Starter", note: "for getting serious" },
+  { price: "$79", suffix: "/mo", label: "Growth", note: "for growing teams", popular: true },
+  { price: "$149", suffix: "/mo", label: "Pro", note: "for full automation" },
 ];
 
 const SECURITY = [
@@ -228,23 +229,21 @@ export default function Landing({ onStart, onLogin }) {
         </div>
       </section>
 
-      {/* testimonials */}
-      <section className="lp-sec">
+      {/* pricing teaser */}
+      <section id="pricing" className="lp-sec">
         <div className="lp-wrap">
-          <div className="lp-kicker">Loved by lean teams</div>
-          <h2 className="lp-h2">Don't just take our word for it</h2>
-          <div className="lp-grid c2">
-            {QUOTES.map((t, i) => (
-              <div className="lp-quote" key={i}>
-                <p>“{t.q}”</p>
-                <div className="who">
-                  <span className="av">{t.n.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span>
-                  <div><div className="nm">{t.n}</div><div className="rl">{t.r}</div></div>
-                </div>
+          <div className="lp-kicker">Simple pricing</div>
+          <h2 className="lp-h2">Free to start. Upgrade when you're ready.</h2>
+          <div className="lp-grid c4">
+            {PRICING_TEASER.map((p) => (
+              <div className="lp-card" key={p.label} style={p.popular ? { borderColor: "var(--teal)" } : undefined}>
+                {p.popular && <div className="lp-kicker" style={{ marginBottom: 6 }}>Most popular</div>}
+                <h3>{p.price}<span style={{ fontSize: 13, fontWeight: 500, color: "var(--muted)" }}>{p.suffix}</span></h3>
+                <p>{p.label} — {p.note}</p>
               </div>
             ))}
           </div>
-          <p className="lp-hero-note" style={{ textAlign: "center" }}>Sample testimonials shown for illustration.</p>
+          <p className="lp-hero-note" style={{ textAlign: "center" }}>No card required to start.</p>
         </div>
       </section>
 
@@ -287,7 +286,7 @@ export default function Landing({ onStart, onLogin }) {
               <h4>Product</h4>
               <a onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</a>
               <a onClick={() => document.getElementById("capabilities")?.scrollIntoView({ behavior: "smooth" })}>Capabilities</a>
-              <a onClick={onStart}>Pricing</a>
+              <a onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}>Pricing</a>
             </div>
             <div>
               <h4>Company</h4>
