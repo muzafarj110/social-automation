@@ -16,6 +16,7 @@ from app.clients.hub_client import HubClient, HubError
 from app.core import credits
 from app.core.config import settings
 from app.core.hub_errors import hub_http
+from app.core.security import require_feature
 from app.core.user_keys import resolve_hub_key
 from app.db.session import get_db
 from app.models.brand import BrandProfile
@@ -46,6 +47,7 @@ async def _owned(lead_id: int, user: User, db: AsyncSession) -> Lead:
 
 
 @router.get("", response_model=list[LeadOut])
+@require_feature("lead_gen")
 async def list_leads(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -57,6 +59,7 @@ async def list_leads(
 
 
 @router.post("", response_model=LeadOut, status_code=201)
+@require_feature("lead_gen")
 async def create_lead(
     body: LeadCreate,
     current: User = Depends(get_current_user),
@@ -70,6 +73,7 @@ async def create_lead(
 
 
 @router.patch("/{lead_id}", response_model=LeadOut)
+@require_feature("lead_gen")
 async def update_lead(
     lead_id: int,
     body: LeadUpdate,
@@ -85,6 +89,7 @@ async def update_lead(
 
 
 @router.delete("/{lead_id}", status_code=204, response_model=None)
+@require_feature("lead_gen")
 async def delete_lead(
     lead_id: int,
     current: User = Depends(get_current_user),
@@ -96,6 +101,7 @@ async def delete_lead(
 
 
 @router.post("/{lead_id}/draft-outreach", response_model=LeadOut)
+@require_feature("lead_gen")
 async def draft_outreach(
     lead_id: int,
     body: DraftOutreachRequest,

@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.core.security import decrypt_secret, encrypt_secret
+from app.core.security import decrypt_secret, encrypt_secret, require_feature
 from app.db.session import get_db
 from app.models.connections import TelegramConnection, WhatsAppConnection
 from app.models.user import User
@@ -101,6 +101,7 @@ class WhatsAppConnect(BaseModel):
 
 
 @router.post("/whatsapp")
+@require_feature("whatsapp_agent")
 async def connect_whatsapp(
     body: WhatsAppConnect,
     current: User = Depends(get_current_user),
@@ -146,6 +147,7 @@ async def connect_whatsapp(
 
 
 @router.delete("/whatsapp", status_code=204, response_model=None)
+@require_feature("whatsapp_agent")
 async def disconnect_whatsapp(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -157,6 +159,7 @@ async def disconnect_whatsapp(
 
 
 @router.patch("/whatsapp/toggle")
+@require_feature("whatsapp_agent")
 async def toggle_whatsapp_autopost(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -175,6 +178,7 @@ class WASendRequest(BaseModel):
 
 
 @router.post("/whatsapp/send")
+@require_feature("whatsapp_agent")
 async def send_whatsapp(
     body: WASendRequest,
     current: User = Depends(get_current_user),
@@ -202,6 +206,7 @@ class WhatsAppAgentSettings(BaseModel):
 
 
 @router.patch("/whatsapp/agent")
+@require_feature("whatsapp_agent")
 async def update_whatsapp_agent_settings(
     body: WhatsAppAgentSettings,
     current: User = Depends(get_current_user),
@@ -220,6 +225,7 @@ async def update_whatsapp_agent_settings(
 
 
 @router.get("/whatsapp/agent")
+@require_feature("whatsapp_agent")
 async def get_whatsapp_agent_settings(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -264,6 +270,7 @@ def _message_out(msg: WhatsAppMessage) -> dict:
 
 
 @router.get("/whatsapp/flagged")
+@require_feature("whatsapp_agent")
 async def list_flagged_whatsapp_messages(
     current: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -298,6 +305,7 @@ async def list_flagged_whatsapp_messages(
 
 
 @router.post("/whatsapp/flagged/{message_id}/dismiss")
+@require_feature("whatsapp_agent")
 async def dismiss_flagged_whatsapp_message(
     message_id: int,
     current: User = Depends(get_current_user),

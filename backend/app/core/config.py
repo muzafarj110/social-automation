@@ -158,4 +158,92 @@ def get_settings() -> Settings:
     return instance
 
 
+# ── Feature Permissions by Profile Type ──────────────────────────────────────
+# Maps profile_type → list of available features. Used by @require_feature decorator.
+FEATURE_PERMISSIONS: dict[str, set[str]] = {
+    # Individual & Influencer: personal growth tools
+    "individual": {
+        "profile_optimizer",
+        "growth_analytics",
+        "content_studio",
+        "video_studio",
+        "video_tools",
+        "generate",
+        "qa",
+        "strategy",
+        "autopilot",
+        "inbox",
+        "profile_studio",
+        "analytics",
+        "infographics",
+        "learn_from_analytics",
+        "multi_account",
+    },
+    "influencer": {
+        "profile_optimizer",
+        "growth_analytics",
+        "content_studio",
+        "video_studio",
+        "video_tools",
+        "generate",
+        "qa",
+        "strategy",
+        "autopilot",
+        "inbox",
+        "profile_studio",
+        "analytics",
+        "infographics",
+        "learn_from_analytics",
+        "multi_account",
+    },
+    # Startup, Company, Agency: business tools (lead gen, WhatsApp agent)
+    "startup": {
+        "lead_gen",
+        "whatsapp_agent",
+        "content_studio",
+        "video_studio",
+        "video_tools",
+        "generate",
+        "qa",
+        "strategy",
+        "autopilot",
+        "inbox",
+        "profile_studio",
+        "infographics",
+    },
+    "company": {
+        "lead_gen",
+        "whatsapp_agent",
+        "growth_analytics",
+        "content_studio",
+        "video_studio",
+        "video_tools",
+        "generate",
+        "qa",
+        "strategy",
+        "autopilot",
+        "inbox",
+        "profile_studio",
+        "analytics",
+        "infographics",
+        "learn_from_analytics",
+        "multi_account",
+    },
+    "agency": {
+        "lead_gen",
+        "whatsapp_agent",
+        "content_studio",
+        "video_studio",
+        "video_tools",
+        "generate",
+        "qa",
+        "strategy",
+        "autopilot",
+        "inbox",
+        "profile_studio",
+        "infographics",
+    },
+}
+
+
 settings = get_settings()

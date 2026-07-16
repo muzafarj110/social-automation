@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getToken, logout, me, listAccounts, listClients, createClient, activateClient, deactivateClient } from "./api.js";
+import { hasFeature } from "./utils/features.js";
 import Auth from "./components/Auth.jsx";
 import Landing from "./components/Landing.jsx";
 import Onboarding from "./components/Onboarding.jsx";
@@ -226,7 +227,24 @@ export default function App() {
             <div key={section.group}>
               <div className="nav-group">{section.group}</div>
               {section.items.map(([id, label, feat, working]) => {
-                const locked = feat && ent[feat] === false;
+                // Map feature flags to feature names for permission checks
+                const featureMap = {
+                  'profile_studio': 'profile_optimizer',
+                  'lead_gen': 'lead_gen',
+                  'whatsapp_agent': 'whatsapp_agent',
+                  'analytics': 'growth_analytics',
+                };
+                const featureName = featureMap[feat] || feat;
+
+                // Check if feature is hidden (user doesn't have access and it's a gated feature)
+                const isHidden = featureName && !hasFeature(user, featureName);
+                const locked = feat && ent[feat] === false && !isHidden;
+
+                // If hidden completely, don't render at all
+                if (isHidden) {
+                  return null;
+                }
+
                 return (
                   <button key={id} className={`nav-item ${tab === id ? "active" : ""}`}
                     aria-current={tab === id ? "page" : undefined}
@@ -274,7 +292,7 @@ export default function App() {
           {tab === "strategy" && <Strategy goTab={setTab} />}
           {tab === "studio" && <Studio />}
           {tab === "videoagent" && <VideoAgent accounts={accounts} />}
-          {tab === "whatsappagent" && <WhatsAppAgent />}
+          {tab === "whatsappagent" && hasFeature(user, 'whatsapp_agent') && <WhatsAppAgent />}
           {tab === "team" && (
             <ContentTeam
               goTab={setTab}
@@ -287,8 +305,8 @@ export default function App() {
           {tab === "posts" && <Posts refreshKey={postsRefresh} accounts={accounts} />}
           {tab === "campaigns" && <Campaigns accounts={accounts} goTab={setTab} />}
           {tab === "inbox" && <Inbox accounts={accounts} />}
-          {tab === "profile" && <ProfileStudio />}
-          {tab === "analytics" && <Analytics />}
+          {tab === "profile" && hasFeature(user, 'profile_optimizer') && <ProfileStudio />}
+          {tab === "analytics" && hasFeature(user, 'growth_analytics') && <Analytics />}
           {tab === "accounts" && (
             <Accounts user={user} accounts={accounts} reloadAccounts={reloadAccounts} refreshUser={refreshUser} goTab={setTab} />
           )}
@@ -297,7 +315,7 @@ export default function App() {
           {tab === "listening" && <SocialListening />}
           {tab === "seo" && <SeoGeo />}
           {tab === "opportunities" && <Opportunities goTab={setTab} />}
-          {tab === "leads" && <Leads refreshUser={refreshUser} />}
+          {tab === "leads" && hasFeature(user, 'lead_gen') && <Leads refreshUser={refreshUser} />}
           {tab === "connections" && (
             <Connections accounts={accounts} goAccounts={() => setTab("accounts")} goWhatsAppAgent={() => setTab("whatsappagent")} />
           )}

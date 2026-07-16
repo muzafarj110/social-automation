@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -36,6 +37,7 @@ class UserOut(BaseModel):
     has_zernio_key: bool = False
     profile_type: str | None = None
     entitlements: dict[str, bool] = {}
+    available_features: List[str] = []
     is_admin: bool = False
     automation_paused: bool = False
     credits: int = 0

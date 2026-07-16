@@ -12,13 +12,15 @@ from __future__ import annotations
 import base64
 import hashlib
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from functools import wraps
+from typing import Any, Callable
 
 import bcrypt
 import jwt
 from cryptography.fernet import Fernet, InvalidToken
+from fastapi import HTTPException, status
 
-from app.core.config import settings
+from app.core.config import settings, FEATURE_PERMISSIONS
 
 
 # --- Passwords ---------------------------------------------------------------
@@ -63,3 +65,66 @@ def decrypt_secret(ciphertext: str) -> str | None:
         return _fernet().decrypt(ciphertext.encode("utf-8")).decode("utf-8")
     except (InvalidToken, ValueError):
         return None
+
+
+# --- Feature Gating by Profile Type -----------------------------------------------
+def require_feature(feature_name: str) -> Callable:
+    """
+    Decorator to gate endpoint access by user profile_type and available features.
+
+    Usage:
+        @router.get("/leads")
+        @require_feature("lead_gen")
+        async def list_leads(...):
+            ...
+
+    Checks if the current user's profile_type has access to the requested feature.
+    Admins (is_staff or is_superuser) bypass all checks.
+    Returns 403 Forbidden if feature is not available for the user's profile.
+
+    Args:
+        feature_name: The feature key to check (e.g., "lead_gen", "whatsapp_agent")
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Extract the current user from kwargs (passed via FastAPI dependency injection)
+            current_user = kwargs.get("current")
+            if not current_user:
+                # Try alternate naming patterns
+                for key in kwargs:
+                    obj = kwargs[key]
+                    if hasattr(obj, "profile_type") and hasattr(obj, "email"):
+                        current_user = obj
+                        break
+
+            if not current_user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required",
+                )
+
+            # Admins (superuser or staff) bypass all feature checks
+            if getattr(current_user, "is_staff", False) or getattr(current_user, "is_superuser", False):
+                return await func(*args, **kwargs)
+
+            # Check if user's profile_type has access to this feature
+            profile_type = getattr(current_user, "profile_type", None)
+            if not profile_type:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Profile type not set. Please complete your onboarding.",
+                )
+
+            allowed_features = FEATURE_PERMISSIONS.get(profile_type, set())
+            if feature_name not in allowed_features:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"This feature is not available for your account type. "
+                           f"Profile: {profile_type}. Feature: {feature_name}.",
+                )
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+    return decorator

@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
-from app.core.config import settings
+from app.core.config import settings, FEATURE_PERMISSIONS
 from app.core.security import (
     create_access_token,
     encrypt_secret,
@@ -69,6 +69,9 @@ def _user_out(user: User) -> UserOut:
     out.subscribed = credits.is_subscribed(user)
     out.free_today_remaining = credits.free_remaining(user)
     out.trial_ends_at = user.trial_ends_at
+    # Populate available features based on profile_type
+    if user.profile_type and user.profile_type in FEATURE_PERMISSIONS:
+        out.available_features = sorted(list(FEATURE_PERMISSIONS[user.profile_type]))
     return out
 
 
