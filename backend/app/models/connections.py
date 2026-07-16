@@ -28,6 +28,18 @@ class WhatsAppConnection(Base):
     # Default send-to number (E.164 format, e.g. +15550001234)
     to_number = Column(String, nullable=True)
     auto_post = Column(Boolean, nullable=False, default=False)
+    # WhatsApp agent — 24/7 autonomous customer-response AI (separate from
+    # auto_post, which is the unrelated/unbuilt "cross-post my LinkedIn
+    # content" toggle above).
+    auto_reply_enabled = Column(Boolean, nullable=False, default=False)
+    escalation_keywords = Column(String, nullable=True)  # comma-separated
+    webhook_verify_token = Column(String, nullable=True)  # generated on connect
+    # Meta App Secret (App Settings > Basic — different from the access
+    # token) used to verify the X-Hub-Signature-256 header on inbound
+    # webhook calls, so a third party can't forge customer messages that
+    # trigger real AI replies and spend real credits under this business's
+    # identity.
+    app_secret_enc = Column(String, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

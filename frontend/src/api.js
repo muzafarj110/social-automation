@@ -206,6 +206,10 @@ export const connectWhatsApp = (data) => apiSend("/connections/whatsapp", "POST"
 export const disconnectWhatsApp = () => apiSend("/connections/whatsapp", "DELETE");
 export const toggleWhatsAppAutoPost = () => apiSend("/connections/whatsapp/toggle", "PATCH", {});
 export const sendWhatsApp = (data) => apiSend("/connections/whatsapp/send", "POST", data);
+export const getWhatsAppAgentSettings = () => apiGet("/connections/whatsapp/agent");
+export const updateWhatsAppAgentSettings = (data) => apiSend("/connections/whatsapp/agent", "PATCH", data);
+export const listWhatsAppFlagged = () => apiGet("/connections/whatsapp/flagged");
+export const dismissWhatsAppFlagged = (messageId) => apiSend(`/connections/whatsapp/flagged/${messageId}/dismiss`, "POST", {});
 export const connectTelegram = (data) => apiSend("/connections/telegram", "POST", data);
 export const disconnectTelegram = () => apiSend("/connections/telegram", "DELETE");
 export const toggleTelegramAutoPost = () => apiSend("/connections/telegram/toggle", "PATCH", {});

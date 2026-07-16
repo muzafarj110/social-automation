@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   getConnections,
-  connectWhatsApp,
-  disconnectWhatsApp,
-  toggleWhatsAppAutoPost,
-  sendWhatsApp,
   connectTelegram,
   disconnectTelegram,
   toggleTelegramAutoPost,
@@ -167,147 +163,45 @@ function InfoBox({ children }) {
 }
 
 // ── WhatsApp Panel ─────────────────────────────────────────────────────────────
+// Full setup (connect, auto-reply AI, knowledge base, flagged conversations)
+// now lives in the WhatsApp agent page — this is just a status summary + link.
 
-function WhatsAppPanel({ status, onRefresh }) {
-  const [phoneId, setPhoneId] = useState("");
-  const [token, setToken] = useState("");
-  const [toNumber, setToNumber] = useState("");
-  const [sending, setSending] = useState(false);
-  const [manualText, setManualText] = useState("");
-  const [err, setErr] = useState("");
-  const [msg, setMsg] = useState("");
-
+function WhatsAppPanel({ status, goWhatsAppAgent }) {
   const connected = status?.connected;
-
-  const connect = async () => {
-    setErr(""); setMsg("");
-    if (!phoneId || !token || !toNumber) { setErr("Fill in all fields."); return; }
-    setSending(true);
-    try {
-      await connectWhatsApp({ phone_number_id: phoneId, access_token: token, to_number: toNumber });
-      setMsg("Connected! Check your WhatsApp for a test message.");
-      setPhoneId(""); setToken(""); setToNumber("");
-      onRefresh();
-    } catch (e) { setErr(e.message); }
-    setSending(false);
-  };
-
-  const disconnect = async () => {
-    if (!confirm("Disconnect WhatsApp?")) return;
-    await disconnectWhatsApp();
-    onRefresh();
-  };
-
-  const toggle = async () => {
-    await toggleWhatsAppAutoPost();
-    onRefresh();
-  };
-
-  const sendNow = async () => {
-    if (!manualText) return;
-    setSending(true); setErr(""); setMsg("");
-    try {
-      await sendWhatsApp({ text: manualText });
-      setMsg("Message sent!"); setManualText("");
-    } catch (e) { setErr(e.message); }
-    setSending(false);
-  };
-
-  const stepState = (n) => {
-    if (connected) return "done";
-    return n === 3 ? "active" : n < 3 ? "done" : "pending";
-  };
-
   return (
     <div>
       <div style={{ fontSize: 16, fontWeight: 500, color: "var(--ink)", marginBottom: 4 }}>
-        Connect WhatsApp Business
+        WhatsApp Business
       </div>
       <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 20 }}>
-        Uses Meta's official Cloud API — free up to 1,000 conversations/month. 5 minute setup.
+        Connection, the 24/7 auto-reply AI, and its knowledge base are managed in the WhatsApp agent —
+        a dedicated AI agent, not just a settings toggle.
       </div>
-
       {connected ? (
-        <>
-          <ConnectedBadge
-            name={status.verified_name || "WhatsApp Business"}
-            sub={status.display_phone || status.to_number}
-            onDisconnect={disconnect}
-          />
-          <div style={{ marginTop: 14 }}>
-            <AutoToggle
-              label="Auto-post LinkedIn content to WhatsApp"
-              checked={status.auto_post}
-              onChange={toggle}
-            />
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12, background: "var(--light)",
+          border: "1px solid var(--line)", borderRadius: 10, padding: "10px 14px",
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{status.verified_name || "WhatsApp Business"}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{status.display_phone || status.to_number}</div>
           </div>
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>
-              Send manual message
-            </div>
-            <textarea
-              value={manualText}
-              onChange={(e) => setManualText(e.target.value)}
-              placeholder="Type a message to send now..."
-              rows={3}
-              style={{
-                width: "100%", padding: "8px 12px", borderRadius: 8,
-                border: "1px solid var(--line)", background: "var(--light)",
-                fontSize: 13, color: "var(--ink)", resize: "vertical", outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-            <div style={{ marginTop: 8 }}>
-              <Btn onClick={sendNow} disabled={sending || !manualText}>
-                {sending ? "Sending…" : "Send now"}
-              </Btn>
-            </div>
-          </div>
-        </>
+        </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <Step n={1} total={5} label="Create a Meta Developer App" state={stepState(1)}
-            hint="Go to developers.facebook.com → My Apps → Create App → choose Business type.">
-            <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12,
-                color: "var(--teal-dark)", textDecoration: "none", background: "var(--light)",
-                border: "1px solid var(--teal)", borderRadius: 6, padding: "5px 12px" }}>
-              Open Meta Developers ↗
-            </a>
-          </Step>
-          <Step n={2} total={5} label="Add WhatsApp product" state={stepState(2)}
-            hint="Inside your app → Add Product → WhatsApp → Set Up." />
-          <Step n={3} total={5} label="Copy your Phone Number ID" state={stepState(3)}
-            hint="Go to WhatsApp → API Setup. Copy the Phone Number ID (a long number, not the phone number itself).">
-            <div style={{ display: "flex", gap: 8 }}>
-              <Input placeholder="e.g. 123456789012345" value={phoneId} onChange={setPhoneId} />
-            </div>
-          </Step>
-          <Step n={4} total={5} label="Copy your Access Token" state="pending"
-            hint="On the same page, copy the Temporary Access Token. For production, use a permanent token from System Users.">
-            <div style={{ display: "flex", gap: 8 }}>
-              <Input type="password" placeholder="EAAxxxxxxxxxxxxxxxx" value={token} onChange={setToken} />
-            </div>
-          </Step>
-          <Step n={5} total={5} label="Your WhatsApp Business number (E.164)" state="pending"
-            hint='The phone number to send messages to, including country code. Example: +971501234567'>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Input placeholder="+971501234567" value={toNumber} onChange={setToNumber} />
-              <Btn onClick={connect} disabled={sending}>
-                {sending ? "Connecting…" : "Connect WhatsApp"}
-              </Btn>
-            </div>
-          </Step>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12, background: "var(--light)",
+          border: "1px solid var(--line)", borderRadius: 10, padding: "10px 14px",
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted)", flexShrink: 0 }} />
+          <div style={{ fontSize: 13, color: "var(--muted)" }}>Not connected yet</div>
         </div>
       )}
-
-      {err && <div style={{ marginTop: 10, fontSize: 13, color: "#dc2626" }}>{err}</div>}
-      {msg && <div style={{ marginTop: 10, fontSize: 13, color: "var(--teal-dark)" }}>{msg}</div>}
-
-      <InfoBox>
-        <strong>Free tier:</strong> 1,000 conversations/month at no cost. After that, Meta charges
-        ~$0.005–$0.08 per conversation. Most users stay within the free tier.
-      </InfoBox>
+      <div style={{ marginTop: 14 }}>
+        <Btn onClick={goWhatsAppAgent}>
+          {connected ? "Manage in WhatsApp agent →" : "Set up in WhatsApp agent →"}
+        </Btn>
+      </div>
     </div>
   );
 }
@@ -463,7 +357,7 @@ const PLATFORM_LABEL = {
   snapchat: "Snapchat", discord: "Discord",
 };
 
-export default function Connections({ accounts = [], goAccounts }) {
+export default function Connections({ accounts = [], goAccounts, goWhatsAppAgent }) {
   const [status, setStatus] = useState(null);
   const [tab, setTab] = useState("wa");
   const [loading, setLoading] = useState(true);
@@ -549,7 +443,7 @@ export default function Connections({ accounts = [], goAccounts }) {
         {loading ? (
           <div style={{ color: "var(--muted)", fontSize: 13 }}>Loading…</div>
         ) : tab === "wa" ? (
-          <WhatsAppPanel status={wa} onRefresh={load} />
+          <WhatsAppPanel status={wa} goWhatsAppAgent={goWhatsAppAgent} />
         ) : (
           <TelegramPanel status={tg} onRefresh={load} />
         )}

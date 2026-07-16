@@ -12,9 +12,11 @@ from app.models.seo_geo import SeoProject
 from app.models.social_listening import ListeningTopic
 from app.models.user import User
 from app.models.video_channel import VideoChannel
+from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
 
 __all__ = [
     "User", "LinkedInAccount", "Post", "Approval", "Campaign",
     "BrandProfile", "Competitor", "ListeningTopic", "SeoProject", "ProactiveItem",
     "WhatsAppConnection", "TelegramConnection", "VideoChannel", "GeneratedVideo", "KidsVideoAsset",
+    "WhatsAppConversation", "WhatsAppMessage",
 ]

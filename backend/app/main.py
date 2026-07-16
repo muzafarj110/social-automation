@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api import (
     accounts, admin, analytics, auth, billing, brand, campaigns, clients, competitor, connections,
     content, inbox, leads, media, opportunities, posts, proactive, profile, routes, seo_geo,
-    social_listening, team, videos,
+    social_listening, team, videos, whatsapp_webhook,
 )
 from app.core.config import settings
 from app.db.session import init_db
@@ -115,6 +115,7 @@ app.include_router(team.router, prefix="/api")
 app.include_router(clients.router, prefix="/api")
 # Channel connections — WhatsApp Business + Telegram
 app.include_router(connections.router, prefix="/api")
+app.include_router(whatsapp_webhook.router, prefix="/api")
 # Media uploads
 app.include_router(media.router, prefix="/api")
 # Video agent — Faceless Video Pipeline integration

@@ -8,27 +8,38 @@ are automatically cross-posted.
 
 from __future__ import annotations
 
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.security import decrypt_secret, encrypt_secret
 from app.db.session import get_db
 from app.models.connections import TelegramConnection, WhatsAppConnection
 from app.models.user import User
+from app.models.whatsapp_conversation import WhatsAppConversation, WhatsAppMessage
 from app.services import telegram as tg_svc
 from app.services import whatsapp as wa_svc
 
 router = APIRouter(prefix="/connections", tags=["connections"])
+
+# Sensible starting point; user-editable via PATCH /whatsapp/agent.
+DEFAULT_ESCALATION_KEYWORDS = (
+    "refund, chargeback, cancel, complaint, legal, lawsuit, scam, fraud, "
+    "credit card, bank details"
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _wa_out(conn: WhatsAppConnection | None) -> dict:
     if not conn:
-        return {"connected": False, "auto_post": False}
+        return {"connected": False, "auto_post": False, "auto_reply_enabled": False}
+    base = (settings.app_base_url or "").rstrip("/")
     return {
         "connected": True,
         "phone_number_id": conn.phone_number_id,
@@ -36,6 +47,10 @@ def _wa_out(conn: WhatsAppConnection | None) -> dict:
         "verified_name": conn.verified_name,
         "to_number": conn.to_number,
         "auto_post": conn.auto_post,
+        "auto_reply_enabled": conn.auto_reply_enabled,
+        "escalation_keywords": conn.escalation_keywords or DEFAULT_ESCALATION_KEYWORDS,
+        "webhook_url": f"{base}/api/whatsapp/webhook" if base else None,
+        "webhook_verify_token": conn.webhook_verify_token,
     }
 
 
@@ -80,6 +95,9 @@ class WhatsAppConnect(BaseModel):
     phone_number_id: str = Field(..., min_length=1)
     access_token: str = Field(..., min_length=1)
     to_number: str = Field(..., min_length=1, description="E.164 format, e.g. +15550001234")
+    app_secret: str | None = Field(
+        None, description="Meta App Settings > Basic > App Secret — required for the WhatsApp agent's webhook signature verification."
+    )
 
 
 @router.post("/whatsapp")
@@ -101,6 +119,14 @@ async def connect_whatsapp(
     conn.to_number = body.to_number
     conn.display_phone = info.get("display_phone_number")
     conn.verified_name = info.get("verified_name")
+    if body.app_secret:
+        conn.app_secret_enc = encrypt_secret(body.app_secret)
+    # Generated once, not rotated on reconnect — rotating would silently break
+    # an already-configured Meta webhook until the user re-pastes the token.
+    if not conn.webhook_verify_token:
+        conn.webhook_verify_token = secrets.token_urlsafe(24)
+    if not conn.escalation_keywords:
+        conn.escalation_keywords = DEFAULT_ESCALATION_KEYWORDS
     await db.commit()
     await db.refresh(conn)
 
@@ -166,6 +192,128 @@ async def send_whatsapp(
         raise HTTPException(400, "No recipient number configured.")
     result = await wa_svc.send_text(conn.phone_number_id, token, to, body.text)
     return {"ok": True, "result": result}
+
+
+# ── WhatsApp agent (24/7 autonomous customer-response AI) ──────────────────────
+
+class WhatsAppAgentSettings(BaseModel):
+    auto_reply_enabled: bool | None = None
+    escalation_keywords: str | None = None
+
+
+@router.patch("/whatsapp/agent")
+async def update_whatsapp_agent_settings(
+    body: WhatsAppAgentSettings,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    conn = await _get_wa(current.id, db)
+    if not conn:
+        raise HTTPException(404, "WhatsApp not connected.")
+    if body.auto_reply_enabled is not None:
+        conn.auto_reply_enabled = body.auto_reply_enabled
+    if body.escalation_keywords is not None:
+        conn.escalation_keywords = body.escalation_keywords
+    await db.commit()
+    await db.refresh(conn)
+    return _wa_out(conn)
+
+
+@router.get("/whatsapp/agent")
+async def get_whatsapp_agent_settings(
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Connection + agent settings, plus whether the webhook has ever
+    actually received a message — the single most useful signal for a user
+    debugging "why isn't my AI replying," since a misconfigured Meta webhook
+    fails silently otherwise."""
+    conn = await _get_wa(current.id, db)
+    out = _wa_out(conn)
+    if conn:
+        received = await db.scalar(
+            select(func.count(WhatsAppMessage.id))
+            .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
+            .where(WhatsAppConversation.user_id == current.id)
+            .where(WhatsAppMessage.sender == "customer")
+        )
+        out["webhook_active"] = bool(received)
+    return out
+
+
+def _conversation_out(conv: WhatsAppConversation) -> dict:
+    return {
+        "id": conv.id,
+        "customer_phone": conv.customer_phone,
+        "customer_name": conv.customer_name,
+        "status": conv.status,
+        "updated_at": conv.updated_at,
+    }
+
+
+def _message_out(msg: WhatsAppMessage) -> dict:
+    return {
+        "id": msg.id,
+        "conversation_id": msg.conversation_id,
+        "sender": msg.sender,
+        "text": msg.text,
+        "flagged": msg.flagged,
+        "flag_reason": msg.flag_reason,
+        "created_at": msg.created_at,
+    }
+
+
+@router.get("/whatsapp/flagged")
+async def list_flagged_whatsapp_messages(
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Flagged customer messages needing a human's eyes — plus the AI's reply
+    that followed, if any, so the owner can see what was actually sent."""
+    rows = await db.execute(
+        select(WhatsAppMessage, WhatsAppConversation)
+        .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
+        .where(WhatsAppConversation.user_id == current.id)
+        .where(WhatsAppMessage.flagged.is_(True))
+        .order_by(WhatsAppMessage.created_at.desc())
+    )
+    out = []
+    for msg, conv in rows.all():
+        # id, not created_at, breaks ties correctly — the inbound message and
+        # its AI reply are often stored within the same second.
+        reply = await db.scalar(
+            select(WhatsAppMessage)
+            .where(WhatsAppMessage.conversation_id == conv.id)
+            .where(WhatsAppMessage.sender == "ai")
+            .where(WhatsAppMessage.id > msg.id)
+            .order_by(WhatsAppMessage.id.asc())
+            .limit(1)
+        )
+        out.append({
+            "message": _message_out(msg),
+            "conversation": _conversation_out(conv),
+            "ai_reply": _message_out(reply) if reply else None,
+        })
+    return out
+
+
+@router.post("/whatsapp/flagged/{message_id}/dismiss")
+async def dismiss_flagged_whatsapp_message(
+    message_id: int,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    msg = await db.scalar(
+        select(WhatsAppMessage)
+        .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
+        .where(WhatsAppMessage.id == message_id)
+        .where(WhatsAppConversation.user_id == current.id)
+    )
+    if not msg:
+        raise HTTPException(404, "Flagged message not found.")
+    msg.flagged = False
+    await db.commit()
+    return {"ok": True}
 
 
 # ── Telegram ──────────────────────────────────────────────────────────────────

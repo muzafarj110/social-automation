@@ -18,6 +18,7 @@ import Leads from "./components/Leads.jsx";
 import Opportunities from "./components/Opportunities.jsx";
 import Studio from "./components/Studio.jsx";
 import VideoAgent from "./components/VideoAgent.jsx";
+import WhatsAppAgent from "./components/WhatsAppAgent.jsx";
 import ContentTeam from "./components/ContentTeam.jsx";
 import Competitor from "./components/Competitor.jsx";
 import SocialListening from "./components/SocialListening.jsx";
@@ -34,6 +35,7 @@ const NAV = [
     ["strategy", "Brand strategist", "strategy", false],
     ["studio", "Studio agent", null, false],
     ["videoagent", "Video agent", null, false],
+    ["whatsappagent", "WhatsApp agent", null, false],
   ] },
   { group: "Growth agents", items: [
     ["competitor", "Competitor agent", null, true],
@@ -55,6 +57,7 @@ const TITLES = {
   strategy: ["Brand strategist", "Your voice, persona and positioning — used by every agent"],
   studio: ["Studio agent", "Reports, email, SEO, formats & graphics — powered by AI"],
   videoagent: ["Video agent", "Turn a topic into a short + long video, ready to post"],
+  whatsappagent: ["WhatsApp agent", "A 24/7 AI that answers customer messages from your knowledge base"],
   campaigns: ["Always-on Campaigns", "Set it once — AI writes, tailors and posts on a schedule"],
   posts: ["Posts", "Drafts, scheduled and published"],
   inbox: ["Approvals", "AI-drafted replies, DMs and outreach to approve"],
@@ -271,6 +274,7 @@ export default function App() {
           {tab === "strategy" && <Strategy goTab={setTab} />}
           {tab === "studio" && <Studio />}
           {tab === "videoagent" && <VideoAgent accounts={accounts} />}
+          {tab === "whatsappagent" && <WhatsAppAgent />}
           {tab === "team" && (
             <ContentTeam
               goTab={setTab}
@@ -294,7 +298,9 @@ export default function App() {
           {tab === "seo" && <SeoGeo />}
           {tab === "opportunities" && <Opportunities goTab={setTab} />}
           {tab === "leads" && <Leads refreshUser={refreshUser} />}
-          {tab === "connections" && <Connections accounts={accounts} goAccounts={() => setTab("accounts")} />}
+          {tab === "connections" && (
+            <Connections accounts={accounts} goAccounts={() => setTab("accounts")} goWhatsAppAgent={() => setTab("whatsappagent")} />
+          )}
           {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}
         </div>
