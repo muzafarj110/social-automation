@@ -10,6 +10,7 @@ import {
   setAutomation,
   changePassword,
   getUsage,
+  suppressAuthExpiry,
 } from "../api.js";
 
 // The platforms the app supports (mirrors backend app/core/platforms.py).
@@ -203,18 +204,17 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser, 
   // When the user returns from the platform's OAuth (?connected=…), auto-import.
   useEffect(() => {
     if (typeof window !== "undefined" && /[?&]connected=/.test(window.location.search)) {
-      // Wrap doImport() to catch auth errors during the OAuth callback
+      // Keep the user right here on the Accounts page through the import — a
+      // transient 401 must not bounce them to the auth screen (suppress flag),
+      // and doImport() itself reloads the list so the new account shows up.
+      suppressAuthExpiry(true);
       (async () => {
         try {
           await doImport();
         } catch (e) {
-          // If token expired during OAuth flow, just show them the import worked
-          if (e.response?.status === 401 || e.message?.includes("401") || e.message?.includes("Unauthorized")) {
-            setMsg("Account connected! Refresh this page to see it in your list.");
-          } else {
-            setError(e.message || "Failed to import connected accounts. Please try again.");
-          }
+          setError(e.message || "Couldn't import the connected account — click \"Refresh connected accounts\" to try again.");
         } finally {
+          suppressAuthExpiry(false);
           window.history.replaceState({}, "", window.location.origin + window.location.pathname + "#accounts");
         }
       })();

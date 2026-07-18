@@ -23,11 +23,20 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+// While an OAuth connect-callback is importing accounts, a transient 401 must
+// NOT tear down the session and bounce the user to the auth screen — the caller
+// handles it locally. Accounts.jsx sets/clears this flag around the import.
+export function suppressAuthExpiry(on) {
+  if (on) sessionStorage.setItem("suppress_auth_expiry", "1");
+  else sessionStorage.removeItem("suppress_auth_expiry");
+}
+
 // On 401: clear token and signal the app to show login
 http.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401 && getToken()) {
+    if (err.response?.status === 401 && getToken()
+        && sessionStorage.getItem("suppress_auth_expiry") !== "1") {
       setToken(null);
       window.dispatchEvent(new Event("auth:expired"));
     }

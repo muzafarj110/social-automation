@@ -78,13 +78,22 @@ const TITLES = {
   help: ["How Autopilot Works", "Learn how to generate leads, create content, and automate your marketing"],
 };
 
+// Only a real password-reset / email-verify link should force the auth screen.
+// Must scope to those flows (`#reset`/`#verify`) — a bare /token=/ also matches
+// OAuth-callback params like `oauth_token=` (LinkedIn/Twitter) and would wrongly
+// bounce a logged-in user to the auth screen when they return from connecting a
+// social account. Mirrors Auth.jsx's readToken() scoping.
+function isResetVerifyLink(str) {
+  return /[?&]token=/.test(str) && /(reset|verify)/i.test(str);
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
   // null = show public landing page; "login"/"register" = show the auth screen.
   // Jump straight to auth when a reset/verify link is opened (has ?token=).
   const [authView, setAuthView] = useState(() => {
     const h = (window.location.hash || "") + (window.location.search || "");
-    return /token=/.test(h) ? "login" : null;
+    return isResetVerifyLink(h) ? "login" : null;
   });
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState([]);
@@ -172,7 +181,7 @@ export default function App() {
   // A reset/verify link (#reset?token=... or #verify?token=...) must open the
   // Auth screen even if a valid session token already exists in localStorage —
   // otherwise it silently does nothing for already-logged-in users.
-  const hasUrlToken = /token=/.test((window.location.hash || "") + (window.location.search || ""));
+  const hasUrlToken = isResetVerifyLink((window.location.hash || "") + (window.location.search || ""));
   if (hasUrlToken) {
     return <Auth initialMode="login" onAuthed={onAuthed} onBack={() => setAuthView(null)} />;
   }
