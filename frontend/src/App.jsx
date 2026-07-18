@@ -30,7 +30,7 @@ import HelpCenter from "./components/HelpCenter.jsx";
 // Each item: [tabId, label, featureFlag, working?]. `working` shows a live
 // pulsing status dot — the "this agent is on the job 24/7" cue (NoimosAI model).
 const NAV = [
-  { group: "Command center", items: [["home", "Live work feed", null], ["help", "Learn how it works", null]] },
+  { group: "Command center", items: [["home", "Live work feed", null]] },
   { group: "Your AI team", items: [
     ["team", "Content agent", null, true],
     ["campaigns", "Always-on Campaigns", "autopilot", true],

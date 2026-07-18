@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listPosts, listInbox, listCampaigns, zernioMetrics, listAccounts, getBrand, listProactiveItems, generateProactiveItem, dismissProactiveItem } from "../api.js";
+import HelpCenter from "./HelpCenter.jsx";
 
 // ---- Agent identities (avatar + accent) used across the live work feed ----
 const AGENTS = {
@@ -73,6 +74,7 @@ export default function Home({ goTab, user, onDirective }) {
   const [error, setError] = useState("");
   const [directive, setDirective] = useState("");
   const [proactive, setProactive] = useState([]);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -141,6 +143,28 @@ export default function Home({ goTab, user, onDirective }) {
 
   return (
     <>
+      {/* Help modal overlay */}
+      {helpOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.4)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 20,
+        }} onClick={() => setHelpOpen(false)}>
+          <div style={{
+            background: "#fff", borderRadius: 12, maxWidth: 900, maxHeight: "90vh", overflow: "auto",
+            width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ position: "sticky", top: 0, background: "#fff", borderBottom: "1px solid var(--line)", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10 }}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>How Autopilot Works</h2>
+              <button onClick={() => setHelpOpen(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "var(--muted)" }} aria-label="Close">×</button>
+            </div>
+            <div style={{ padding: 0 }}>
+              <HelpCenter />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat bar — briefs the Content agent's weekly plan in natural language */}
       <form onSubmit={submitDirective} style={{
         display: "flex", alignItems: "center", gap: 10, background: "#fff",
@@ -156,6 +180,17 @@ export default function Home({ goTab, user, onDirective }) {
         />
         <button type="submit" className="btn-primary" style={{ borderRadius: 999, width: 40, height: 40, padding: 0, fontSize: 18, flexShrink: 0 }} aria-label="Send to team">↑</button>
       </form>
+
+      {/* Learn how it works button */}
+      <div style={{ marginBottom: 18 }}>
+        <button onClick={() => setHelpOpen(true)} style={{
+          width: "100%", padding: "12px 16px", background: "var(--teal-tint)", border: "1px solid var(--teal)",
+          borderRadius: 10, color: "var(--teal-deep)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+          textAlign: "center", transition: "all 0.2s",
+        }} onMouseEnter={(e) => e.target.style.background = "var(--teal)"} onMouseEnter={(e) => { e.target.style.background = "var(--teal)"; e.target.style.color = "#fff"; }} onMouseLeave={(e) => { e.target.style.background = "var(--teal-tint)"; e.target.style.color = "var(--teal-deep)"; }}>
+          📚 Learn how it works
+        </button>
+      </div>
 
       {/* Agents working strip */}
       <div className="card" style={{ marginBottom: 18, padding: "14px 18px" }}>
