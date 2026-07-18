@@ -357,12 +357,14 @@ class ZernioClient:
         )
 
     # -- accounts / orgs / analytics / comments ------------------------------
-    async def list_accounts(self, *, profile_id: str | None = None) -> dict[str, Any]:
+    async def list_accounts(self, *, profile_id: str | None) -> dict[str, Any]:
         """GET /accounts — connected social accounts.
 
-        Pass profile_id to scope to ONE profile (one customer). Omitting it under
-        an app-level key returns accounts across ALL profiles — never do that for
-        a per-customer view."""
+        profile_id has no default — callers must pass it explicitly (None is
+        allowed for legacy single-tenant callers whose per-user key already
+        scopes access, but it must be a deliberate choice, not an omitted kwarg).
+        Zernio defaults profileId to "all" under an app-level key, so a forgotten
+        argument here would silently return every customer's accounts."""
         params = {"profileId": profile_id} if profile_id else None
         return await self._request("GET", "/accounts", params=params)
 
@@ -398,13 +400,14 @@ class ZernioClient:
         )
 
     async def get_analytics(
-        self, *, platform: str = "linkedin", profile_id: str | None = None,
+        self, *, platform: str = "linkedin", profile_id: str | None,
         from_date: str | None = None, to_date: str | None = None,
     ) -> dict[str, Any]:
         """GET /analytics — post metrics for a platform/date range.
 
-        profileId defaults to "all" on Zernio's side, so pass profile_id to scope
-        to one customer — omitting it under an app key leaks across customers."""
+        profile_id has no default — callers must pass it explicitly. Zernio
+        defaults profileId to "all" on its side, so a forgotten argument here
+        would silently leak analytics across every customer under an app key."""
         params: dict[str, Any] = {"platform": platform}
         if profile_id:
             params["profileId"] = profile_id
@@ -432,8 +435,14 @@ class ZernioClient:
         """
         return await self._request("DELETE", f"/posts/{post_id}")
 
-    async def list_comments(self, **params: Any) -> dict[str, Any]:
-        """GET /comments — inbox comments (LinkedIn: org pages only)."""
+    async def list_comments(self, *, profile_id: str | None, **params: Any) -> dict[str, Any]:
+        """GET /comments — inbox comments (LinkedIn: org pages only).
+
+        profile_id is explicit (not folded into **params) so it can't be
+        forgotten — Zernio defaults profileId to "all" under an app key,
+        which would leak every customer's comments into one inbox."""
+        if profile_id:
+            params["profileId"] = profile_id
         return await self._request("GET", "/comments", params=params)
 
     async def reply_comment(self, comment_id: str, message: str) -> dict[str, Any]:

@@ -163,7 +163,7 @@ export default function Generate({ accounts, onSaved, goConnect }) {
     setError("");
     setMsg("");
     if (!accountId) {
-      setError("Select a LinkedIn account first.");
+      setError("Select a connected account first.");
       return;
     }
     setBusy(true);
@@ -191,7 +191,7 @@ export default function Generate({ accounts, onSaved, goConnect }) {
       {msg && <div className="flash success" role="status">{msg}</div>}
 
       <div className="card">
-        <h2>Generate a LinkedIn post</h2>
+        <h2>Generate a post</h2>
         <form onSubmit={doGenerate}>
           <label htmlFor="gen-topic">Topic</label>
           <textarea

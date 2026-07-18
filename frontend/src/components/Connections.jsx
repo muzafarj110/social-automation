@@ -275,7 +275,7 @@ function TelegramPanel({ status, onRefresh }) {
           />
           <div style={{ marginTop: 14 }}>
             <AutoToggle
-              label="Auto-post LinkedIn content to Telegram"
+              label="Auto-post your content to Telegram"
               checked={status.auto_post}
               onChange={toggle}
             />
@@ -431,7 +431,7 @@ export default function Connections({ accounts = [], goAccounts, goWhatsAppAgent
       </div>
 
       <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 20 }}>
-        Connect messaging channels to cross-post your LinkedIn content automatically or on demand.
+        Connect messaging channels to cross-post content from any of your connected accounts, automatically or on demand.
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>

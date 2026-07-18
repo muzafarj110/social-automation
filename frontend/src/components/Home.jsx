@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { listPosts, listInbox, listCampaigns, zernioMetrics, listAccounts, getBrand, listProactiveItems, generateProactiveItem, dismissProactiveItem } from "../api.js";
 import HelpCenter from "./HelpCenter.jsx";
+import { platformLabel } from "../utils/platforms.js";
+import { aggregatePosts, filterPostsByPlatform } from "../utils/analyticsAggregate.js";
 
 // ---- Agent identities (avatar + accent) used across the live work feed ----
 const AGENTS = {
@@ -75,6 +77,7 @@ export default function Home({ goTab, user, onDirective }) {
   const [directive, setDirective] = useState("");
   const [proactive, setProactive] = useState([]);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [metricsFilter, setMetricsFilter] = useState("all");
 
   useEffect(() => {
     (async () => {
@@ -86,9 +89,16 @@ export default function Home({ goTab, user, onDirective }) {
           listAccounts().catch(() => []),
           getBrand().catch(() => ({})),
         ]);
-        let metrics = null;
-        try { const z = await zernioMetrics(); if (z.ok) metrics = z.summary; } catch { /* no key */ }
-        setData({ posts, inbox, campaigns, accounts, brand, metrics });
+        let metrics = null, metricsPlatforms = [], metricsPosts = [];
+        try {
+          const z = await zernioMetrics();
+          if (z.ok) {
+            metrics = z.summary;
+            metricsPlatforms = z.platforms || [];
+            metricsPosts = z.data?.posts || [];
+          }
+        } catch { /* no key */ }
+        setData({ posts, inbox, campaigns, accounts, brand, metrics, metricsPlatforms, metricsPosts });
       } catch (e) { setError(e.message); }
     })();
   }, []);
@@ -215,26 +225,43 @@ export default function Home({ goTab, user, onDirective }) {
       </div>
 
       {/* Performance band (only when we have live metrics) */}
-      {data.metrics && (
-        <div className="hero" style={{ marginBottom: 18 }}>
-          <div className="orb" />
-          <div className="row" style={{ position: "relative", alignItems: "center" }}>
-            <div>
-              <h2 style={{ color: "#fff", margin: 0 }}>Your performance</h2>
-              <p style={{ margin: "4px 0 0", opacity: 0.9, fontSize: 13 }}>What your AI team has driven so far</p>
+      {data.metrics && (() => {
+        const platforms = data.metricsPlatforms || [];
+        const shown = metricsFilter === "all"
+          ? data.metrics
+          : aggregatePosts(filterPostsByPlatform(data.metricsPosts || [], metricsFilter));
+        return (
+          <div className="hero" style={{ marginBottom: 18 }}>
+            <div className="orb" />
+            <div className="row" style={{ position: "relative", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+              <div>
+                <h2 style={{ color: "#fff", margin: 0 }}>Your performance</h2>
+                <p style={{ margin: "4px 0 0", opacity: 0.9, fontSize: 13 }}>What your AI team has driven so far</p>
+              </div>
+              <div className="spacer" />
+              {platforms.length > 1 && (
+                <select
+                  aria-label="Filter performance by account"
+                  value={metricsFilter}
+                  onChange={(e) => setMetricsFilter(e.target.value)}
+                  style={{ background: "#fff", color: "var(--teal-dark)", borderRadius: "var(--radius)", border: "none", padding: "9px 12px", fontSize: 13, fontWeight: 600 }}
+                >
+                  <option value="all">All accounts</option>
+                  {platforms.map((p) => <option key={p} value={p}>{platformLabel(p)}</option>)}
+                </select>
+              )}
+              <button className="btn-secondary" style={{ background: "#fff", color: "var(--teal-dark)" }}
+                onClick={() => goTab("analytics")}>View analytics</button>
             </div>
-            <div className="spacer" />
-            <button className="btn-secondary" style={{ background: "#fff", color: "var(--teal-dark)" }}
-              onClick={() => goTab("analytics")}>View analytics</button>
+            <div className="hero-metrics">
+              <div><div className="hm-v">{(shown.impressions || 0).toLocaleString()}</div><div className="hm-l">Impressions</div></div>
+              <div><div className="hm-v">{(shown.total_likes || 0).toLocaleString()}</div><div className="hm-l">Total likes</div></div>
+              <div><div className="hm-v">{(shown.post_count || 0).toLocaleString()}</div><div className="hm-l">Posts published</div></div>
+              <div><div className="hm-v">{(shown.avg_likes || 0).toLocaleString()}</div><div className="hm-l">Avg likes / post</div></div>
+            </div>
           </div>
-          <div className="hero-metrics">
-            <div><div className="hm-v">{(data.metrics.impressions || 0).toLocaleString()}</div><div className="hm-l">Impressions</div></div>
-            <div><div className="hm-v">{(data.metrics.total_likes || 0).toLocaleString()}</div><div className="hm-l">Total likes</div></div>
-            <div><div className="hm-v">{(data.metrics.post_count || 0).toLocaleString()}</div><div className="hm-l">Posts published</div></div>
-            <div><div className="hm-v">{(data.metrics.avg_likes || 0).toLocaleString()}</div><div className="hm-l">Avg likes / post</div></div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Setup steps — only until the team is fully briefed */}
       {!setupDone && (

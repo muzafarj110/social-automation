@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { zernioMetrics, getInsights } from "../api.js";
+import { platformLabel } from "../utils/platforms.js";
+import { aggregatePosts, filterPostsByPlatform } from "../utils/analyticsAggregate.js";
 
 function objText(o) {
   return Object.entries(o)
@@ -65,8 +67,12 @@ function Stat({ label, value }) {
   );
 }
 
-function Summary({ s }) {
-  const fmt = (n) => (n ?? 0).toLocaleString();
+function PlatformBadge({ platform }) {
+  if (!platform) return null;
+  return <span className="badge kind" style={{ flexShrink: 0 }}>{platformLabel(platform)}</span>;
+}
+
+function Summary({ s, showPlatformBadges }) {
   const top = (s.recent || [])
     .slice()
     .sort((a, b) => (b.impressions || 0) - (a.impressions || 0))
@@ -81,6 +87,7 @@ function Summary({ s }) {
           <div className="bars">
             {top.map((p, i) => (
               <div className="bar-row" key={i}>
+                {showPlatformBadges && <PlatformBadge platform={p.platform} />}
                 <span className="bar-label">{(p.content || "(no text)").slice(0, 44)}</span>
                 <span className="bar-track">
                   <span className="bar-fill" style={{ width: `${Math.round(((p.impressions || 0) / maxImp) * 100)}%` }} />
@@ -93,11 +100,17 @@ function Summary({ s }) {
       )}
       {s.recent?.length > 0 && (
         <div style={{ marginTop: 14 }}>
-          <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 8 }}>Recent posts</div>
+          <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 2 }}>Recent posts</div>
+          <p className="muted" style={{ fontSize: 12, margin: "0 0 8px" }}>
+            Pulled live from the account itself — includes anything posted there, not just posts made in Autopilot.
+          </p>
           <div className="pill-list" style={{ maxHeight: 320, overflowY: "auto", paddingRight: 4 }}>
             {s.recent.map((p, i) => (
               <div className="pill" key={i} style={{ alignItems: "flex-start", flexDirection: "column", gap: 4 }}>
-                <div style={{ fontSize: 13 }}>{p.content || "(no text)"}{p.content?.length >= 160 ? "…" : ""}</div>
+                <div className="row" style={{ gap: 8, width: "100%" }}>
+                  {showPlatformBadges && <PlatformBadge platform={p.platform} />}
+                  <div style={{ fontSize: 13 }}>{p.content || "(no text)"}{p.content?.length >= 160 ? "…" : ""}</div>
+                </div>
                 <div className="row" style={{ gap: 10, width: "100%" }}>
                   <span className="muted" style={{ fontSize: 12 }}>
                     {p.impressions} impressions · {p.likes} likes · {p.comments} comments
@@ -126,6 +139,7 @@ export default function Analytics() {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [platformFilter, setPlatformFilter] = useState("all");
 
   const loadZernio = async () => {
     setError("");
@@ -141,7 +155,14 @@ export default function Analytics() {
   };
   useEffect(() => { loadZernio(); }, []); // eslint-disable-line
 
-  const summary = zernio?.ok ? zernio.summary : null;
+  // `platforms` is every account connected (from the DB), even ones Zernio
+  // returned no posts for; `summary` is always the all-platforms merged total.
+  const platforms = zernio?.ok ? (zernio.platforms || []) : [];
+  const rawPosts = zernio?.ok ? (zernio.data?.posts || []) : [];
+  const allSummary = zernio?.ok ? zernio.summary : null;
+  const summary = !zernio?.ok || platformFilter === "all"
+    ? allSummary
+    : aggregatePosts(filterPostsByPlatform(rawPosts, platformFilter));
 
   const runInsights = async () => {
     setError(""); setBusy("insights"); setInsights(null);
@@ -167,6 +188,27 @@ export default function Analytics() {
     <>
       {error && <div className="error" role="alert">{error}</div>}
 
+      {platforms.length > 1 && (
+        <div className="row" style={{ gap: 6, flexWrap: "wrap", marginBottom: 14 }} role="tablist" aria-label="Filter analytics by account">
+          <button
+            type="button" role="tab" aria-selected={platformFilter === "all"}
+            className={`filter-chip ${platformFilter === "all" ? "active" : ""}`}
+            onClick={() => setPlatformFilter("all")}
+          >
+            All accounts
+          </button>
+          {platforms.map((p) => (
+            <button
+              key={p} type="button" role="tab" aria-selected={platformFilter === p}
+              className={`filter-chip ${platformFilter === p ? "active" : ""}`}
+              onClick={() => setPlatformFilter(p)}
+            >
+              {platformLabel(p)}
+            </button>
+          ))}
+        </div>
+      )}
+
       {summary && (
         <div className="kpi-strip">
           <div className="kpi-tile"><div className="v">{(summary.post_count ?? 0).toLocaleString()}</div><div className="l">Published posts</div></div>
@@ -181,7 +223,7 @@ export default function Analytics() {
       <div className="card">
         <h2>Strategy &amp; suggestions</h2>
         <p className="muted">
-          The AI reads your LinkedIn metrics (below) and tells you what's working, what isn't,
+          The AI reads your connected accounts' metrics (below) and tells you what's working, what isn't,
           and what to do next. No numbers to enter — just set your goal and go.
         </p>
         <div className="row">
@@ -225,7 +267,7 @@ export default function Analytics() {
           {zernio == null ? (
             <div className="muted" style={{ marginTop: 8 }}>Loading…</div>
           ) : summary ? (
-            <Summary s={summary} />
+            <Summary s={summary} showPlatformBadges={platformFilter === "all" && platforms.length > 1} />
           ) : zernio.ok ? (
             <div style={{ marginTop: 8 }}><HubResult data={zernio.data} /></div>
           ) : (

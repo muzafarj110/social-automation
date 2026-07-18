@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { listPosts } from "../api.js";
+import { platformLabel, platformShort } from "../utils/platforms.js";
 
 const STATUS_CLASS = { published: "published", scheduled: "scheduled", draft: "draft", failed: "failed" };
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -86,8 +87,11 @@ export default function Calendar() {
             <div className={`cal-cell${dim ? " dim" : ""}${sameDay(date, today) ? " today" : ""}`} key={i}>
               <div className="cal-daynum">{date.getDate()}</div>
               {items.slice(0, 4).map((p) => (
-                <div className={`cal-chip chip-${STATUS_CLASS[p.status] || "draft"}`} key={p.id} title={p.body}>
-                  <span className="t">{p.scheduled_for ? p.when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "•"} </span>
+                <div className={`cal-chip chip-${STATUS_CLASS[p.status] || "draft"}`} key={p.id}
+                     title={`${platformLabel(p.platform)} — ${p.body}`}>
+                  <span className="t">
+                    {platformShort(p.platform)} · {p.scheduled_for ? p.when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "•"}{" "}
+                  </span>
                   {(p.body || "").slice(0, 30)}
                 </div>
               ))}

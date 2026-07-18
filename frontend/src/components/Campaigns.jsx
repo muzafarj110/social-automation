@@ -9,6 +9,7 @@ import {
   publishPost,
   deletePost,
 } from "../api.js";
+import { platformLabel } from "../utils/platforms.js";
 
 function CampaignPosts({ campaignId }) {
   const [posts, setPosts] = useState(null);
@@ -32,6 +33,7 @@ function CampaignPosts({ campaignId }) {
       {posts.map((p) => (
         <div className="pill" key={p.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
           <div className="row">
+            <span className="badge kind">{platformLabel(p.platform)}</span>
             <span className={`badge ${p.status}`}>{p.status}</span>
             {p.scheduled_for && <span className="muted" style={{ fontSize: 12 }}>for {new Date(p.scheduled_for).toLocaleString()}</span>}
             <div className="spacer" />

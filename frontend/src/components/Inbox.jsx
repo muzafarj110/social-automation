@@ -134,7 +134,7 @@ function InboxCard({ item, onChange }) {
 
       {item.status === "approved" && (
         <div className="row" style={{ marginTop: 12 }}>
-          <span className="muted">No official API for this action — send it manually on LinkedIn.</span>
+          <span className="muted">No official API for this action — send it manually on the platform.</span>
           <div className="spacer" />
           <button className="btn-secondary" onClick={copy}>Copy text</button>
         </div>
@@ -245,16 +245,16 @@ export default function Inbox({ accounts, refreshKey }) {
           {kind === "comment" && (
             <>
               <label htmlFor="inbox-post-url">Target post URL <span className="muted">(optional — for your reference)</span></label>
-              <input id="inbox-post-url" value={postUrl} placeholder="https://linkedin.com/posts/…"
+              <input id="inbox-post-url" value={postUrl} placeholder="https://www.linkedin.com/posts/…"
                      onChange={(e) => setPostUrl(e.target.value)} />
-              <label htmlFor="inbox-comment-id">Company-page comment ID <span className="muted">(optional — enables auto-reply)</span></label>
+              <label htmlFor="inbox-comment-id">Company/org-page comment ID <span className="muted">(optional — enables auto-reply)</span></label>
               <input id="inbox-comment-id" value={commentId} placeholder="leave blank for a personal comment you'll post yourself"
                      onChange={(e) => setCommentId(e.target.value)} />
               {commentId.trim() && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontWeight: 400 }}>
                   <input type="checkbox" checked={autoSend} style={{ width: "auto" }}
                          onChange={(e) => setAutoSend(e.target.checked)} />
-                  <span>Auto-post this reply (no manual approval). Company-page comments only — LinkedIn's API doesn't allow auto-sending personal comments or DMs.</span>
+                  <span>Auto-post this reply (no manual approval). Company/org-page comments only — the platform's API doesn't allow auto-sending personal comments or DMs.</span>
                 </label>
               )}
             </>

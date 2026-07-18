@@ -99,5 +99,5 @@ async def list_customer_accounts(user: User, db) -> list[dict[str, Any]]:
         return [a for a in accts if _account_profile_id(a) == pid]
     # Legacy/dev single-tenant: the per-user key already scopes to that user.
     async with ZernioClient(settings.zernio_base_url, key) as z:
-        data = await z.list_accounts()
+        data = await z.list_accounts(profile_id=None)
     return data.get("accounts") or data.get("data") or []
