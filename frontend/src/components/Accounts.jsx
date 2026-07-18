@@ -203,8 +203,21 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser, 
   // When the user returns from the platform's OAuth (?connected=…), auto-import.
   useEffect(() => {
     if (typeof window !== "undefined" && /[?&]connected=/.test(window.location.search)) {
-      doImport();
-      window.history.replaceState({}, "", window.location.origin + window.location.pathname + "#accounts");
+      // Wrap doImport() to catch auth errors during the OAuth callback
+      (async () => {
+        try {
+          await doImport();
+        } catch (e) {
+          // If token expired during OAuth flow, just show them the import worked
+          if (e.response?.status === 401 || e.message?.includes("401") || e.message?.includes("Unauthorized")) {
+            setMsg("Account connected! Refresh this page to see it in your list.");
+          } else {
+            setError(e.message || "Failed to import connected accounts. Please try again.");
+          }
+        } finally {
+          window.history.replaceState({}, "", window.location.origin + window.location.pathname + "#accounts");
+        }
+      })();
     }
   }, []); // eslint-disable-line
 
