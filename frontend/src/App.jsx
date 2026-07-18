@@ -30,7 +30,7 @@ import HelpCenter from "./components/HelpCenter.jsx";
 // Each item: [tabId, label, featureFlag, working?]. `working` shows a live
 // pulsing status dot — the "this agent is on the job 24/7" cue (NoimosAI model).
 const NAV = [
-  { group: "Command center", items: [["home", "Live work feed", null]] },
+  { group: "Command center", items: [["home", "Live work feed", null], ["help", "Learn how it works", null]] },
   { group: "Your AI team", items: [
     ["team", "Content agent", null, true],
     ["campaigns", "Always-on Campaigns", "autopilot", true],
@@ -270,10 +270,6 @@ export default function App() {
                 : `${user?.free_today_remaining ?? 0} free today`}</span>
             </button>
           )}
-          <button className="nav-item" onClick={() => go("help")} title="How Autopilot works">
-            <span style={{ fontSize: "16px", marginRight: "8px" }}>?</span>
-            <span>Help</span>
-          </button>
           <div className="email">{user?.email}</div>
           <button className="nav-item" onClick={doLogout}><span className="dot" /><span>Sign out</span></button>
         </div>
