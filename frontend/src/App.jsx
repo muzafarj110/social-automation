@@ -25,6 +25,7 @@ import Competitor from "./components/Competitor.jsx";
 import SocialListening from "./components/SocialListening.jsx";
 import SeoGeo from "./components/SeoGeo.jsx";
 import Connections from "./components/Connections.jsx";
+import HelpCenter from "./components/HelpCenter.jsx";
 
 // Each item: [tabId, label, featureFlag, working?]. `working` shows a live
 // pulsing status dot — the "this agent is on the job 24/7" cue (NoimosAI model).
@@ -74,6 +75,7 @@ const TITLES = {
   connections: ["Messaging channels", "Connect WhatsApp Business and Telegram for cross-channel posting"],
   billing: ["Billing", "Your credits and top-ups"],
   admin: ["Users", "Manage plans, access and account status"],
+  help: ["How Autopilot Works", "Learn how to generate leads, create content, and automate your marketing"],
 };
 
 export default function App() {
@@ -268,6 +270,10 @@ export default function App() {
                 : `${user?.free_today_remaining ?? 0} free today`}</span>
             </button>
           )}
+          <button className="nav-item" onClick={() => go("help")} title="How Autopilot works">
+            <span style={{ fontSize: "16px", marginRight: "8px" }}>?</span>
+            <span>Help</span>
+          </button>
           <div className="email">{user?.email}</div>
           <button className="nav-item" onClick={doLogout}><span className="dot" /><span>Sign out</span></button>
         </div>
@@ -321,6 +327,7 @@ export default function App() {
           )}
           {tab === "billing" && <Billing user={user} />}
           {tab === "admin" && user.is_admin && <Admin />}
+          {tab === "help" && <HelpCenter />}
         </div>
       </main>
     </div>
