@@ -8,8 +8,11 @@ import {
   listCampaignPosts,
   publishPost,
   deletePost,
+  getBrand,
 } from "../api.js";
 import { platformLabel } from "../utils/platforms.js";
+import BrandWarning, { isBrandReady } from "./BrandWarning.jsx";
+import ProgressTimer from "./ProgressTimer.jsx";
 
 function CampaignPosts({ campaignId }) {
   const [posts, setPosts] = useState(null);
@@ -96,8 +99,9 @@ const emptyForm = {
   learn_from_analytics: false,
 };
 
-function CampaignCard({ c, onChange, goTab }) {
+function CampaignCard({ c, onChange, goTab, refreshUser }) {
   const [busy, setBusy] = useState(false);
+  const [running, setRunning] = useState(false);
   const [msg, setMsg] = useState("");
   const [ranCount, setRanCount] = useState(null);
   const [error, setError] = useState("");
@@ -109,17 +113,25 @@ function CampaignCard({ c, onChange, goTab }) {
     try { await fn(); } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
 
-  const doRun = run(async () => {
-    const posts = await runCampaign(c.id);
-    const n = posts.length;
-    setMsg(c.mode === "auto"
-      ? `Generated ${n} post${n === 1 ? "" : "s"} and scheduled them.`
-      : `Generated ${n} draft${n === 1 ? "" : "s"} — review them below before publishing.`);
-    setRanCount(n);
-    setShowPosts(true);
-    setRefreshPosts((x) => x + 1);
-    onChange();
-  });
+  const doRun = async () => {
+    setBusy(true); setRunning(true); setError(""); setMsg(""); setRanCount(null);
+    try {
+      const posts = await runCampaign(c.id);
+      const n = posts.length;
+      setMsg(c.mode === "auto"
+        ? `Generated ${n} post${n === 1 ? "" : "s"} and scheduled them.`
+        : `Generated ${n} draft${n === 1 ? "" : "s"} — review them below before publishing.`);
+      setRanCount(n);
+      setShowPosts(true);
+      setRefreshPosts((x) => x + 1);
+      onChange();
+      refreshUser?.();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false); setRunning(false);
+    }
+  };
   const togglePause = run(async () => {
     await updateCampaign(c.id, { status: c.status === "active" ? "paused" : "active" });
     onChange();
@@ -150,6 +162,7 @@ function CampaignCard({ c, onChange, goTab }) {
       </div>
       {c.last_error && <div className="error" role="alert">{c.last_error}</div>}
       {error && <div className="flash error" role="alert">{error}</div>}
+      {running && <ProgressTimer label="Generating and quality-checking this batch…" />}
       {msg && (
         <div className="success" style={{ display: "flex", alignItems: "center", gap: 10 }} aria-live="polite">
           <span>{msg}</span>
@@ -184,13 +197,14 @@ function CampaignCard({ c, onChange, goTab }) {
   );
 }
 
-export default function Campaigns({ accounts, goTab }) {
+export default function Campaigns({ accounts, goTab, refreshUser }) {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [brandReady, setBrandReady] = useState(true); // assume ready until checked, avoids a flash
 
   const load = async () => {
     try { setItems(await listCampaigns()); }
@@ -198,6 +212,9 @@ export default function Campaigns({ accounts, goTab }) {
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []); // eslint-disable-line
+  useEffect(() => {
+    getBrand().then((b) => setBrandReady(isBrandReady(b))).catch(() => {});
+  }, []);
   useEffect(() => {
     if (!form.account_id && accounts.length) setForm((f) => ({ ...f, account_id: accounts[0].id }));
   }, [accounts]); // eslint-disable-line
@@ -281,6 +298,7 @@ export default function Campaigns({ accounts, goTab }) {
 
   return (
     <>
+      {!brandReady && <BrandWarning goTab={goTab} />}
       <div className="card">
         <h2>New campaign</h2>
         {accounts.length === 0 && (
@@ -478,7 +496,7 @@ export default function Campaigns({ accounts, goTab }) {
       ) : items.length === 0 ? (
         <div className="empty">No campaigns yet. Create one above to put posting on autopilot.</div>
       ) : (
-        items.map((c) => <CampaignCard key={c.id} c={c} onChange={load} goTab={goTab} />)
+        items.map((c) => <CampaignCard key={c.id} c={c} onChange={load} goTab={goTab} refreshUser={refreshUser} />)
       )}
     </>
   );

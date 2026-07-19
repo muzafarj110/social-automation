@@ -176,7 +176,7 @@ function Result({ data }) {
   );
 }
 
-export default function Studio() {
+export default function Studio({ refreshUser }) {
   const [cat, setCat] = useState(CACHE.cat);
   const [toolKey, setToolKey] = useState(CACHE.tool);
   const [form, setForm] = useState(CACHE.form[CACHE.tool] || {});
@@ -229,6 +229,7 @@ export default function Studio() {
       }).catch((err) => { delete CACHE.inflight[key]; throw err; });
       CACHE.inflight[key] = p;
       const data = await p;
+      refreshUser?.();
       if (CACHE.tool === key) { setResult(data); setBusy(false); }
     } catch (e2) {
       setError(e2.message); setBusy(false);

@@ -25,10 +25,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.hub_client import HubClient, HubError
 from app.core import credits
-from app.core.config import settings
+from app.core.config import FEATURE_PERMISSIONS, settings
 from app.core.user_keys import resolve_hub_key
 from app.models.brand import BrandProfile
 from app.models.competitor import Competitor
+from app.models.connections import WhatsAppConnection
 from app.models.lead import CONTACTED, NEW, Lead
 from app.models.proactive import ProactiveItem
 from app.models.seo_geo import SeoProject
@@ -175,6 +176,20 @@ async def generate_for_user(user: User, db: AsyncSession) -> ProactiveItem | Non
                 "Lead-gen agent can draft outreach for your new prospects",
                 f"You have {new_lead_count} new lead{'s' if new_lead_count != 1 else ''} without a drafted message yet.",
                 "leads",
+            ))
+
+    # --- WhatsApp agent available but not connected --------------------------
+    if "whatsapp_agent" in FEATURE_PERMISSIONS.get(user.profile_type or "", set()):
+        wa = await db.scalar(
+            select(WhatsAppConnection).where(WhatsAppConnection.user_id == user.id)
+        )
+        if not wa:
+            tier_candidates.append((
+                "whatsapp",
+                "WhatsApp agent is included in your plan",
+                "Connect WhatsApp Business (one-time Meta setup, ~10-15 min) so it can answer "
+                "customers from your FAQ 24/7.",
+                "whatsappagent",
             ))
 
     if tier_candidates:

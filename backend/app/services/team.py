@@ -12,6 +12,7 @@ breaking the whole batch, so a flaky model never wipes the run.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -43,6 +44,27 @@ class TeamError(Exception):
         self.status_code = status_code
 
 
+_STOPWORDS = {
+    "a", "an", "the", "of", "to", "for", "and", "or", "in", "on", "with", "is",
+    "are", "your", "you", "what", "how", "why", "this", "that", "from", "into",
+}
+
+
+def _normalize_tokens(text: str) -> set[str]:
+    words = re.findall(r"[a-z0-9]+", (text or "").lower())
+    return {w for w in words if len(w) > 2 and w not in _STOPWORDS}
+
+
+def _similar(a: str, b: str, threshold: float = 0.4) -> bool:
+    """Jaccard similarity on normalized word sets — catches reworded near-
+    duplicates ("5 AI tools for productivity" vs "5 AI tools to boost
+    productivity") that exact-match or substring checks both miss."""
+    ta, tb = _normalize_tokens(a), _normalize_tokens(b)
+    if not ta or not tb:
+        return False
+    return (len(ta & tb) / len(ta | tb)) >= threshold
+
+
 def _topics_from_strategy(data, count: int) -> list[str]:
     """Pull post topics/angles out of a Hub content_strategy response."""
     topics: list[str] = []
@@ -62,11 +84,10 @@ def _topics_from_strategy(data, count: int) -> list[str]:
                                 topics.append(str(cp["title"]))
             if topics:
                 break
-    seen, out = set(), []
+    out: list[str] = []
     for t in topics:
         t = t.strip()
-        if t and t.lower() not in seen:
-            seen.add(t.lower())
+        if t and not any(_similar(t, o) for o in out):
             out.append(t)
     return out
 
@@ -152,8 +173,7 @@ async def build_plan(db, user: User, count: int = 3, *, key: str | None = None, 
             log.warning("Team strategist failed: %s", getattr(e, "message", e))
 
     # Prefer fresh angles: drop topics that echo something posted recently.
-    low_recent = " ".join(recent).lower()
-    fresh = [t for t in topics if t[:24].lower() not in low_recent] or topics
+    fresh = [t for t in topics if not any(_similar(t, r) for r in recent)] or topics
     if not fresh:
         fresh = [f"{seed}: angle #{i + 1}" for i in range(count)]
     topics = fresh[:count]

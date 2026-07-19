@@ -301,8 +301,8 @@ export default function App() {
             />
           )}
           {tab === "strategy" && <Strategy goTab={setTab} />}
-          {tab === "studio" && <Studio />}
-          {tab === "videoagent" && <VideoAgent accounts={accounts} />}
+          {tab === "studio" && <Studio refreshUser={refreshUser} />}
+          {tab === "videoagent" && <VideoAgent accounts={accounts} refreshUser={refreshUser} />}
           {tab === "whatsappagent" && hasFeature(user, 'whatsapp_agent') && <WhatsAppAgent />}
           {tab === "team" && (
             <ContentTeam
@@ -311,10 +311,11 @@ export default function App() {
               accounts={accounts}
               goConnect={() => setTab("accounts")}
               onSaved={() => { setPostsRefresh((n) => n + 1); setTab("posts"); }}
+              refreshUser={refreshUser}
             />
           )}
           {tab === "posts" && <Posts refreshKey={postsRefresh} accounts={accounts} />}
-          {tab === "campaigns" && <Campaigns accounts={accounts} goTab={setTab} />}
+          {tab === "campaigns" && <Campaigns accounts={accounts} goTab={setTab} refreshUser={refreshUser} />}
           {tab === "inbox" && <Inbox accounts={accounts} />}
           {tab === "profile" && hasFeature(user, 'profile_optimizer') && <ProfileStudio />}
           {tab === "analytics" && hasFeature(user, 'growth_analytics') && <Analytics />}

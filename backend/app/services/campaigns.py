@@ -23,6 +23,7 @@ from app.core.config import settings
 from app.core.entitlements import is_admin
 from app.core.user_keys import resolve_hub_key, resolve_zernio_key
 from app.services.channels import ensure_profile
+from app.services.team import _similar
 from app.models import campaign as cstate
 from app.models import post as post_status
 from app.models.account import LinkedInAccount
@@ -80,19 +81,26 @@ def next_slots(
 
 
 def _extract_topics(data: dict[str, Any], n: int) -> list[str]:
-    """Pull a list of topic strings out of a Hub calendar/plan response."""
+    """Pull a list of topic strings out of a Hub calendar/plan response.
+
+    Skips near-duplicate topics (e.g. the Hub returning two reworded takes on
+    the same idea) rather than exact-match only, so a padded-out response
+    doesn't waste a chunk of the week restating one angle."""
     for key in ("calendar", "posts", "ideas", "schedule", "plan", "items", "topics", "days"):
         v = data.get(key)
         if isinstance(v, list) and v:
             out: list[str] = []
             for item in v:
+                cand = None
                 if isinstance(item, str) and item.strip():
-                    out.append(item.strip())
+                    cand = item.strip()
                 elif isinstance(item, dict):
                     for k in ("topic", "title", "theme", "hook", "idea", "subject", "headline"):
                         if isinstance(item.get(k), str) and item[k].strip():
-                            out.append(item[k].strip())
+                            cand = item[k].strip()
                             break
+                if cand and not any(_similar(cand, o) for o in out):
+                    out.append(cand)
                 if len(out) >= n:
                     break
             if out:
@@ -121,7 +129,11 @@ async def resolve_topics(campaign: Campaign, n: int, hub: HubClient) -> list[str
         if planned:
             return [planned[i % len(planned)] for i in range(n)]
 
-    base = [t for t in (campaign.topics or []) if t and t.strip()]
+    raw_base = [t.strip() for t in (campaign.topics or []) if t and t.strip()]
+    base: list[str] = []
+    for t in raw_base:
+        if not any(_similar(t, o) for o in base):
+            base.append(t)
     if not base:
         seed = campaign.goal or campaign.niche or campaign.name
         base = [seed]

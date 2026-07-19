@@ -7,6 +7,9 @@ viral-analyzer models, so the insights can guide what the autopilot posts next.
 
 from __future__ import annotations
 
+import json
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +27,7 @@ from app.schemas.analytics import InsightsRequest, ViralRequest
 from app.services.channels import ensure_profile
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+log = logging.getLogger("uvicorn.error")
 
 _METRIC_KEYS = ("impressions", "reach", "likes", "comments", "shares", "saves", "clicks", "views")
 
@@ -104,21 +108,29 @@ async def fetch_all_metrics(z: ZernioClient, platforms: list[str],
 
     profile_id scopes to one customer (required in white-label mode). Posts are
     tagged with their platform; overview counters are summed. Per-platform
-    failures are skipped so one bad platform doesn't break the whole view."""
+    failures are tracked (not silently swallowed) so a broken fetch doesn't
+    look identical to "this account genuinely has zero data"."""
     merged_posts: list[dict] = []
     merged_overview: dict = {}
+    failed_platforms: list[str] = []
     for p in platforms:
         try:
             d = await z.get_analytics(platform=p, profile_id=profile_id)
-        except ZernioError:
+        except ZernioError as e:
+            failed_platforms.append(p)
+            log.warning("Zernio analytics fetch failed for platform=%s: %s", p, e.message)
             continue
+        # Diagnostic only — Zernio's field names for impressions/reach can vary
+        # by platform and by personal-vs-organization account type on LinkedIn;
+        # this makes the raw shape inspectable without guessing at a fix.
+        log.debug("Zernio analytics raw for platform=%s: %s", p, json.dumps(d)[:2000])
         for post in (d.get("posts") or []):
             post.setdefault("platform", p)
             merged_posts.append(post)
         for k, v in (d.get("overview") or {}).items():
             if isinstance(v, (int, float)):
                 merged_overview[k] = merged_overview.get(k, 0) + v
-    return {"overview": merged_overview, "posts": merged_posts}
+    return {"overview": merged_overview, "posts": merged_posts, "failed_platforms": failed_platforms}
 
 
 @router.get("/zernio")
@@ -141,7 +153,10 @@ async def zernio_metrics(
             data = await fetch_all_metrics(z, platforms, profile_id)
         except ZernioError as e:
             return {"ok": False, "error": e.message}
-    return {"ok": True, "summary": _aggregate(data), "data": data, "platforms": platforms}
+    return {
+        "ok": True, "summary": _aggregate(data), "data": data, "platforms": platforms,
+        "failed_platforms": data.get("failed_platforms") or [],
+    }
 
 
 _INSIGHTS_STRING_FIELDS = (

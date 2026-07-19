@@ -3,6 +3,7 @@ import { listPosts, listInbox, listCampaigns, zernioMetrics, listAccounts, getBr
 import HelpCenter from "./HelpCenter.jsx";
 import { platformLabel } from "../utils/platforms.js";
 import { aggregatePosts, filterPostsByPlatform } from "../utils/analyticsAggregate.js";
+import { hasFeature } from "../utils/features.js";
 
 // ---- Agent identities (avatar + accent) used across the live work feed ----
 const AGENTS = {
@@ -13,10 +14,13 @@ const AGENTS = {
   leadgen:    { name: "Lead-gen agent",     mono: "Le", bg: "#fbeaf0", fg: "#993556" },
   listening:  { name: "Listening agent",    mono: "Li", bg: "#e6f5f2", fg: "#2a8c84" },
   seo:        { name: "SEO + GEO agent",    mono: "Se", bg: "#fff8e6", fg: "#7A5200" },
+  whatsapp:   { name: "WhatsApp agent",     mono: "Wa", bg: "#dcfce7", fg: "#166534" },
 };
 
-// The team shown in the "working 24/7" status strip.
+// The team shown in the "working 24/7" status strip — filtered per-user below
+// to only agents this account actually has (some are plan-gated).
 const TEAM = ["content", "autopilot", "competitor", "leadgen", "listening", "seo"];
+const AGENT_FEATURE = { leadgen: "lead_gen" };
 
 const PROFILE_LEAD = {
   individual: "Brief your content agent on what to focus on this week.",
@@ -130,6 +134,7 @@ export default function Home({ goTab, user, onDirective }) {
   const connected = data.accounts.length > 0;
   const brandReady = !!(data.brand && (data.brand.voice || data.brand.brand_name));
   const hasCampaign = data.campaigns.length > 0;
+  const liveTeam = TEAM.filter((k) => !AGENT_FEATURE[k] || hasFeature(user, AGENT_FEATURE[k]));
   const steps = [
     { done: connected, title: "Connect your channels", desc: "Link a social account so your agents can publish.", tab: "accounts", cta: "Connect" },
     { done: brandReady, title: "Brief your brand strategist", desc: "Set voice, audience and positioning — every agent uses it.", tab: "strategy", cta: "Set up brand" },
@@ -202,28 +207,6 @@ export default function Home({ goTab, user, onDirective }) {
         </button>
       </div>
 
-      {/* Agents working strip */}
-      <div className="card" style={{ marginBottom: 18, padding: "14px 18px" }}>
-        <div className="row" style={{ alignItems: "center" }}>
-          <div className="row" style={{ gap: 8, alignItems: "center" }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)", boxShadow: "0 0 0 4px rgba(54,173,163,0.16)" }} />
-            <span style={{ fontWeight: 700, fontSize: 13.5 }}>{TEAM.length} agents working 24/7</span>
-          </div>
-          <div className="spacer" />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {TEAM.map((k) => (
-              <span key={k} title={AGENTS[k].name} style={{
-                display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12,
-                background: AGENTS[k].bg, color: AGENTS[k].fg, padding: "4px 10px", borderRadius: 999, fontWeight: 600,
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
-                {AGENTS[k].name.replace(" agent", "")}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Performance band (only when we have live metrics) */}
       {data.metrics && (() => {
         const platforms = data.metricsPlatforms || [];
@@ -235,8 +218,10 @@ export default function Home({ goTab, user, onDirective }) {
             <div className="orb" />
             <div className="row" style={{ position: "relative", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
               <div>
-                <h2 style={{ color: "#fff", margin: 0 }}>Your performance</h2>
-                <p style={{ margin: "4px 0 0", opacity: 0.9, fontSize: 13 }}>What your AI team has driven so far</p>
+                <h2 style={{ color: "#fff", margin: 0 }}>Account performance</h2>
+                <p style={{ margin: "4px 0 0", opacity: 0.9, fontSize: 13 }}>
+                  Real reach on your connected account(s) — includes anything posted there, not just what Autopilot made.
+                </p>
               </div>
               <div className="spacer" />
               {platforms.length > 1 && (
@@ -292,9 +277,11 @@ export default function Home({ goTab, user, onDirective }) {
 
       {/* ---- Live work feed ---- */}
       <div className="row" style={{ marginBottom: 10, alignItems: "baseline" }}>
-        <h2 style={{ margin: 0 }}>Live work feed</h2>
+        <h2 style={{ margin: 0 }}>Needs your attention</h2>
         <span className="muted" style={{ fontSize: 13 }}>
-          {data.inbox.length > 0 ? `${data.inbox.length} need your approval` : "Up to date"}
+          {data.inbox.length > 0
+            ? `${data.inbox.length} need your approval`
+            : proactive.length > 0 ? `${proactive.length} update${proactive.length === 1 ? "" : "s"}` : "Nothing pending"}
         </span>
       </div>
 
@@ -302,21 +289,6 @@ export default function Home({ goTab, user, onDirective }) {
         <FeedCard agent="approvals" tag="needs approval"
           primary={{ label: "Review & approve", onClick: () => goTab("inbox") }}>
           Drafted <strong>{data.inbox.length}</strong> repl{data.inbox.length === 1 ? "y" : "ies"} / outreach message{data.inbox.length === 1 ? "" : "s"} — waiting on your OK before they go out.
-        </FeedCard>
-      )}
-
-      {scheduled.slice(0, 3).map((p) => (
-        <FeedCard key={p.id} agent="autopilot" when={p.scheduled_for ? new Date(p.scheduled_for).toLocaleString() : ""}
-          primary={{ label: "Open", onClick: () => goTab("posts") }}
-          secondary={{ label: "Calendar", onClick: () => goTab("calendar") }}>
-          Scheduled a post: “{p.body.slice(0, 120)}{p.body.length > 120 ? "…" : ""}”
-        </FeedCard>
-      ))}
-
-      {drafts.length > 0 && (
-        <FeedCard agent="content"
-          primary={{ label: "Review drafts", onClick: () => goTab("posts") }}>
-          Wrote <strong>{drafts.length}</strong> new draft{drafts.length === 1 ? "" : "s"} ready to schedule or publish.
         </FeedCard>
       )}
 
@@ -336,7 +308,54 @@ export default function Home({ goTab, user, onDirective }) {
         );
       })}
 
-      {scheduled.length === 0 && drafts.length === 0 && data.inbox.length === 0 && (
+      {data.inbox.length === 0 && proactive.length === 0 && (
+        <div className="empty" style={{ marginTop: 4, marginBottom: 18 }}>
+          Nothing needs you right now.
+        </div>
+      )}
+
+      <div className="row" style={{ marginTop: 24, marginBottom: 10, alignItems: "baseline" }}>
+        <h2 style={{ margin: 0 }}>Team activity</h2>
+      </div>
+
+      {/* Agents working strip — only agents this account actually has */}
+      <div className="card" style={{ marginBottom: 14, padding: "14px 18px" }}>
+        <div className="row" style={{ alignItems: "center" }}>
+          <div className="row" style={{ gap: 8, alignItems: "center" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)", boxShadow: "0 0 0 4px rgba(54,173,163,0.16)" }} />
+            <span style={{ fontWeight: 700, fontSize: 13.5 }}>{liveTeam.length} agent{liveTeam.length === 1 ? "" : "s"} working 24/7</span>
+          </div>
+          <div className="spacer" />
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {liveTeam.map((k) => (
+              <span key={k} title={AGENTS[k].name} style={{
+                display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12,
+                background: AGENTS[k].bg, color: AGENTS[k].fg, padding: "4px 10px", borderRadius: 999, fontWeight: 600,
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                {AGENTS[k].name.replace(" agent", "")}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {scheduled.slice(0, 3).map((p) => (
+        <FeedCard key={p.id} agent="autopilot" when={p.scheduled_for ? new Date(p.scheduled_for).toLocaleString() : ""}
+          primary={{ label: "Open", onClick: () => goTab("posts") }}
+          secondary={{ label: "Calendar", onClick: () => goTab("calendar") }}>
+          Scheduled a post: “{p.body.slice(0, 120)}{p.body.length > 120 ? "…" : ""}”
+        </FeedCard>
+      ))}
+
+      {drafts.length > 0 && (
+        <FeedCard agent="content"
+          primary={{ label: "Review drafts", onClick: () => goTab("posts") }}>
+          Wrote <strong>{drafts.length}</strong> new draft{drafts.length === 1 ? "" : "s"} ready to schedule or publish.
+        </FeedCard>
+      )}
+
+      {scheduled.length === 0 && drafts.length === 0 && (
         <div className="empty" style={{ marginTop: 4 }}>
           {hasCampaign
             ? "Your team is warming up — fresh work will appear here shortly."

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { teamPlan, teamRun, listTeamRuns, getTeamRun, approveTeamRun, deletePost } from "../api.js";
+import { teamPlan, teamRun, listTeamRuns, getTeamRun, approveTeamRun, deletePost, getBrand } from "../api.js";
 import Generate from "./Generate.jsx";
+import BrandWarning, { isBrandReady } from "./BrandWarning.jsx";
+import ProgressTimer from "./ProgressTimer.jsx";
 
 const AGENTS = ["Strategist", "Packager", "Writer", "Producer", "Publisher"];
 const PLATFORM_LABEL = { linkedin: "LinkedIn", twitter: "X", instagram: "Instagram", facebook: "Facebook" };
@@ -18,7 +20,7 @@ function Pipeline({ active }) {
   );
 }
 
-export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, onSaved }) {
+export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, onSaved, refreshUser }) {
   const [mode, setMode] = useState("weekly"); // "weekly" | "single"
   const [run, setRun] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,11 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
   const [learning, setLearning] = useState(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [brandReady, setBrandReady] = useState(true); // assume ready until checked, avoids a flash
+
+  useEffect(() => {
+    getBrand().then((b) => setBrandReady(isBrandReady(b))).catch(() => {});
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +60,7 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
       setBrief(p.brief || "");
       setTopics(p.topics || []);
       setLearning(p.learning || null);
+      refreshUser?.();
     } catch (e) { setError(e.message); }
     finally { setPlanning(false); }
   };
@@ -64,6 +72,7 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
     try {
       const r = await teamRun({ brief, topics: clean });
       setRun(r); setTopics(null);
+      refreshUser?.();
     } catch (e) { setError(e.message); }
     finally { setRunning(false); }
   };
@@ -107,6 +116,8 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
         </button>
       </div>
 
+      {!brandReady && <BrandWarning goTab={goTab} />}
+
       {mode === "single" && (
         <Generate accounts={accounts} goConnect={goConnect} onSaved={onSaved} />
       )}
@@ -140,8 +151,16 @@ export default function ContentTeam({ goTab, initialBrief, accounts, goConnect, 
         <Pipeline active={pipeActive} />
       </div>
 
-      {planning && <div className="card"><div className="studio-loading"><span className="spinner" />Your strategist is planning the week…</div></div>}
-      {running && <div className="card"><div className="studio-loading"><span className="spinner" />Your team is writing & quality-checking the batch…</div></div>}
+      {planning && (
+        <div className="card">
+          <ProgressTimer label="Your strategist is planning the week…" steps={AGENTS} active={0} />
+        </div>
+      )}
+      {running && (
+        <div className="card">
+          <ProgressTimer label="Your team is writing & quality-checking the batch…" steps={AGENTS} active={3} />
+        </div>
+      )}
 
       {/* Plan editor */}
       {!busy && topics !== null && !run && (

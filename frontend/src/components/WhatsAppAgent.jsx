@@ -183,6 +183,17 @@ function SettingsTab({ settings, onRefresh }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 16 }}>
+          <div style={{
+            display: "flex", gap: 10, background: "#fef3c7", border: "1px solid #f59e0b",
+            borderRadius: 10, padding: "12px 14px", marginBottom: 20, fontSize: 13, color: "#92600e",
+          }}>
+            <span style={{ flexShrink: 0 }}>⚠️</span>
+            <div>
+              <strong>Heads up — this one's different.</strong> Unlike the one-click connect on the Accounts
+              page, WhatsApp needs a one-time Meta Developer setup (~10-15 minutes): creating a free Meta app
+              and copying a few IDs into the fields below. Worth doing in one sitting.
+            </div>
+          </div>
           <Step n={1} total={5} label="Create a Meta Developer App" state={stepState(1)}
             hint="Go to developers.facebook.com → My Apps → Create App → choose Business type.">
             <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer"

@@ -63,7 +63,7 @@ function ChannelForm({ initial, onSave, saving }) {
   );
 }
 
-function GenerateSection({ channel }) {
+function GenerateSection({ channel, refreshUser }) {
   const [topic, setTopic] = useState("");
   const [job, setJob] = useState(null);
   const [error, setError] = useState("");
@@ -79,6 +79,7 @@ function GenerateSection({ channel }) {
     try {
       const v = await generateVideo(topic.trim());
       setJob(v);
+      refreshUser?.();
       if (v.status === "queued" || v.status === "generating") {
         pollRef.current = setInterval(async () => {
           try {
@@ -100,6 +101,7 @@ function GenerateSection({ channel }) {
       <h3 style={{ marginTop: 0 }}>Generate a video</h3>
       <p className="muted" style={{ fontSize: 13 }}>
         Type a topic — {channel.name} will get a short (~60s) and long (~3-4min) cut, both at once.
+        Uses 15 credits per generation · typically takes 2-5 minutes.
       </p>
       <div className="row">
         <input style={{ flex: 1 }} placeholder="e.g. 5 free AI tools that replace expensive software"
@@ -118,6 +120,9 @@ function GenerateSection({ channel }) {
           <div className="row">
             <span className={`badge ${job.status}`}>{STATUS_LABEL[job.status] || job.status}</span>
             {job.progress_step && <span className="muted">{PROGRESS_LABEL[job.progress_step] || job.progress_step}</span>}
+            {(job.status === "queued" || job.status === "generating") && (
+              <span className="muted" style={{ fontSize: 12 }}>· usually a few minutes</span>
+            )}
           </div>
           {job.status === "failed" && <div className="error" role="alert" style={{ marginTop: 8 }}>{job.error}</div>}
           {job.status === "completed" && (
@@ -248,7 +253,7 @@ function GallerySection({ accounts }) {
   );
 }
 
-export default function VideoAgent({ accounts = [] }) {
+export default function VideoAgent({ accounts = [], refreshUser }) {
   const [channel, setChannel] = useState(null);
   const [channelLoaded, setChannelLoaded] = useState(false);
   const [section, setSection] = useState("generate");
@@ -293,10 +298,15 @@ export default function VideoAgent({ accounts = [] }) {
           onClick={() => setSection("settings")}>Settings</button>
       </div>
 
+      {section === "settings" && !channel && (
+        <div className="empty" style={{ marginBottom: 14, textAlign: "left" }}>
+          Set up your video channel below — once saved, Generate and Gallery unlock automatically.
+        </div>
+      )}
       {section === "settings" && (
         <ChannelForm initial={channel} onSave={saveChannel} saving={savingChannel} />
       )}
-      {section === "generate" && channel && <GenerateSection channel={channel} />}
+      {section === "generate" && channel && <GenerateSection channel={channel} refreshUser={refreshUser} />}
       {section === "gallery" && channel && <GallerySection accounts={accounts} />}
     </div>
   );

@@ -163,6 +163,13 @@ export default function Analytics() {
   const summary = !zernio?.ok || platformFilter === "all"
     ? allSummary
     : aggregatePosts(filterPostsByPlatform(rawPosts, platformFilter));
+  const failedPlatforms = zernio?.ok ? (zernio.failed_platforms || []) : [];
+  // A 0 next to real likes/comments is more likely a data gap (e.g. LinkedIn's
+  // API withholds impression counts for personal profiles, only exposing them
+  // for organization/company pages) than genuinely zero reach — hedge rather
+  // than presenting a bare 0 as a confirmed fact.
+  const impressionsMaybeUnavailable = !!summary && summary.impressions === 0
+    && (summary.total_likes > 0 || summary.total_comments > 0);
 
   const runInsights = async () => {
     setError(""); setBusy("insights"); setInsights(null);
@@ -187,6 +194,12 @@ export default function Analytics() {
   return (
     <>
       {error && <div className="error" role="alert">{error}</div>}
+
+      {failedPlatforms.length > 0 && (
+        <div className="error" role="alert" style={{ marginBottom: 14 }}>
+          Couldn't refresh metrics for {failedPlatforms.map(platformLabel).join(", ")} — showing the rest below.
+        </div>
+      )}
 
       {platforms.length > 1 && (
         <div className="row" style={{ gap: 6, flexWrap: "wrap", marginBottom: 14 }} role="tablist" aria-label="Filter analytics by account">
@@ -217,6 +230,13 @@ export default function Analytics() {
           <div className="kpi-tile"><div className="v">{(summary.total_comments ?? 0).toLocaleString()}</div><div className="l">Comments</div></div>
           <div className="kpi-tile"><div className="v">{(summary.avg_likes ?? 0).toLocaleString()}</div><div className="l">Avg likes/post</div></div>
         </div>
+      )}
+      {impressionsMaybeUnavailable && (
+        <p className="muted" style={{ fontSize: 12, marginTop: -10, marginBottom: 14 }}>
+          Impressions show 0 despite real engagement — LinkedIn's API only exposes impression counts for
+          organization (company page) accounts, not personal profiles, so this may just not be available yet
+          rather than genuinely zero reach.
+        </p>
       )}
 
       <div className="masonry">

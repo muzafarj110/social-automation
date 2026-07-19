@@ -288,7 +288,9 @@ export default function Accounts({ user, accounts, reloadAccounts, refreshUser, 
               ? (
                 <p className="muted">
                   Your AI runs on Autopilot's managed capacity — no setup needed.
-                  {" "}You have <strong>{user?.credits ?? 0}</strong> credits remaining.
+                  {" "}{user?.subscribed
+                    ? <>You have <strong>{user?.credits ?? 0}</strong> subscription credits remaining this billing period.</>
+                    : <>You're on the free trial — <strong>{user?.free_today_remaining ?? 0}</strong> free credits left today (resets daily, also shown in the sidebar).</>}
                 </p>
               )
               : <UsageCard data={usage.data} />}
