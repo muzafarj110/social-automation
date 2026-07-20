@@ -3,6 +3,7 @@
 // returned in a /analytics/zernio response's `data.posts`. The server's
 // `summary` field is always the all-platforms merged total.
 const METRIC_KEYS = ["impressions", "reach", "likes", "comments", "shares", "saves", "clicks", "views"];
+const VIEW_BASED_PLATFORMS = new Set(["youtube", "tiktok"]);
 
 export function aggregatePosts(posts) {
   const totals = Object.fromEntries(METRIC_KEYS.map((k) => [k, 0]));
@@ -12,11 +13,15 @@ export function aggregatePosts(posts) {
     for (const k of METRIC_KEYS) totals[k] += Number(a[k] || 0);
     const plats = p.platforms || [];
     const url = (plats[0] && plats[0].platformPostUrl) || null;
+    const platform = (p.platform || "").toLowerCase();
+    const reachValue = VIEW_BASED_PLATFORMS.has(platform) ? (a.views || 0) : (a.impressions || 0);
     recent.push({
       content: (p.content || "").slice(0, 160),
       status: p.status,
       platform: p.platform,
       impressions: a.impressions || 0,
+      views: a.views || 0,
+      reach_value: reachValue,
       likes: a.likes || 0,
       comments: a.comments || 0,
       url,
@@ -26,6 +31,7 @@ export function aggregatePosts(posts) {
   return {
     post_count: posts.length,
     impressions: totals.impressions,
+    views: totals.views,
     total_likes: totals.likes,
     total_comments: totals.comments,
     avg_likes: Math.round(totals.likes / denom),

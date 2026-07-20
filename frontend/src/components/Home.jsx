@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listPosts, listInbox, listCampaigns, zernioMetrics, listAccounts, getBrand, listProactiveItems, generateProactiveItem, dismissProactiveItem } from "../api.js";
 import HelpCenter from "./HelpCenter.jsx";
-import { platformLabel } from "../utils/platforms.js";
+import { platformLabel, reachMetricLabel } from "../utils/platforms.js";
 import { aggregatePosts, filterPostsByPlatform } from "../utils/analyticsAggregate.js";
 import { hasFeature } from "../utils/features.js";
 
@@ -213,6 +213,10 @@ export default function Home({ goTab, user, onDirective }) {
         const shown = metricsFilter === "all"
           ? data.metrics
           : aggregatePosts(filterPostsByPlatform(data.metricsPosts || [], metricsFilter));
+        const reachLabel = metricsFilter === "all" ? "Reach" : reachMetricLabel(metricsFilter);
+        const reachValue = metricsFilter === "all"
+          ? (shown.impressions || 0) + (shown.views || 0)
+          : reachLabel === "Views" ? (shown.views || 0) : (shown.impressions || 0);
         return (
           <div className="hero" style={{ marginBottom: 18 }}>
             <div className="orb" />
@@ -239,7 +243,7 @@ export default function Home({ goTab, user, onDirective }) {
                 onClick={() => goTab("analytics")}>View analytics</button>
             </div>
             <div className="hero-metrics">
-              <div><div className="hm-v">{(shown.impressions || 0).toLocaleString()}</div><div className="hm-l">Impressions</div></div>
+              <div><div className="hm-v">{reachValue.toLocaleString()}</div><div className="hm-l">{reachLabel}</div></div>
               <div><div className="hm-v">{(shown.total_likes || 0).toLocaleString()}</div><div className="hm-l">Total likes</div></div>
               <div><div className="hm-v">{(shown.post_count || 0).toLocaleString()}</div><div className="hm-l">Posts published</div></div>
               <div><div className="hm-v">{(shown.avg_likes || 0).toLocaleString()}</div><div className="hm-l">Avg likes / post</div></div>

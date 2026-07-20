@@ -23,3 +23,13 @@ const PLATFORM_SHORT = {
 export function platformShort(id) {
   return PLATFORM_SHORT[id] || (id ? id.slice(0, 2) : "?");
 }
+
+// Platforms that report reach as "views" rather than "impressions" — mirrors
+// VIEW_BASED_PLATFORMS in backend/app/api/analytics.py. Showing a video
+// platform's real view count under an "Impressions" label misrepresents
+// what was actually measured.
+const VIEW_BASED_PLATFORMS = new Set(["youtube", "tiktok"]);
+
+export function reachMetricLabel(platform) {
+  return VIEW_BASED_PLATFORMS.has(platform) ? "Views" : "Impressions";
+}

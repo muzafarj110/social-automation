@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { zernioMetrics, getInsights } from "../api.js";
-import { platformLabel } from "../utils/platforms.js";
+import { platformLabel, reachMetricLabel } from "../utils/platforms.js";
 import { aggregatePosts, filterPostsByPlatform } from "../utils/analyticsAggregate.js";
 
 function objText(o) {
@@ -75,24 +75,24 @@ function PlatformBadge({ platform }) {
 function Summary({ s, showPlatformBadges }) {
   const top = (s.recent || [])
     .slice()
-    .sort((a, b) => (b.impressions || 0) - (a.impressions || 0))
+    .sort((a, b) => (b.reach_value || 0) - (a.reach_value || 0))
     .slice(0, 6);
-  const maxImp = Math.max(1, ...top.map((p) => p.impressions || 0));
+  const maxReach = Math.max(1, ...top.map((p) => p.reach_value || 0));
 
   return (
     <div style={{ marginTop: 10 }}>
       {top.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 4 }}>Top posts by impressions</div>
+          <div style={{ fontWeight: 600, color: "var(--mid)", marginBottom: 4 }}>Top posts by reach</div>
           <div className="bars">
             {top.map((p, i) => (
               <div className="bar-row" key={i}>
                 {showPlatformBadges && <PlatformBadge platform={p.platform} />}
                 <span className="bar-label">{(p.content || "(no text)").slice(0, 44)}</span>
                 <span className="bar-track">
-                  <span className="bar-fill" style={{ width: `${Math.round(((p.impressions || 0) / maxImp) * 100)}%` }} />
+                  <span className="bar-fill" style={{ width: `${Math.round(((p.reach_value || 0) / maxReach) * 100)}%` }} />
                 </span>
-                <span className="bar-val">{(p.impressions || 0).toLocaleString()}</span>
+                <span className="bar-val">{(p.reach_value || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -113,7 +113,7 @@ function Summary({ s, showPlatformBadges }) {
                 </div>
                 <div className="row" style={{ gap: 10, width: "100%" }}>
                   <span className="muted" style={{ fontSize: 12 }}>
-                    {p.impressions} impressions · {p.likes} likes · {p.comments} comments
+                    {p.reach_value} {reachMetricLabel(p.platform).toLowerCase()} · {p.likes} likes · {p.comments} comments
                   </span>
                   <div className="spacer" />
                   {p.url && (
@@ -164,25 +164,35 @@ export default function Analytics() {
     ? allSummary
     : aggregatePosts(filterPostsByPlatform(rawPosts, platformFilter));
   const failedPlatforms = zernio?.ok ? (zernio.failed_platforms || []) : [];
+  // A single platform reports one metric type (YouTube/TikTok: views, others:
+  // impressions) — label and value follow whichever is real for that platform.
+  // "All accounts" mixes both metric types, so it's shown as a combined "Reach".
+  const reachLabel = platformFilter === "all" ? "Reach" : reachMetricLabel(platformFilter);
+  const reachIsMixed = platformFilter === "all"
+    && platforms.some((p) => reachMetricLabel(p) === "Views")
+    && platforms.some((p) => reachMetricLabel(p) !== "Views");
+  const reachValue = !summary ? 0
+    : platformFilter === "all" ? (summary.impressions || 0) + (summary.views || 0)
+    : reachMetricLabel(platformFilter) === "Views" ? (summary.views || 0) : (summary.impressions || 0);
   // A 0 next to real likes/comments is more likely a data gap (e.g. LinkedIn's
   // API withholds impression counts for personal profiles, only exposing them
   // for organization/company pages) than genuinely zero reach — hedge rather
-  // than presenting a bare 0 as a confirmed fact.
-  const impressionsMaybeUnavailable = !!summary && summary.impressions === 0
+  // than presenting a bare 0 as a confirmed fact. Only applies to the
+  // impressions metric, not views, which don't have that same limitation.
+  const impressionsMaybeUnavailable = !!summary && reachValue === 0 && reachLabel !== "Views"
     && (summary.total_likes > 0 || summary.total_comments > 0);
 
   const runInsights = async () => {
     setError(""); setBusy("insights"); setInsights(null);
     try {
-      const s = summary || {};
       const res = await getInsights({
         followers: Number(followers || 0),
-        impressions: s.impressions || 0,
+        impressions: reachValue,
         profile_views: 0,
-        post_count: s.post_count || 0,
-        avg_likes: s.avg_likes || 0,
-        avg_comments: s.avg_comments || 0,
-        avg_shares: s.avg_shares || 0,
+        post_count: summary?.post_count || 0,
+        avg_likes: summary?.avg_likes || 0,
+        avg_comments: summary?.avg_comments || 0,
+        avg_shares: summary?.avg_shares || 0,
         timeframe: "Last 30 days",
         goal: goal || null,
       });
@@ -225,11 +235,17 @@ export default function Analytics() {
       {summary && (
         <div className="kpi-strip">
           <div className="kpi-tile"><div className="v">{(summary.post_count ?? 0).toLocaleString()}</div><div className="l">Published posts</div></div>
-          <div className="kpi-tile"><div className="v">{(summary.impressions ?? 0).toLocaleString()}</div><div className="l">Impressions</div></div>
+          <div className="kpi-tile"><div className="v">{reachValue.toLocaleString()}</div><div className="l">{reachLabel}</div></div>
           <div className="kpi-tile"><div className="v">{(summary.total_likes ?? 0).toLocaleString()}</div><div className="l">Total likes</div></div>
           <div className="kpi-tile"><div className="v">{(summary.total_comments ?? 0).toLocaleString()}</div><div className="l">Comments</div></div>
           <div className="kpi-tile"><div className="v">{(summary.avg_likes ?? 0).toLocaleString()}</div><div className="l">Avg likes/post</div></div>
         </div>
+      )}
+      {reachIsMixed && (
+        <p className="muted" style={{ fontSize: 12, marginTop: -10, marginBottom: 14 }}>
+          "Reach" combines impressions (LinkedIn, X, etc.) and views (YouTube, TikTok) — switch to a single
+          account above to see its own metric.
+        </p>
       )}
       {impressionsMaybeUnavailable && (
         <p className="muted" style={{ fontSize: 12, marginTop: -10, marginBottom: 14 }}>
@@ -263,7 +279,7 @@ export default function Analytics() {
           </button>
           {summary && (
             <span className="muted" style={{ alignSelf: "center" }}>
-              Using {summary.post_count} posts · {(summary.impressions || 0).toLocaleString()} impressions
+              Using {summary.post_count} posts · {reachValue.toLocaleString()} {reachLabel.toLowerCase()}
             </span>
           )}
         </div>

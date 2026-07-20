@@ -31,6 +31,11 @@ log = logging.getLogger("uvicorn.error")
 
 _METRIC_KEYS = ("impressions", "reach", "likes", "comments", "shares", "saves", "clicks", "views")
 
+# Platforms that report reach as "views" rather than "impressions" — showing
+# a video platform's real view count under an "Impressions" label (or vice
+# versa) misrepresents what was actually measured.
+VIEW_BASED_PLATFORMS = {"youtube", "tiktok"}
+
 
 def _aggregate(zdata: dict) -> dict:
     """Roll Zernio's per-post analytics into account totals/averages.
@@ -53,13 +58,22 @@ def _aggregate(zdata: dict) -> dict:
         plats = p.get("platforms") or []
         if plats and isinstance(plats[0], dict):
             url = plats[0].get("platformPostUrl")
+        platform = (p.get("platform") or "").lower()
+        post_analytics = p.get("analytics") or {}
+        # The metric that actually reflects reach for this post's platform —
+        # views for YouTube/TikTok, impressions for everything else — so a
+        # per-post number is never silently 0 just because it was captured
+        # under a differently-named field.
+        reach_value = post_analytics.get("views" if platform in VIEW_BASED_PLATFORMS else "impressions", 0)
         recent.append({
             "content": (p.get("content") or "")[:160],
             "status": p.get("status"),
             "platform": p.get("platform"),
-            "impressions": (p.get("analytics") or {}).get("impressions", 0),
-            "likes": (p.get("analytics") or {}).get("likes", 0),
-            "comments": (p.get("analytics") or {}).get("comments", 0),
+            "impressions": post_analytics.get("impressions", 0),
+            "views": post_analytics.get("views", 0),
+            "reach_value": reach_value,
+            "likes": post_analytics.get("likes", 0),
+            "comments": post_analytics.get("comments", 0),
             "url": url,
         })
     n = len(posts)
@@ -68,6 +82,7 @@ def _aggregate(zdata: dict) -> dict:
     return {
         "post_count": post_count,
         "impressions": totals["impressions"],
+        "views": totals["views"],
         "reach": totals["reach"],
         "total_likes": totals["likes"],
         "total_comments": totals["comments"],
